@@ -873,10 +873,11 @@ export default function App() {
 
       {/* ── PROFILE & THEME CUSTOMIZATION MODAL ───────────── */}
       {profileModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4"
-          style={{ background:'rgba(0,0,0,0.4)', backdropFilter:'blur(14px)' }}>
-          <div className="w-full max-w-lg rounded-3xl p-7 shadow-2xl overflow-y-auto max-h-[90vh]"
-            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border:`1.5px solid ${C.border}`, color: C.txt }}>
+        <div className="fixed inset-0 flex items-end justify-center z-[60] px-4 pb-[96px] pt-4"
+          style={{ background:'rgba(0,0,0,0.4)', backdropFilter:'blur(14px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setProfileModal(false); }}>
+          <div className="w-full max-w-lg rounded-3xl p-7 shadow-2xl overflow-y-auto"
+            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border:`1.5px solid ${C.border}`, color: C.txt, maxHeight:'calc(100vh - 120px)' }}>
             
             {/* Modal Header */}
             <div className="flex items-center justify-between mb-6 pb-4" style={{ borderBottom: `1.5px solid ${C.border}` }}>
