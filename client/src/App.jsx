@@ -555,6 +555,9 @@ export default function App() {
 
     if (yid) {
       // Call playVideo synchronously FIRST to unlock mobile browser audio constraints, then load the new video.
+      const audio = document.getElementById('silent-audio');
+      if (audio) audio.play().catch(()=>{});
+      
       yt.current?.playVideo?.();
       yt.current?.loadVideoById?.(yid);
     } else {
@@ -565,8 +568,16 @@ export default function App() {
 
   const togglePlay = () => {
     if (!track) { if (songs[0]) play(songs[0]); return; }
-    if (playing) { yt.current?.pauseVideo?.(); setPlaying(false); }
-    else         { yt.current?.playVideo?.();  setPlaying(true);  }
+    const audio = document.getElementById('silent-audio');
+    if (playing) { 
+      if (audio) audio.pause();
+      yt.current?.pauseVideo?.(); 
+      setPlaying(false); 
+    } else { 
+      if (audio) audio.play().catch(()=>{});
+      yt.current?.playVideo?.();  
+      setPlaying(true);  
+    }
   };
 
   const nextTrack = () => {
@@ -598,8 +609,18 @@ export default function App() {
         artist: track.artist,
         artwork: [ { src: track.thumbnail, sizes: '512x512', type: 'image/jpeg' } ]
       });
-      navigator.mediaSession.setActionHandler('play', () => { yt.current?.playVideo?.(); setPlaying(true); });
-      navigator.mediaSession.setActionHandler('pause', () => { yt.current?.pauseVideo?.(); setPlaying(false); });
+      navigator.mediaSession.setActionHandler('play', () => { 
+        const audio = document.getElementById('silent-audio');
+        if (audio) audio.play().catch(()=>{});
+        yt.current?.playVideo?.(); 
+        setPlaying(true); 
+      });
+      navigator.mediaSession.setActionHandler('pause', () => { 
+        const audio = document.getElementById('silent-audio');
+        if (audio) audio.pause();
+        yt.current?.pauseVideo?.(); 
+        setPlaying(false); 
+      });
       navigator.mediaSession.setActionHandler('previoustrack', prevTrack);
       navigator.mediaSession.setActionHandler('nexttrack', nextTrack);
     }
