@@ -205,12 +205,8 @@ export default function App() {
   });
 
   // Page routing: 'landing' | 'login' | 'app'
-  // If user already logged in (from localStorage), go straight to app
-  const [page, setPage] = useState(() => {
-    try {
-      return localStorage.getItem('aura_user') ? 'app' : 'landing';
-    } catch { return 'landing'; }
-  });
+  // Always start at landing page on fresh visit
+  const [page, setPage] = useState('landing');
 
   const [loginModal, setLoginModal] = useState(false);
   const [email,      setEmail]      = useState('');
@@ -596,23 +592,15 @@ export default function App() {
             </p>
           </div>
 
-          <div className="rounded-2xl p-3.5 mb-6 flex items-start gap-3"
-            style={{ background: C.tag, border:`1px solid ${C.border}` }}>
-            <i className="ri-lock-2-fill text-base mt-0.5" style={{ color: C.primarySolid }}></i>
-            <p className="text-xs leading-relaxed" style={{ color: C.txtSub }}>
-              Trang web âm nhạc cá nhân đã được khóa. Vui lòng <strong style={{ color: C.txt }}>Đăng nhập</strong> để bắt đầu nghe nhạc.
-            </p>
-          </div>
-
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <div>
-              <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Email Chủ Sở Hữu</label>
+              <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                placeholder="admin@auramusic.com"
+                placeholder="Nhập email của bạn"
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none transition"
                 style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
               />
