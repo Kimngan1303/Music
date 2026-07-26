@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aura Music - Modern Music Streaming App</title>
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Remix Icons / FontAwesome for crisp modern icons -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="dark-theme">
+  <!-- Dynamic Ambient Background Canvas & Glow -->
+  <div id="ambient-backdrop" class="ambient-backdrop">
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+    <canvas id="particle-canvas" class="particle-canvas"></canvas>
+  </div>
+
+  <!-- App Wrapper -->
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">
+          <i class="ri-disc-fill logo-icon"></i>
+        </div>
+        <span class="brand-name">Aura<span class="highlight">Music</span></span>
+      </div>
+
+      <nav class="nav-menu">
+        <div class="nav-section">
+          <span class="nav-section-title">Menu</span>
+          <a href="#" class="nav-item active" data-view="home">
+            <i class="ri-home-5-line"></i>
+            <span>Trang chủ</span>
+          </a>
+          <a href="#" class="nav-item" data-view="library">
+            <i class="ri-music-2-line"></i>
+            <span>Thư viện nhạc</span>
+          </a>
+          <a href="#" class="nav-item" data-view="favorites">
+            <i class="ri-heart-3-line"></i>
+            <span>Yêu thích</span>
+            <span class="badge" id="fav-count-badge">0</span>
+          </a>
+          <a href="#" class="nav-item" data-view="playlists">
+            <i class="ri-playlist-2-line"></i>
+            <span>Danh sách phát</span>
+          </a>
+          <a href="#" class="nav-item" data-view="history">
+            <i class="ri-history-line"></i>
+            <span>Lịch sử nghe</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-header">
+            <span class="nav-section-title">Playlist của bạn</span>
+            <button class="icon-btn-sm" id="btn-quick-create-playlist" title="Tạo playlist mới">
+              <i class="ri-add-line"></i>
+            </button>
+          </div>
+          <div class="sidebar-playlist-list" id="sidebar-playlists">
+            <!-- Dynamic Playlists -->
+          </div>
+        </div>
+      </nav>
+
+      <button class="btn-add-music-sidebar" id="btn-open-add-modal">
+        <i class="ri-youtube-line"></i>
+        <span>Thêm nhạc YouTube</span>
+      </button>
+
+      <div class="user-profile-mini">
+        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Avatar" class="avatar">
+        <div class="user-info">
+          <span class="user-name">Premium Listener</span>
+          <span class="user-status">Dynamic Audio On</span>
+        </div>
+        <button class="btn-theme-toggle" id="theme-toggle-btn" title="Chuyển Chế độ Giao diện">
+          <i class="ri-moon-clear-line" id="theme-icon"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Search & Header Bar -->
+      <header class="top-bar">
+        <div class="mobile-toggle" id="mobile-menu-btn">
+          <i class="ri-menu-line"></i>
+        </div>
+
+        <div class="search-box">
+          <i class="ri-search-line search-icon"></i>
+          <input type="text" id="global-search-input" placeholder="Tìm kiếm bài hát, ca sĩ, playlist...">
+          <button class="clear-search-btn" id="clear-search-btn" style="display: none;">
+            <i class="ri-close-line"></i>
+          </button>
+        </div>
+
+        <div class="top-bar-actions">
+          <button class="action-btn" id="btn-visualizer-toggle" title="Bật/Tắt Visualizer">
+            <i class="ri-equalizer-line"></i>
+            <span>Visualizer</span>
+          </button>
+          <button class="action-btn highlight-btn" id="btn-header-add-music">
+            <i class="ri-add-circle-line"></i>
+            <span>Thêm bài hát</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- View Containers -->
+
+      <!-- 1. Home View -->
+      <section id="view-home" class="view-section active">
+        <!-- Hero Banner -->
+        <div class="hero-banner">
+          <div class="hero-content">
+            <span class="hero-tag"><i class="ri-sparkles-fill"></i> Your Music, Your World</span>
+            <h1 class="hero-title">Đắm Chìm Vào Không Gian Âm Nhạc Đỉnh Cao</h1>
+            <p class="hero-subtitle">Thêm nhạc từ YouTube, tự động đổi không gian theme và cảm nhận nhịp đập âm nhạc với hiệu ứng Visualizer sắc nét.</p>
+            <div class="hero-actions">
+              <button class="btn-primary" id="btn-hero-play-all">
+                <i class="ri-play-fill"></i> Phát ngẫu nhiên tất cả
+              </button>
+              <button class="btn-secondary" id="btn-hero-add-music">
+                <i class="ri-youtube-line"></i> Dán link YouTube
+              </button>
+            </div>
+          </div>
+          <div class="hero-visual">
+            <div class="vinyl-record-container">
+              <div class="vinyl-record" id="hero-vinyl">
+                <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=400&q=80" alt="Cover" id="hero-vinyl-img">
+                <div class="vinyl-center"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recently Played -->
+        <div class="section-container" id="recently-played-section">
+          <div class="section-header">
+            <h2 class="section-title"><i class="ri-history-line"></i> Đã nghe gần đây</h2>
+            <a href="#" class="see-all-link" data-view="history">Xem tất cả</a>
+          </div>
+          <div class="cards-grid" id="recently-played-grid">
+            <!-- Dynamic items -->
+          </div>
+        </div>
+
+        <!-- Recommended Playlists -->
+        <div class="section-container">
+          <div class="section-header">
+            <h2 class="section-title"><i class="ri-bar-chart-grouped-line"></i> Playlist đề xuất</h2>
+          </div>
+          <div class="cards-grid" id="recommended-playlists-grid">
+            <!-- Dynamic Playlists -->
+          </div>
+        </div>
+
+        <!-- Recently Added Songs -->
+        <div class="section-container">
+          <div class="section-header">
+            <h2 class="section-title"><i class="ri-sparkles-line"></i> Bài hát mới thêm</h2>
+            <a href="#" class="see-all-link" data-view="library">Xem tất cả thư viện</a>
+          </div>
+          <div class="song-list-container" id="recent-songs-list">
+            <!-- Dynamic song rows -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Music Library View -->
+      <section id="view-library" class="view-section">
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">Thư viện nhạc</h1>
+            <p class="view-subtitle">Toàn bộ bài hát đã thêm vào ứng dụng</p>
+          </div>
+          <div class="library-toolbar">
+            <div class="filter-sort-group">
+              <label for="library-sort"><i class="ri-sort-desc"></i> Sắp xếp:</label>
+              <select id="library-sort" class="custom-select">
+                <option value="newest">Mới nhất</option>
+                <option value="recent">Nghe gần đây</option>
+                <option value="alpha">Tên A - Z</option>
+              </select>
+            </div>
+            <button class="btn-primary-sm" id="btn-library-play-all">
+              <i class="ri-play-fill"></i> Phát tất cả
+            </button>
+          </div>
+        </div>
+
+        <div class="song-list-container" id="library-song-list">
+          <!-- Dynamic Library Rows -->
+        </div>
+      </section>
+
+      <!-- 3. Favorites View -->
+      <section id="view-favorites" class="view-section">
+        <div class="playlist-hero">
+          <div class="playlist-cover favorite-cover">
+            <i class="ri-heart-fill"></i>
+          </div>
+          <div class="playlist-meta">
+            <span class="playlist-type">PLAYLIST CÁ NHÂN</span>
+            <h1 class="playlist-title">Bài Hát Yêu Thích</h1>
+            <p class="playlist-description">Bộ sưu tập các giai điệu bạn yêu thích nhất.</p>
+            <div class="playlist-stats">
+              <span id="fav-song-count">0 bài hát</span> • <span id="fav-total-duration">0 phút</span>
+            </div>
+            <div class="playlist-hero-actions">
+              <button class="btn-primary" id="btn-fav-play-all">
+                <i class="ri-play-fill"></i> Phát tất cả
+              </button>
+              <button class="btn-secondary" id="btn-fav-shuffle">
+                <i class="ri-shuffle-line"></i> Phát ngẫu nhiên
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="song-list-container" id="favorites-song-list">
+          <!-- Dynamic Favorites Rows -->
+        </div>
+      </section>
+
+      <!-- 4. Playlists Overview View -->
+      <section id="view-playlists" class="view-section">
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">Danh sách phát của bạn</h1>
+            <p class="view-subtitle">Quản lý các playlist theo tâm trạng và chủ đề</p>
+          </div>
+          <button class="btn-primary" id="btn-create-playlist-main">
+            <i class="ri-add-line"></i> Tạo Playlist Mới
+          </button>
+        </div>
+
+        <div class="playlists-grid" id="playlists-overview-grid">
+          <!-- Dynamic Playlist Cards -->
+        </div>
+      </section>
+
+      <!-- 5. Playlist Detail View -->
+      <section id="view-playlist-detail" class="view-section">
+        <div class="playlist-hero">
+          <img src="" alt="Cover" id="playlist-detail-cover" class="playlist-cover-img">
+          <div class="playlist-meta">
+            <span class="playlist-type">PLAYLIST</span>
+            <h1 class="playlist-title" id="playlist-detail-title">Tên Playlist</h1>
+            <p class="playlist-description" id="playlist-detail-desc">Mô tả playlist</p>
+            <div class="playlist-stats">
+              <span id="playlist-detail-count">0 bài hát</span> • <span id="playlist-detail-duration">0 phút</span>
+            </div>
+            <div class="playlist-hero-actions">
+              <button class="btn-primary" id="btn-playlist-detail-play">
+                <i class="ri-play-fill"></i> Phát tất cả
+              </button>
+              <button class="btn-secondary" id="btn-playlist-detail-shuffle">
+                <i class="ri-shuffle-line"></i> Phát ngẫu nhiên
+              </button>
+              <button class="btn-icon-secondary" id="btn-edit-playlist-title" title="Sửa tên Playlist">
+                <i class="ri-edit-line"></i>
+              </button>
+              <button class="btn-icon-danger" id="btn-delete-playlist" title="Xóa Playlist">
+                <i class="ri-delete-bin-line"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="song-list-container" id="playlist-detail-song-list">
+          <!-- Playlist songs -->
+        </div>
+      </section>
+
+      <!-- 6. History View -->
+      <section id="view-history" class="view-section">
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">Lịch sử nghe nhạc</h1>
+            <p class="view-subtitle">Các bài hát bạn đã thưởng thức gần đây</p>
+          </div>
+          <button class="btn-secondary-sm" id="btn-clear-history">
+            <i class="ri-delete-bin-7-line"></i> Xóa lịch sử
+          </button>
+        </div>
+
+        <div class="song-list-container" id="history-song-list">
+          <!-- Dynamic History Songs -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Music Visualizer Canvas Overlay Panel -->
+  <div id="visualizer-container" class="visualizer-container">
+    <div class="visualizer-header">
+      <span><i class="ri-pulse-line"></i> Audio Reactive Dynamic Visualizer</span>
+      <button id="btn-close-visualizer" class="icon-btn"><i class="ri-close-line"></i></button>
+    </div>
+    <canvas id="visualizer-canvas"></canvas>
+  </div>
+
+  <!-- Fixed Bottom Music Player Bar -->
+  <footer class="player-bar" id="player-bar">
+    <!-- Progress Bar (Top of player bar) -->
+    <div class="player-progress-wrapper" id="progress-wrapper">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+        <div class="progress-thumb" id="progress-thumb"></div>
+      </div>
+    </div>
+
+    <div class="player-content">
+      <!-- Currently Playing Info -->
+      <div class="now-playing">
+        <div class="now-playing-cover-wrapper" id="btn-expand-nowplaying" title="Phóng to giao diện nghe nhạc">
+          <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=150&q=80" alt="Track Cover" id="player-cover">
+          <div class="cover-overlay">
+            <i class="ri-fullscreen-line"></i>
+          </div>
+        </div>
+        <div class="now-playing-info">
+          <h4 class="track-title" id="player-title">Chưa chọn bài hát</h4>
+          <p class="track-artist" id="player-artist">Chọn một bài hát từ thư viện để phát</p>
+        </div>
+        <button class="btn-like-player" id="player-btn-like" title="Thêm vào Yêu thích">
+          <i class="ri-heart-line"></i>
+        </button>
+      </div>
+
+      <!-- Controls -->
+      <div class="player-controls">
+        <div class="control-buttons">
+          <button class="control-btn" id="btn-shuffle" title="Phát ngẫu nhiên (Shuffle)">
+            <i class="ri-shuffle-line"></i>
+          </button>
+          <button class="control-btn" id="btn-prev" title="Bài trước">
+            <i class="ri-skip-back-fill"></i>
+          </button>
+          <button class="control-btn play-btn" id="btn-play-pause" title="Phát / Tạm dừng">
+            <i class="ri-play-fill" id="play-pause-icon"></i>
+          </button>
+          <button class="control-btn" id="btn-next" title="Bài tiếp theo">
+            <i class="ri-skip-forward-fill"></i>
+          </button>
+          <button class="control-btn" id="btn-repeat" title="Lặp lại (Repeat)">
+            <i class="ri-repeat-2-line"></i>
+          </button>
+        </div>
+        <div class="time-display">
+          <span id="current-time">0:00</span>
+          <span class="time-divider">/</span>
+          <span id="total-duration">0:00</span>
+        </div>
+      </div>
+
+      <!-- Extra Controls (Volume & Visualizer & Add) -->
+      <div class="player-extra-controls">
+        <button class="extra-btn" id="btn-mini-add-playlist" title="Thêm bài đang phát vào Playlist">
+          <i class="ri-playlist-add-line"></i>
+        </button>
+        
+        <div class="volume-control">
+          <button class="extra-btn" id="btn-mute" title="Tắt / Bật âm thanh">
+            <i class="ri-volume-up-line" id="volume-icon"></i>
+          </button>
+          <input type="range" id="volume-slider" min="0" max="100" value="80" class="volume-slider">
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Hidden YouTube IFrame Player Container -->
+  <div id="youtube-player-hidden" class="youtube-player-hidden"></div>
+
+  <!-- Add Song from YouTube Modal -->
+  <div class="modal-backdrop" id="add-music-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="ri-youtube-fill modal-yt-icon"></i> Thêm Nhạc từ YouTube</h3>
+        <button class="modal-close-btn" id="btn-close-add-modal"><i class="ri-close-line"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <label for="yt-url-input">Dán Đường Dẫn YouTube (URL)</label>
+        <div class="input-with-button">
+          <input type="text" id="yt-url-input" placeholder="https://www.youtube.com/watch?v=... hoặc https://youtu.be/...">
+          <button class="btn-primary" id="btn-fetch-yt-metadata">
+            <i class="ri-search-2-line"></i> Kiểm tra Link
+          </button>
+        </div>
+        <span class="input-error-msg" id="yt-url-error"></span>
+
+        <!-- Song Preview Area -->
+        <div class="song-preview-card" id="song-preview-card" style="display: none;">
+          <img src="" alt="Thumbnail Preview" id="preview-thumbnail" class="preview-img">
+          <div class="preview-info">
+            <span class="preview-badge"><i class="ri-check-line"></i> Đã tìm thấy bài hát</span>
+            <h4 id="preview-title" class="preview-title">Tên bài hát</h4>
+            <p id="preview-artist" class="preview-artist">Kênh / Nghệ sĩ</p>
+            <p class="preview-duration"><i class="ri-time-line"></i> Thời lượng: <span id="preview-duration-val">3:45</span></p>
+          </div>
+        </div>
+
+        <!-- Add Destinations -->
+        <div class="add-options-group" id="add-options-group" style="display: none;">
+          <label>Tùy chọn lưu:</label>
+          <div class="checkbox-options">
+            <label class="checkbox-label">
+              <input type="checkbox" id="chk-add-library" checked disabled>
+              <span>Thêm vào Thư viện nhạc</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="chk-add-favorites">
+              <span>Thêm vào Yêu thích ❤️</span>
+            </label>
+          </div>
+
+          <label for="select-target-playlist">Thêm vào Playlist (Tùy chọn):</label>
+          <select id="select-target-playlist" class="custom-select">
+            <option value="">-- Không thêm vào Playlist --</option>
+            <!-- Dynamic Playlists -->
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btn-cancel-add">Hủy</button>
+        <button class="btn-primary" id="btn-confirm-add-music" style="display: none;">
+          <i class="ri-add-line"></i> Xác Nhận Thêm Bài Hát
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Playlist Modal -->
+  <div class="modal-backdrop" id="create-playlist-modal">
+    <div class="modal-card modal-sm">
+      <div class="modal-header">
+        <h3><i class="ri-playlist-add-line"></i> Tạo Playlist Mới</h3>
+        <button class="modal-close-btn" id="btn-close-playlist-modal"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body">
+        <label for="playlist-name-input">Tên Playlist</label>
+        <input type="text" id="playlist-name-input" placeholder="Ví dụ: Chill Vibe, Lofi Tập Trung, Nhạc Việt Hit...">
+        <label for="playlist-desc-input">Mô tả (Không bắt buộc)</label>
+        <input type="text" id="playlist-desc-input" placeholder="Cảm xúc hoặc danh sách nghệ sĩ...">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btn-cancel-playlist-create">Hủy</button>
+        <button class="btn-primary" id="btn-confirm-create-playlist">Tạo Playlist</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Song to Playlist Picker Modal -->
+  <div class="modal-backdrop" id="add-to-playlist-picker-modal">
+    <div class="modal-card modal-sm">
+      <div class="modal-header">
+        <h3><i class="ri-playlist-2-line"></i> Thêm vào Playlist</h3>
+        <button class="modal-close-btn" id="btn-close-picker-modal"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body">
+        <div id="picker-playlist-list" class="picker-playlist-list">
+          <!-- Dynamic options -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- JS Modules -->
+  <script src="js/colorExtractor.js"></script>
+  <script src="js/visualizer.js"></script>
+  <script src="js/youtubePlayer.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- YouTube IFrame API async script -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
