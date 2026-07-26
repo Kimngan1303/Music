@@ -181,8 +181,8 @@ const addSpotifyPlaylist = async (req, res) => {
     if (!playlistUrl) return res.status(400).json({ message: 'Missing playlistUrl' });
 
     // Ensure it is a valid Spotify URL
-    if (!playlistUrl.includes('spotify.com/playlist') && !playlistUrl.includes('spotify.com/intl-')) {
-      return res.status(400).json({ message: 'Đường dẫn Playlist Spotify không hợp lệ.' });
+    if (!playlistUrl.includes('spotify.com/')) {
+      return res.status(400).json({ message: 'Đường dẫn Spotify không hợp lệ.' });
     }
 
     // Get tracks from Spotify
@@ -201,7 +201,7 @@ const addSpotifyPlaylist = async (req, res) => {
     for (let i = 0; i < tracksToProcess.length; i++) {
       const track = tracksToProcess[i];
       const title = track.name;
-      const artist = track.artists && track.artists[0] ? track.artists[0].name : 'Unknown Artist';
+      const artist = track.artist || (track.artists && track.artists[0] ? track.artists[0].name : 'Unknown Artist');
       
       try {
         const query = `${title} ${artist}`;

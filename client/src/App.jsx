@@ -615,71 +615,27 @@ export default function App() {
     e.preventDefault(); if (!spotifyUrl.trim()) return;
     setAdding(true); setAddErr('');
     try {
-      if (spotifyUrl.includes('/playlist/')) {
-        const res = await axios.post('/api/music/spotify-playlist', {
-          playlistUrl: spotifyUrl,
-          addedBy: user?._id || null
-        });
-        
-        const newSongs = res.data;
-        if (!newSongs || newSongs.length === 0) throw new Error("Không lấy được bài hát nào từ Spotify Playlist.");
-
-        setSongs(p => {
-          const updated = [...newSongs, ...p];
-          if (user) {
-            localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
-          }
-          return updated;
-        });
-        
-        setTrack(newSongs[0]); 
-        play(newSongs[0]);
-        setAddModal(false); 
-        setSpotifyUrl('');
-        return;
-      }
-
-      // Parse Spotify track ID from various URL formats
-      const m = spotifyUrl.match(/spotify\.com\/(?:intl-[a-z]+\/)?track\/([A-Za-z0-9]+)/);
-      const tid = m?.[1];
-      if (!tid) throw new Error('Đường dẫn Spotify không hợp lệ! Ví dụ: https://open.spotify.com/track/...');
-      let title = 'Spotify Track';
-      let artist = 'Spotify Artist';
-      let thumbnail = `https://open.spotify.com/embed/track/${tid}`;
+      // The backend /api/music/spotify-playlist handles playlists, albums, and single tracks
+      const res = await axios.post('/api/music/spotify-playlist', {
+        playlistUrl: spotifyUrl,
+        addedBy: user?._id || null
+      });
       
-      // Try oEmbed for metadata
-      try {
-        const o = await axios.get(`https://open.spotify.com/oembed?url=https://open.spotify.com/track/${tid}`);
-        title     = o.data?.title     || title;
-        artist    = o.data?.provider_name || 'Spotify';
-        thumbnail = o.data?.thumbnail_url || thumbnail;
-      } catch {}
-
-      // Convert to YouTube Track via Backend Search
-      const searchRes = await axios.get(`/api/music/search?query=${encodeURIComponent(title + ' ' + artist)}`);
-      if (!searchRes.data?.youtubeId) throw new Error('Không thể tìm thấy bài hát này trên hệ thống âm thanh.');
-      
-      let s = {
-        id: 's'+Date.now(),
-        sourceType: 'youtube', // Save as youtube so it plays with normal controls
-        youtubeId: searchRes.data.youtubeId,
-        spotifyId: tid, // keep for reference
-        title: title,
-        artist: artist,
-        thumbnail: thumbnail, // use Spotify's thumbnail!
-        duration: searchRes.data.duration || '3:00'
-      };
+      const newSongs = res.data;
+      if (!newSongs || newSongs.length === 0) throw new Error("Không lấy được bài hát nào từ Spotify.");
 
       setSongs(p => {
-        const updated = [s, ...p];
+        const updated = [...newSongs, ...p];
         if (user) {
           localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
-          axios.post('/api/music', { ...s, addedBy: user._id }).catch(()=>{});
         }
         return updated;
       });
-      setTrack(s); play(s);
-      setAddModal(false); setSpotifyUrl('');
+      
+      setTrack(newSongs[0]); 
+      play(newSongs[0]);
+      setAddModal(false); 
+      setSpotifyUrl('');
     } catch(err) { setAddErr(err.response?.data?.message || err.message || 'Lỗi không xác định.'); }
     finally { setAdding(false); }
   };
