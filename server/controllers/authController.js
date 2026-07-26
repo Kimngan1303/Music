@@ -6,23 +6,43 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@auramusic.com';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    // List of hardcoded accounts (from .env)
+    const hardcodedAccounts = [
+      {
+        email:    process.env.ADMIN_EMAIL    || 'admin@auramusic.com',
+        password: process.env.ADMIN_PASSWORD || 'admin123',
+        id:       'admin-owner',
+        name:     'Chủ sở hữu (Admin)',
+        avatar:   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        role:     'admin',
+      },
+      {
+        email:    process.env.USER2_EMAIL    || 'Koanh@gmail.com',
+        password: process.env.USER2_PASSWORD || 'abc123',
+        id:       'user-koanh',
+        name:     'Koanh',
+        avatar:   'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+        role:     'user',
+      },
+    ];
 
-    // Check if input matches configured owner credentials
-    if (email === adminEmail && password === adminPassword) {
+    // Check against hardcoded accounts (case-insensitive email)
+    const matched = hardcodedAccounts.find(
+      acc => acc.email.toLowerCase() === email.toLowerCase() && acc.password === password
+    );
+
+    if (matched) {
       const token = jwt.sign(
-        { id: 'admin-owner', email: adminEmail, role: 'admin' },
+        { id: matched.id, email: matched.email, role: matched.role },
         process.env.JWT_SECRET || 'aura_music_secret_jwt_key_2026',
         { expiresIn: '30d' }
       );
-
       return res.json({
-        _id: 'admin-owner',
-        name: 'Chủ sở hữu (Admin)',
-        email: adminEmail,
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        role: 'admin',
+        _id:    matched.id,
+        name:   matched.name,
+        email:  matched.email,
+        avatar: matched.avatar,
+        role:   matched.role,
         token
       });
     }
@@ -38,11 +58,10 @@ const loginUser = async (req, res) => {
             process.env.JWT_SECRET || 'aura_music_secret_jwt_key_2026',
             { expiresIn: '30d' }
           );
-
           return res.json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
+            _id:    user._id,
+            name:   user.name,
+            email:  user.email,
             avatar: user.avatar,
             token
           });
@@ -57,4 +76,5 @@ const loginUser = async (req, res) => {
 };
 
 module.exports = { loginUser };
+
 

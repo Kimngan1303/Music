@@ -213,10 +213,11 @@ export default function App() {
   });
 
   const [loginModal, setLoginModal] = useState(false);
-  const [email,      setEmail]      = useState('admin@auramusic.com');
-  const [pwd,        setPwd]        = useState('admin123');
+  const [email,      setEmail]      = useState('');
+  const [pwd,        setPwd]        = useState('');
   const [loginErr,   setLoginErr]   = useState('');
   const [loggingIn,  setLoggingIn]  = useState(false);
+
 
   // Profile & Theme Customization Modal
   const [profileModal, setProfileModal] = useState(false);
