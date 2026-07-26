@@ -153,12 +153,21 @@ const PRESET_AVATARS = [
 const DEFAULT_SONGS = [];
 
 export default function App() {
+  // ── Helper: per-user localStorage keys ──────────────────
+  const songsKey = (uid) => `aura_songs_${uid || 'guest'}`;
+  const favsKey  = (uid) => `aura_favs_${uid || 'guest'}`;
+
+  // Get user ID from localStorage at init time (before user state resolves)
+  const initUserId = (() => {
+    try { return JSON.parse(localStorage.getItem('aura_user') || 'null')?._id || 'guest'; } catch { return 'guest'; }
+  })();
+
   const [songs, setSongs] = useState(() => {
     try {
-      const saved = localStorage.getItem('aura_songs');
+      const saved = localStorage.getItem(songsKey(initUserId));
       if (saved !== null) return JSON.parse(saved);
     } catch (e) {}
-    return DEFAULT_SONGS;
+    return [];
   });
 
   const [track,      setTrack]      = useState(null);
@@ -166,7 +175,7 @@ export default function App() {
   const [tab,        setTab]        = useState('home');
   const [favs,       setFavs]       = useState(() => {
     try {
-      const saved = localStorage.getItem('aura_favs');
+      const saved = localStorage.getItem(favsKey(initUserId));
       if (saved !== null) return JSON.parse(saved);
     } catch (e) {}
     return [];
@@ -270,20 +279,20 @@ export default function App() {
     }
   };
 
-  // Fetch songs from API if DB connected (otherwise use persisted songs)
+  // Reload songs/favs when user changes (login to a different account)
   useEffect(() => {
-    axios.get('/api/music').then(r => {
-      if (r.data?.length) {
-        const formatted = r.data.map(x => ({
-          id: x._id || x.youtubeId, youtubeId: x.youtubeId, title: x.title, artist: x.artist,
-          thumbnail: x.thumbnail || `https://img.youtube.com/vi/${x.youtubeId}/hqdefault.jpg`,
-          duration: x.duration || '3:30'
-        }));
-        setSongs(formatted);
-        localStorage.setItem('aura_songs', JSON.stringify(formatted));
-      }
-    }).catch(() => {});
-  }, []);
+    if (!user) { setSongs([]); setFavs([]); return; }
+    try {
+      const savedSongs = localStorage.getItem(songsKey(user._id));
+      if (savedSongs !== null) setSongs(JSON.parse(savedSongs));
+      else setSongs([]);
+    } catch {}
+    try {
+      const savedFavs = localStorage.getItem(favsKey(user._id));
+      if (savedFavs !== null) setFavs(JSON.parse(savedFavs));
+      else setFavs([]);
+    } catch {}
+  }, [user?._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Init YT Player
   useEffect(() => {
@@ -363,19 +372,19 @@ export default function App() {
 
   const toggleFav = id => setFavs(p => {
     const updated = p.includes(id) ? p.filter(x=>x!==id) : [...p,id];
-    localStorage.setItem('aura_favs', JSON.stringify(updated));
+    if (user) localStorage.setItem(favsKey(user._id), JSON.stringify(updated));
     return updated;
   });
 
   const deleteSong = id => {
     setSongs(p => {
       const updated = p.filter(s => s.id !== id);
-      localStorage.setItem('aura_songs', JSON.stringify(updated));
+      if (user) localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
       return updated;
     });
     setFavs(p => {
       const updated = p.filter(x => x !== id);
-      localStorage.setItem('aura_favs', JSON.stringify(updated));
+      if (user) localStorage.setItem(favsKey(user._id), JSON.stringify(updated));
       return updated;
     });
     if (track?.id === id) {
@@ -452,7 +461,7 @@ export default function App() {
       try { const o = await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${vid}&format=json`); s.title = o.data?.title||s.title; s.artist = o.data?.author_name||s.artist; } catch {}
       setSongs(p => {
         const updated = [s, ...p];
-        localStorage.setItem('aura_songs', JSON.stringify(updated));
+        if (user) localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
         return updated;
       });
       setAddModal(false); setYtUrl(''); play(s);
@@ -486,7 +495,7 @@ export default function App() {
       } catch {}
       setSongs(p => {
         const updated = [s, ...p];
-        localStorage.setItem('aura_songs', JSON.stringify(updated));
+        if (user) localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
         return updated;
       });
       setTrack(s);
