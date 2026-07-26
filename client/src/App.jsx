@@ -1075,7 +1075,7 @@ export default function App() {
 
         {/* Sidebar footer card */}
         <div className="rounded-2xl p-4 text-center" style={{ background: C.tag, border:`1px solid ${C.border}` }}>
-          <div className="text-2xl mb-1">🐟</div>
+          <div className="text-2xl mb-1">🕊️</div>
           <p style={{ fontFamily: F.cursive, fontSize:'17px', color: C.primarySolid }}>Music soothes the soul</p>
         </div>
       </aside>
@@ -1220,7 +1220,7 @@ export default function App() {
           <div className="flex flex-col gap-2">
             {list.length === 0 ? (
               <div className="text-center py-16">
-                <div className="text-4xl mb-3">🐟</div>
+                <div className="text-4xl mb-3">🕊️</div>
                 <p className="text-sm font-semibold" style={{ color: C.txtFad }}>Chưa có bài hát nào~</p>
               </div>
             ) : list.map((song, i) => {
@@ -1467,7 +1467,7 @@ export default function App() {
                 <i className="ri-heart-lock-fill text-3xl text-white"></i>
               </div>
               <h2 style={{ fontFamily: F.heading, fontSize:'26px', fontWeight:700, color: C.txt, marginBottom:'4px' }}>Chào mừng trở lại</h2>
-              <p style={{ fontFamily: F.cursive, fontSize:'18px', color: C.primarySolid }}>your personal music haven 🐟</p>
+              <p style={{ fontFamily: F.cursive, fontSize:'18px', color: C.primarySolid }}>your personal music haven 🕊️</p>
             </div>
 
             <div className="rounded-2xl p-3.5 mb-5 flex items-start gap-2.5"
