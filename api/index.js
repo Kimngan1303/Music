@@ -1,3 +1,7 @@
-// Vercel Serverless Function entry point
-// Re-exports the Express app from server/server.js
-module.exports = require('../server/server.js');
+const app = require('../server/server.js');
+const connectDB = require('../server/config/db.js');
+
+module.exports = async (req, res) => {
+  await connectDB();
+  return app(req, res);
+};
