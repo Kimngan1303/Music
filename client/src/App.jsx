@@ -1245,28 +1245,17 @@ export default function App() {
         </div>
       )}
 
-      {/* ── SPOTIFY EMBED PLAYER (floats above footer when Spotify track active) */}
-      {track?.sourceType === 'spotify' && (
-        <div className="fixed bottom-[100px] right-6 z-[55] rounded-2xl overflow-hidden shadow-2xl" style={{ border:`2px solid #1DB954`, width:'320px' }}>
-          <div className="flex items-center justify-between px-3 py-1.5" style={{ background:'#1DB954' }}>
-            <span className="text-white text-xs font-bold flex items-center gap-1.5">
-              <i className="ri-spotify-fill"></i> Spotify Player
-            </span>
-            <button onClick={() => setTrack(null)} className="text-white opacity-70 hover:opacity-100 text-xs">✕</button>
-          </div>
-          <iframe
-            src={`https://open.spotify.com/embed/track/${track.spotifyId}?utm_source=generator&theme=0`}
-            width="320" height="80"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            style={{ border:'none', display:'block' }}
-            title={track.title}
-          />
-        </div>
-      )}
 
       {/* ── BOTTOM PLAYER ─────────────────────── */}
-      <footer className="w-full h-[88px] flex items-center px-8 justify-between shrink-0 z-50"
-        style={{ background: C.surface, backdropFilter:'blur(24px)', borderTop:`1.5px solid ${C.border}`, boxShadow:'0 -6px 28px rgba(0,0,0,0.06)' }}>
+      <footer
+        className="w-full flex items-center px-8 justify-between shrink-0 z-50 transition-all"
+        style={{
+          height: track?.sourceType === 'spotify' ? '108px' : '88px',
+          background: C.surface,
+          backdropFilter: 'blur(24px)',
+          borderTop: `1.5px solid ${C.border}`,
+          boxShadow: '0 -6px 28px rgba(0,0,0,0.06)'
+        }}>
 
         {/* Track Info */}
         <div className="flex items-center gap-4 w-64 shrink-0">
@@ -1305,63 +1294,79 @@ export default function App() {
 
         {/* Controls + Progress */}
         <div className="flex flex-col items-center gap-1.5 flex-1 max-w-lg px-6">
-          <div className="flex items-center gap-5">
-            <button onClick={random} title="Phát ngẫu nhiên" style={{ color: C.txtFad }}>
-              <i className="ri-shuffle-line text-lg"></i>
-            </button>
 
-            {/* Repeat Mode Button */}
-            <button
-              onClick={toggleRepeat}
-              title={
-                repeatMode === 'one'
-                  ? 'Đang lặp 1 bài hát'
-                  : repeatMode === 'all'
-                  ? 'Đang lặp toàn bộ danh sách'
-                  : 'Lặp lại: Tắt'
-              }
-              className="relative p-1 transition cursor-pointer"
-              style={{ color: repeatMode !== 'off' ? C.primarySolid : C.txtFad }}
-            >
-              <i className={repeatMode === 'one' ? 'ri-repeat-2-line text-lg font-bold' : 'ri-repeat-line text-lg'}></i>
-              {repeatMode === 'one' && (
-                <span className="absolute -top-1 -right-1 text-[9px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center text-white shadow-xs"
-                  style={{ background: C.primarySolid }}>
-                  1
-                </span>
-              )}
-              {repeatMode === 'all' && (
-                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
-                  style={{ background: C.primarySolid }}>
-                </span>
-              )}
-            </button>
+          {/* Spotify: embed iframe directly in footer center */}
+          {track?.sourceType === 'spotify' ? (
+            <iframe
+              key={track.spotifyId}
+              src={`https://open.spotify.com/embed/track/${track.spotifyId}?utm_source=generator&theme=0`}
+              width="100%"
+              height="90"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              style={{ border:'none', borderRadius:'12px', display:'block' }}
+              title={track.title}
+            />
+          ) : (
+            <>
+              <div className="flex items-center gap-5">
+                <button onClick={random} title="Phát ngẫu nhiên" style={{ color: C.txtFad }}>
+                  <i className="ri-shuffle-line text-lg"></i>
+                </button>
 
-            <button onClick={prevTrack} title="Bài trước" style={{ color: C.txtSub }}>
-              <i className="ri-skip-back-fill text-2xl"></i>
-            </button>
-            <button onClick={togglePlay}
-              title={playing ? 'Tạm dừng' : 'Phát'}
-              className="w-12 h-12 rounded-full text-white text-xl flex items-center justify-center shadow-lg transition-transform hover:scale-105"
-              style={{ background: C.primary, boxShadow:`0 4px 18px ${C.primaryGlow}` }}>
-              <i className={playing ? 'ri-pause-fill' : 'ri-play-fill'}></i>
-            </button>
-            <button onClick={nextTrack} title="Bài tiếp" style={{ color: C.txtSub }}>
-              <i className="ri-skip-forward-fill text-2xl"></i>
-            </button>
-            <button onClick={()=>track&&toggleFav(track.id)} title="Yêu thích"
-              style={{ color: track&&favs.includes(track.id) ? C.primarySolid : C.txtFad }}>
-              <i className={track&&favs.includes(track.id) ? 'ri-heart-fill text-lg' : 'ri-heart-line'}></i>
-            </button>
-          </div>
+                {/* Repeat Mode Button */}
+                <button
+                  onClick={toggleRepeat}
+                  title={
+                    repeatMode === 'one'
+                      ? 'Đang lặp 1 bài hát'
+                      : repeatMode === 'all'
+                      ? 'Đang lặp toàn bộ danh sách'
+                      : 'Lặp lại: Tắt'
+                  }
+                  className="relative p-1 transition cursor-pointer"
+                  style={{ color: repeatMode !== 'off' ? C.primarySolid : C.txtFad }}
+                >
+                  <i className={repeatMode === 'one' ? 'ri-repeat-2-line text-lg font-bold' : 'ri-repeat-line text-lg'}></i>
+                  {repeatMode === 'one' && (
+                    <span className="absolute -top-1 -right-1 text-[9px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center text-white shadow-xs"
+                      style={{ background: C.primarySolid }}>
+                      1
+                    </span>
+                  )}
+                  {repeatMode === 'all' && (
+                    <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
+                      style={{ background: C.primarySolid }}>
+                    </span>
+                  )}
+                </button>
 
-          {/* Timeline */}
-          <div className="flex items-center gap-3 w-full">
-            <span className="text-[11px] font-mono w-9 text-right shrink-0" style={{ color: C.txtFad }}>{fmt(curTime)}</span>
-            <input type="range" min="0" max={dur||100} value={curTime} onChange={seek}
-              className="flex-1" style={{ accentColor: C.primarySolid }} />
-            <span className="text-[11px] font-mono w-9 shrink-0" style={{ color: C.txtFad }}>{fmt(dur)}</span>
-          </div>
+                <button onClick={prevTrack} title="Bài trước" style={{ color: C.txtSub }}>
+                  <i className="ri-skip-back-fill text-2xl"></i>
+                </button>
+                <button onClick={togglePlay}
+                  title={playing ? 'Tạm dừng' : 'Phát'}
+                  className="w-12 h-12 rounded-full text-white text-xl flex items-center justify-center shadow-lg transition-transform hover:scale-105"
+                  style={{ background: C.primary, boxShadow:`0 4px 18px ${C.primaryGlow}` }}>
+                  <i className={playing ? 'ri-pause-fill' : 'ri-play-fill'}></i>
+                </button>
+                <button onClick={nextTrack} title="Bài tiếp" style={{ color: C.txtSub }}>
+                  <i className="ri-skip-forward-fill text-2xl"></i>
+                </button>
+                <button onClick={()=>track&&toggleFav(track.id)} title="Yêu thích"
+                  style={{ color: track&&favs.includes(track.id) ? C.primarySolid : C.txtFad }}>
+                  <i className={track&&favs.includes(track.id) ? 'ri-heart-fill text-lg' : 'ri-heart-line'}></i>
+                </button>
+              </div>
+
+              {/* Timeline */}
+              <div className="flex items-center gap-3 w-full">
+                <span className="text-[11px] font-mono w-9 text-right shrink-0" style={{ color: C.txtFad }}>{fmt(curTime)}</span>
+                <input type="range" min="0" max={dur||100} value={curTime} onChange={seek}
+                  className="flex-1" style={{ accentColor: C.primarySolid }} />
+                <span className="text-[11px] font-mono w-9 shrink-0" style={{ color: C.txtFad }}>{fmt(dur)}</span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Volume */}
