@@ -1725,16 +1725,17 @@ export default function App() {
 
       {/* ── BOTTOM PLAYER ─────────────────────── */}
       <footer
-        className="w-full flex flex-row items-center px-2 md:px-8 justify-between shrink-0 z-50 transition-all h-[75px] pb-3 md:pb-0 md:h-[88px]"
+        className="w-full flex flex-col md:flex-row items-center px-2 md:px-8 justify-center md:justify-between shrink-0 z-50 transition-all h-auto md:h-[88px] py-2.5 md:py-0 gap-2.5 md:gap-0"
         style={{
           background: C.surface,
           backdropFilter: 'blur(24px)',
           borderTop: `1.5px solid ${C.border}`,
-          boxShadow: '0 -6px 28px rgba(0,0,0,0.06)'
+          boxShadow: '0 -6px 28px rgba(0,0,0,0.06)',
+          paddingBottom: 'max(env(safe-area-inset-bottom), 12px)'
         }}>
 
         {/* Track Info */}
-        <div className="flex items-center gap-2 md:gap-4 flex-1 md:flex-none md:w-64 min-w-0 pr-1 md:pr-2">
+        <div className="flex items-center gap-2 md:gap-4 w-full md:w-64 md:flex-none min-w-0 justify-start">
           {track ? (
             <>
               <div className="relative shrink-0">
@@ -1769,9 +1770,9 @@ export default function App() {
         </div>
 
         {/* Controls + Progress */}
-        <div className="flex flex-col items-center gap-1 md:gap-1.5 flex-[1.5] md:flex-1 max-w-lg px-1 md:px-6">
-          <div className="flex items-center justify-center gap-1 md:gap-5 w-full">
-            <button onClick={random} title="Phát ngẫu nhiên" style={{ color: C.txtFad }} className="hidden sm:block">
+        <div className="flex flex-col items-center gap-1.5 md:gap-1.5 w-full md:flex-1 max-w-lg md:px-6">
+          <div className="flex items-center justify-between md:justify-center gap-1 md:gap-5 w-full px-4 md:px-0 order-2 md:order-1">
+            <button onClick={random} title="Phát ngẫu nhiên" style={{ color: C.txtFad }}>
               <i className="ri-shuffle-line text-sm md:text-lg"></i>
             </button>
 
@@ -1831,8 +1832,8 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Timeline (hidden on very small screens if needed, but we keep it here) */}
-              <div className="flex items-center gap-2 md:gap-3 w-full">
+              {/* Timeline */}
+              <div className="flex items-center gap-2 md:gap-3 w-full order-1 md:order-2 px-2 md:px-0">
                 <span className="text-[10px] md:text-[11px] font-mono w-7 md:w-9 text-right shrink-0" style={{ color: C.txtFad }}>{fmt(curTime)}</span>
                 <input type="range" min="0" max={dur||100} value={curTime} onChange={seek}
                   className="flex-1" style={{ accentColor: C.primarySolid }} />
