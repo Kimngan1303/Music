@@ -443,7 +443,7 @@ export default function App() {
       if (yt.current || !window.YT?.Player) return;
       yt.current = new window.YT.Player('yt-player', {
         height:'0', width:'0', videoId:'',
-        playerVars: { autoplay:1, controls:0, disablekb:1, fs:0, rel:0 },
+        playerVars: { autoplay:1, controls:0, disablekb:1, fs:0, rel:0, playsinline: 1 },
         events: {
           onReady: () => yt.current.setVolume(80),
           onStateChange: e => {
@@ -505,33 +505,41 @@ export default function App() {
     setSleepTimeLeft(nextVal * 60);
   };
 
-  const play = async trk => {
+  const play = trk => {
     setTrack(trk); setPlaying(true);
     let yid = trk.youtubeId;
     
     // Auto-migrate old Spotify tracks
     if (!yid && trk.sourceType === 'spotify') {
-      try {
-        const searchRes = await axios.get(`/api/music/search?query=${encodeURIComponent(trk.title + ' ' + trk.artist)}`);
-        yid = searchRes.data?.youtubeId;
-        if (yid) {
-          trk.youtubeId = yid;
-          trk.sourceType = 'youtube';
-          // Update in storage silently
-          setSongs(prev => {
-            const updated = prev.map(s => s.id === trk.id ? { ...s, youtubeId: yid, sourceType: 'youtube' } : s);
-            if (user) localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
-            return updated;
-          });
-        }
-      } catch (e) {
-        console.error("Failed to auto-migrate spotify track", e);
-      }
+      axios.get(`/api/music/search?query=${encodeURIComponent(trk.title + ' ' + trk.artist)}`)
+        .then(searchRes => {
+          yid = searchRes.data?.youtubeId;
+          if (yid) {
+            trk.youtubeId = yid;
+            trk.sourceType = 'youtube';
+            // Update in storage silently
+            setSongs(prev => {
+              const updated = prev.map(s => s.id === trk.id ? { ...s, youtubeId: yid, sourceType: 'youtube' } : s);
+              if (user) localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
+              return updated;
+            });
+            yt.current?.playVideo?.(); // Prime mobile autoplay
+            yt.current?.loadVideoById?.(yid);
+          } else {
+            setPlaying(false);
+          }
+        })
+        .catch(e => {
+          console.error("Failed to auto-migrate spotify track", e);
+          setPlaying(false);
+        });
+      return;
     }
 
     if (yid) {
-      yt.current?.loadVideoById?.(yid);
+      // Call playVideo synchronously FIRST to unlock mobile browser audio constraints, then load the new video.
       yt.current?.playVideo?.();
+      yt.current?.loadVideoById?.(yid);
     } else {
       // If still no yid, just stop
       setPlaying(false);
