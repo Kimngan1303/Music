@@ -180,6 +180,19 @@ export default function App() {
     } catch (e) {}
     return [];
   });
+  const playlistsKey = uid => `aura_playlists_${uid}`;
+
+  const [playlists, setPlaylists] = useState(() => {
+    try {
+      const saved = localStorage.getItem(playlistsKey(initUserId));
+      if (saved !== null) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
+
+  const [playlistModal, setPlaylistModal] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [songToAdd, setSongToAdd] = useState(null); // Which song is currently selected to be added to a playlist
 
 
   const [query,      setQuery]      = useState('');
@@ -244,6 +257,9 @@ export default function App() {
       
       const savedFavs = localStorage.getItem(favsKey(uid));
       setFavs(savedFavs ? JSON.parse(savedFavs) : []);
+      
+      const savedPlaylists = localStorage.getItem(playlistsKey(uid));
+      setPlaylists(savedPlaylists ? JSON.parse(savedPlaylists) : []);
     } catch (e) {
       console.error("Failed to load user data", e);
     }
@@ -276,6 +292,12 @@ export default function App() {
           setSongs(merged);
           localStorage.setItem(songsKey(uid), JSON.stringify(merged));
         }
+      }).catch(console.error);
+
+      // Fetch playlists
+      axios.get(`/api/playlists?userId=${user._id}`).then(res => {
+        setPlaylists(res.data);
+        localStorage.setItem(playlistsKey(user._id), JSON.stringify(res.data));
       }).catch(console.error);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -632,11 +654,72 @@ export default function App() {
     finally { setAdding(false); }
   };
 
+  const handleCreatePlaylist = async e => {
+    e.preventDefault();
+    if (!newPlaylistName.trim() || !user) return;
+    try {
+      const res = await axios.post('/api/playlists', { name: newPlaylistName, userId: user._id });
+      setPlaylists(p => {
+        const up = [res.data, ...p];
+        localStorage.setItem(playlistsKey(user._id), JSON.stringify(up));
+        return up;
+      });
+      setPlaylistModal(false);
+      setNewPlaylistName('');
+      setTab(`playlist_${res.data._id}`);
+    } catch(err) {
+      console.error(err);
+      alert('Lỗi tạo playlist');
+    }
+  };
+
+  const handleDeletePlaylist = async id => {
+    if(!window.confirm('Bạn có chắc muốn xóa danh sách phát này không?')) return;
+    try {
+      await axios.delete(`/api/playlists/${id}`);
+      setPlaylists(p => {
+        const up = p.filter(x => x._id !== id);
+        localStorage.setItem(playlistsKey(user._id), JSON.stringify(up));
+        return up;
+      });
+      if(tab === `playlist_${id}`) setTab('home');
+    } catch(err) { console.error(err); }
+  };
+
+  const handleAddToPlaylist = async (playlistId, songId) => {
+    try {
+      const res = await axios.put(`/api/playlists/${playlistId}/add`, { songId });
+      setPlaylists(p => {
+        const up = p.map(x => x._id === playlistId ? res.data : x);
+        localStorage.setItem(playlistsKey(user._id), JSON.stringify(up));
+        return up;
+      });
+      setSongToAdd(null);
+    } catch(err) { console.error(err); }
+  };
+
+  const handleRemoveFromPlaylist = async (playlistId, songId) => {
+    try {
+      const res = await axios.put(`/api/playlists/${playlistId}/remove`, { songId });
+      setPlaylists(p => {
+        const up = p.map(x => x._id === playlistId ? res.data : x);
+        localStorage.setItem(playlistsKey(user._id), JSON.stringify(up));
+        return up;
+      });
+    } catch(err) { console.error(err); }
+  };
+
   const fmt = s => isNaN(s)||s<0 ? '0:00' : `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+
+  const activePlaylist = tab.startsWith('playlist_') ? playlists.find(p => p._id === tab.split('_')[1]) : null;
 
   const list = songs
     .filter(s => s.title.toLowerCase().includes(query.toLowerCase()) || s.artist.toLowerCase().includes(query.toLowerCase()))
-    .filter(s => tab==='favorites' ? favs.includes(s.id) : true);
+    .filter(s => {
+      if (tab === 'favorites') return favs.includes(s.id);
+      if (activePlaylist) return activePlaylist.songs.includes(s.id);
+      return true;
+    });
 
   const glass = { background: C.surface, backdropFilter: 'blur(20px)', border: `1.5px solid ${C.border}` };
   const btn   = { background: C.btn, color: C.btnTxt, border: `1.5px solid ${C.btnBd}` };
@@ -845,7 +928,7 @@ export default function App() {
         </div>
 
         {/* Nav */}
-        <nav className="flex flex-col gap-1.5 flex-1">
+        <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto pr-2 custom-scrollbar">
           <p style={{ fontFamily: F.brand, fontSize:'11px', fontWeight:600, letterSpacing:'0.2em', textTransform:'uppercase', color: C.txtFad, padding:'0 12px', marginBottom:'4px' }}>Menu</p>
           {[
             { key:'home',      icon:'ri-home-heart-line', label:'Trang chủ' },
@@ -855,7 +938,7 @@ export default function App() {
             const active = tab === t.key;
             return (
               <button key={t.key} onClick={()=>setTab(t.key)}
-                className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 text-left"
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 text-left shrink-0"
                 style={active
                   ? { background: C.tag, color: C.txt, border:`1.5px solid ${C.border}`, boxShadow:'0 2px 12px rgba(0,0,0,0.05)' }
                   : { color: C.txtSub, border:'1.5px solid transparent' }
@@ -866,6 +949,32 @@ export default function App() {
                 {t.badge !== undefined && (
                   <span className="ml-auto text-[11px] font-bold text-white px-2 py-0.5 rounded-full" style={{ background: C.primarySolid }}>{t.badge}</span>
                 )}
+              </button>
+            );
+          })}
+
+          <div className="mt-4 mb-2 flex items-center justify-between px-3">
+            <p style={{ fontFamily: F.brand, fontSize:'11px', fontWeight:600, letterSpacing:'0.2em', textTransform:'uppercase', color: C.txtFad }}>Danh sách phát</p>
+            <button onClick={() => setPlaylistModal(true)} title="Tạo Playlist"
+              className="w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+              style={{ background: C.tag, color: C.txt, border: `1px solid ${C.border}` }}>
+              <i className="ri-add-line text-xs"></i>
+            </button>
+          </div>
+
+          {playlists.map(p => {
+            const tabKey = `playlist_${p._id}`;
+            const active = tab === tabKey;
+            return (
+              <button key={p._id} onClick={()=>setTab(tabKey)}
+                className="flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 text-left shrink-0"
+                style={active
+                  ? { background: C.tag, color: C.txt, border:`1.5px solid ${C.border}`, boxShadow:'0 2px 12px rgba(0,0,0,0.05)' }
+                  : { color: C.txtSub, border:'1.5px solid transparent' }
+                }
+              >
+                <i className={active ? "ri-folder-music-fill text-base" : "ri-folder-music-line text-base"} style={{ color: active ? C.primarySolid : C.txtFad }}></i>
+                <span className="truncate flex-1">{p.name}</span>
               </button>
             );
           })}
@@ -982,11 +1091,17 @@ export default function App() {
           {/* ── Section heading ─────────────────── */}
           <div className="flex items-center gap-3 mb-4">
             <h2 style={{ color: C.txt, fontFamily: F.heading, fontSize:'22px', fontWeight:700 }}>
-              {tab==='favorites' ? '🤍 Yêu Thích' : '🎵 Thư Viện Nhạc'}
+              {tab === 'favorites' ? '🤍 Yêu Thích' : activePlaylist ? `🎵 ${activePlaylist.name}` : '🎵 Thư Viện Nhạc'}
             </h2>
             <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: C.tag, color: C.tagTxt, border:`1px solid ${C.tagBd}` }}>
               {list.length} bài
             </span>
+            {activePlaylist && (
+              <button onClick={() => handleDeletePlaylist(activePlaylist._id)} className="ml-auto text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center"
+                style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+                <i className="ri-delete-bin-line mr-1"></i> Xóa Playlist
+              </button>
+            )}
           </div>
 
           {/* ── Song list ───────────────────────── */}
@@ -1002,7 +1117,7 @@ export default function App() {
                 <div key={song.id} onClick={()=>play(song)}
                   className="grid items-center p-3 rounded-2xl cursor-pointer transition-all duration-200 group"
                   style={{
-                    gridTemplateColumns:'36px 52px 1fr 72px 96px',
+                    gridTemplateColumns:'36px 52px 1fr 72px 120px',
                     background: sel ? C.tag : C.surface,
                     border: `1.5px solid ${sel ? C.borderSel : 'transparent'}`,
                     boxShadow: sel ? '0 4px 18px rgba(0,0,0,0.06)' : 'none',
@@ -1024,21 +1139,31 @@ export default function App() {
                   </div>
                   <span className="text-xs text-right" style={{ color: C.txtFad }}>{song.duration}</span>
                   <div className="flex justify-end items-center gap-0.5" onClick={e=>e.stopPropagation()}>
+                    <button onClick={()=>setSongToAdd(song)} title="Thêm vào playlist" className="p-2 rounded-full transition opacity-0 group-hover:opacity-100"
+                      style={{ color: C.txtFad }}
+                      onMouseEnter={e => e.currentTarget.style.color=C.primarySolid}
+                      onMouseLeave={e => e.currentTarget.style.color=C.txtFad}>
+                      <i className="ri-play-list-add-line"></i>
+                    </button>
                     <button onClick={()=>toggleFav(song.id)} className="p-2 rounded-full transition"
                       style={{ color: favs.includes(song.id) ? C.primarySolid : C.txtFad }}>
                       <i className={favs.includes(song.id) ? 'ri-heart-fill' : 'ri-heart-line'}></i>
                     </button>
                     <button
                       onClick={() => {
-                        if (window.confirm(`Xóa "${song.title}" khỏi thư viện?`)) deleteSong(song.id);
+                        if (activePlaylist) {
+                          handleRemoveFromPlaylist(activePlaylist._id, song.id);
+                        } else {
+                          if (window.confirm(`Xóa "${song.title}" khỏi thư viện?`)) deleteSong(song.id);
+                        }
                       }}
-                      title="Xóa bài hát"
+                      title={activePlaylist ? "Xóa khỏi playlist" : "Xóa bài hát"}
                       className="p-2 rounded-full transition opacity-0 group-hover:opacity-100"
                       style={{ color: C.txtFad }}
                       onMouseEnter={e => e.currentTarget.style.color='#f43f5e'}
                       onMouseLeave={e => e.currentTarget.style.color=C.txtFad}
                     >
-                      <i className="ri-delete-bin-6-line"></i>
+                      <i className={activePlaylist ? "ri-close-line text-lg" : "ri-delete-bin-6-line"}></i>
                     </button>
                   </div>
                 </div>
@@ -1408,6 +1533,77 @@ export default function App() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── CREATE PLAYLIST MODAL ─────────────────────── */}
+      {playlistModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-[60] p-4"
+          style={{ background:'rgba(0,0,0,0.4)', backdropFilter:'blur(14px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setPlaylistModal(false); }}>
+          <div className="w-full max-w-sm rounded-3xl p-8 shadow-2xl"
+            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border:`1.5px solid ${C.border}`, boxShadow:'0 20px 60px rgba(0,0,0,0.18)' }}>
+            <h3 className="flex items-center gap-2 mb-5" style={{ fontFamily: F.heading, fontSize:'20px', fontWeight:700, color: C.txt }}>
+              <i className="ri-play-list-add-fill" style={{ color: C.primarySolid }}></i> Tạo Playlist Mới
+            </h3>
+            
+            <form onSubmit={handleCreatePlaylist} className="flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Tên danh sách phát</label>
+                <input type="text" placeholder="Nhạc chill cuối tuần..." value={newPlaylistName} onChange={e=>setNewPlaylistName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
+                  style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
+                  autoFocus required
+                />
+              </div>
+              <div className="flex gap-3 mt-1">
+                <button type="button" onClick={() => setPlaylistModal(false)}
+                  className="w-28 shrink-0 py-2.5 rounded-xl text-sm font-bold" style={btn}>
+                  Hủy
+                </button>
+                <button type="submit"
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg"
+                  style={{ background: C.primary, boxShadow:`0 6px 18px ${C.primaryGlow}` }}>
+                  Tạo mới
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── ADD TO PLAYLIST MODAL ─────────────────────── */}
+      {songToAdd && (
+        <div className="fixed inset-0 flex items-center justify-center z-[60] p-4"
+          style={{ background:'rgba(0,0,0,0.4)', backdropFilter:'blur(14px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setSongToAdd(null); }}>
+          <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl"
+            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border:`1.5px solid ${C.border}`, boxShadow:'0 20px 60px rgba(0,0,0,0.18)' }}>
+            <h3 className="mb-4" style={{ fontFamily: F.heading, fontSize:'18px', fontWeight:700, color: C.txt }}>
+              Thêm vào danh sách phát
+            </h3>
+            
+            <div className="flex flex-col gap-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+              {playlists.length === 0 ? (
+                <p className="text-sm text-center py-4" style={{ color: C.txtSub }}>Bạn chưa có playlist nào.</p>
+              ) : playlists.map(p => {
+                const inPlaylist = p.songs.includes(songToAdd.id);
+                return (
+                  <button key={p._id} onClick={() => inPlaylist ? handleRemoveFromPlaylist(p._id, songToAdd.id) : handleAddToPlaylist(p._id, songToAdd.id)}
+                    className="flex items-center justify-between px-4 py-3 rounded-xl transition"
+                    style={{ background: C.tag, border:`1px solid ${inPlaylist ? C.primarySolid : C.border}` }}>
+                    <span className="text-sm font-semibold truncate" style={{ color: inPlaylist ? C.primarySolid : C.txt }}>{p.name}</span>
+                    <i className={inPlaylist ? "ri-check-line text-lg" : "ri-add-line text-lg"} style={{ color: inPlaylist ? C.primarySolid : C.txtSub }}></i>
+                  </button>
+                );
+              })}
+            </div>
+            
+            <button onClick={() => setSongToAdd(null)}
+              className="mt-4 w-full py-2.5 rounded-xl text-sm font-bold" style={btn}>
+              Đóng
+            </button>
           </div>
         </div>
       )}

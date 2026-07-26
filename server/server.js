@@ -16,6 +16,7 @@ app.use(express.json());
 // Mounted API Endpoints
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/music', require('./routes/musicRoutes'));
+app.use('/api/playlists', require('./routes/playlistRoutes'));
 app.use('/api', require('./routes/api'));
 
 // Serve client dist static files if built (local dev only)
