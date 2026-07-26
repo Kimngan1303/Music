@@ -1,6 +1,8 @@
 const Music = require('../models/Music');
 const axios = require('axios');
 const ytSearch = require('yt-search');
+const { getTracks } = require('spotify-url-info')(fetch);
+
 
 const getSongs = async (req, res) => {
   try {
@@ -79,7 +81,10 @@ const addPlaylist = async (req, res) => {
   try {
     const { playlistUrl, addedBy } = req.body;
     const match = playlistUrl.match(/[?&]list=([^#\&\?]+)/);
-    const listId = match ? match[1] : null;
+    let listId = match ? match[1] : null;
+    if (listId && !listId.startsWith('VL')) {
+      listId = 'VL' + listId;
+    }
     
     if (!listId) {
       return res.status(400).json({ message: 'Đường dẫn Playlist YouTube không hợp lệ!' });
@@ -170,4 +175,69 @@ const searchYouTube = async (req, res) => {
   }
 };
 
-module.exports = { getSongs, parseYouTubeUrl, addSong, deleteSong, searchYouTube, addPlaylist };
+const addSpotifyPlaylist = async (req, res) => {
+  try {
+    const { playlistUrl, addedBy } = req.body;
+    if (!playlistUrl) return res.status(400).json({ message: 'Missing playlistUrl' });
+
+    // Ensure it is a valid Spotify URL
+    if (!playlistUrl.includes('spotify.com/playlist') && !playlistUrl.includes('spotify.com/intl-')) {
+      return res.status(400).json({ message: 'Đường dẫn Playlist Spotify không hợp lệ.' });
+    }
+
+    // Get tracks from Spotify
+    const tracks = await getTracks(playlistUrl);
+    if (!tracks || tracks.length === 0) {
+      return res.status(404).json({ message: 'Không tìm thấy bài hát nào trong Playlist này.' });
+    }
+
+    // Limit to 30 tracks to avoid timeout
+    const limit = 30;
+    const tracksToProcess = tracks.slice(0, limit);
+
+    // Process tracks sequentially (or with limited concurrency) to not spam YouTube search
+    const songsToUpsert = [];
+    
+    for (let i = 0; i < tracksToProcess.length; i++) {
+      const track = tracksToProcess[i];
+      const title = track.name;
+      const artist = track.artists && track.artists[0] ? track.artists[0].name : 'Unknown Artist';
+      
+      try {
+        const query = `${title} ${artist}`;
+        const searchRes = await ytSearch(query);
+        const video = searchRes.videos[0];
+        
+        if (video) {
+          const sId = 's' + video.videoId + Date.now() + '_' + i;
+          
+          songsToUpsert.push({
+            id: sId,
+            youtubeId: video.videoId,
+            youtubeUrl: `https://www.youtube.com/watch?v=${video.videoId}`,
+            title: title,
+            artist: artist,
+            thumbnail: video.thumbnail, // fallback to YouTube thumbnail, or use track.album?.images[0]?.url if available, but spotify-url-info getTracks doesn't always return full images
+            duration: video.timestamp || '3:00',
+            addedBy: addedBy || null
+          });
+        }
+      } catch (err) {
+        console.warn('Could not find track on YouTube:', title, artist);
+        // skip this track if search fails
+      }
+    }
+
+    if (songsToUpsert.length === 0) {
+      return res.status(404).json({ message: 'Không thể tìm thấy nguồn nhạc nào trên YouTube cho các bài hát trong Playlist này.' });
+    }
+
+    const createdSongs = await Music.insertMany(songsToUpsert);
+    res.status(201).json(createdSongs);
+  } catch (error) {
+    console.error("Spotify Playlist Error:", error);
+    res.status(500).json({ message: 'Lỗi khi tải Playlist Spotify: ' + error.message });
+  }
+};
+
+module.exports = { getSongs, parseYouTubeUrl, addSong, deleteSong, searchYouTube, addPlaylist, addSpotifyPlaylist };

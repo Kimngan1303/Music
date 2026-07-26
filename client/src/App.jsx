@@ -200,6 +200,8 @@ export default function App() {
   const [dur,        setDur]        = useState(0);
   const [vol,        setVol]        = useState(80);
   const [muted,      setMuted]      = useState(false);
+  const [sleepTimer, setSleepTimer] = useState(0);
+  const [sleepTimeLeft, setSleepTimeLeft] = useState(0);
   const [addModal,   setAddModal]   = useState(false);
   const [addTab,     setAddTab]     = useState('youtube'); // 'youtube' | 'spotify' | 'playlist'
   const [ytUrl,      setYtUrl]      = useState('');
@@ -232,6 +234,7 @@ export default function App() {
   // Page routing: 'landing' | 'login' | 'app'
   // Always start at landing page on fresh visit
   const [page, setPage] = useState('landing');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [loginModal, setLoginModal] = useState(false);
   const [email,      setEmail]      = useState('');
@@ -385,7 +388,7 @@ export default function App() {
                 yt.current?.seekTo?.(0, true);
                 yt.current?.playVideo?.();
               } else {
-                nextTrack();
+                if (nextTrackRef.current) nextTrackRef.current();
               }
             }
           }
@@ -407,6 +410,33 @@ export default function App() {
     }, 500);
     return () => clearInterval(t);
   }, [playing]);
+
+  // Sleep Timer logic
+  useEffect(() => {
+    let interval;
+    if (sleepTimer > 0 && playing) {
+      interval = setInterval(() => {
+        setSleepTimeLeft(prev => {
+          if (prev <= 1) {
+            yt.current?.pauseVideo?.();
+            setPlaying(false);
+            setSleepTimer(0);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [sleepTimer, playing]);
+
+  const cycleSleepTimer = () => {
+    const options = [0, 15, 30, 60, 120];
+    const idx = options.indexOf(sleepTimer);
+    const nextVal = options[(idx + 1) % options.length] || 0;
+    setSleepTimer(nextVal);
+    setSleepTimeLeft(nextVal * 60);
+  };
 
   const play = async trk => {
     setTrack(trk); setPlaying(true);
@@ -452,6 +482,10 @@ export default function App() {
     const i = songs.findIndex(s => s.id === track?.id);
     play(songs[(i + 1) % songs.length]);
   };
+
+  const nextTrackRef = useRef();
+  nextTrackRef.current = nextTrack;
+
 
   const prevTrack = () => {
     if (songs.length === 0) return;
@@ -581,6 +615,30 @@ export default function App() {
     e.preventDefault(); if (!spotifyUrl.trim()) return;
     setAdding(true); setAddErr('');
     try {
+      if (spotifyUrl.includes('/playlist/')) {
+        const res = await axios.post('/api/music/spotify-playlist', {
+          playlistUrl: spotifyUrl,
+          addedBy: user?._id || null
+        });
+        
+        const newSongs = res.data;
+        if (!newSongs || newSongs.length === 0) throw new Error("Không lấy được bài hát nào từ Spotify Playlist.");
+
+        setSongs(p => {
+          const updated = [...newSongs, ...p];
+          if (user) {
+            localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
+          }
+          return updated;
+        });
+        
+        setTrack(newSongs[0]); 
+        play(newSongs[0]);
+        setAddModal(false); 
+        setSpotifyUrl('');
+        return;
+      }
+
       // Parse Spotify track ID from various URL formats
       const m = spotifyUrl.match(/spotify\.com\/(?:intl-[a-z]+\/)?track\/([A-Za-z0-9]+)/);
       const tid = m?.[1];
@@ -669,7 +727,7 @@ export default function App() {
       setTab(`playlist_${res.data._id}`);
     } catch(err) {
       console.error(err);
-      alert('Lỗi tạo playlist');
+      alert('Lỗi tạo playlist: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -912,10 +970,22 @@ export default function App() {
       <div id="yt-player" className="absolute -top-[9999px] -left-[9999px] opacity-0 pointer-events-none" />
 
       {/* ── TOP ROW: sidebar + main ─────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
 
       {/* ── SIDEBAR ─────────────────────────────── */}
-      <aside className="w-60 flex flex-col gap-5 p-6 shrink-0" style={{ ...glass, borderRight: `1.5px solid ${C.border}`, borderTop:'none', borderBottom:'none', borderLeft:'none' }}>
+      {/* Overlay for mobile drawer */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-40 md:hidden" 
+          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+      
+      <aside 
+        className={`fixed md:relative z-50 w-64 h-full flex flex-col gap-5 p-6 shrink-0 transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`} 
+        style={{ ...glass, borderRight: `1.5px solid ${C.border}`, borderTop:'none', borderBottom:'none', borderLeft:'none', background: C.surface }}
+      >
         {/* Brand */}
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: C.primary }}>
@@ -937,7 +1007,7 @@ export default function App() {
           ].map(t => {
             const active = tab === t.key;
             return (
-              <button key={t.key} onClick={()=>setTab(t.key)}
+              <button key={t.key} onClick={() => { setTab(t.key); setIsMobileMenuOpen(false); }}
                 className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 text-left shrink-0"
                 style={active
                   ? { background: C.tag, color: C.txt, border:`1.5px solid ${C.border}`, boxShadow:'0 2px 12px rgba(0,0,0,0.05)' }
@@ -966,7 +1036,7 @@ export default function App() {
             const tabKey = `playlist_${p._id}`;
             const active = tab === tabKey;
             return (
-              <button key={p._id} onClick={()=>setTab(tabKey)}
+              <button key={p._id} onClick={() => { setTab(tabKey); setIsMobileMenuOpen(false); }}
                 className="flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 text-left shrink-0"
                 style={active
                   ? { background: C.tag, color: C.txt, border:`1.5px solid ${C.border}`, boxShadow:'0 2px 12px rgba(0,0,0,0.05)' }
@@ -991,54 +1061,71 @@ export default function App() {
       <main className="flex-1 flex flex-col overflow-hidden">
 
         {/* Header */}
-        <header className="h-[66px] px-8 flex items-center justify-between shrink-0" style={{ background: C.surface, backdropFilter:'blur(18px)', borderBottom:`1.5px solid ${C.border}` }}>
-          {/* Search */}
-          <div className="relative w-72">
-            <i className="ri-search-line absolute left-3.5 top-2.5 text-sm" style={{ color: C.txtFad }}></i>
-            <input type="text" placeholder="Tìm bài hát, nghệ sĩ..."
-              value={query} onChange={e=>setQuery(e.target.value)}
-              className="w-full py-2 pl-10 pr-4 text-sm rounded-full outline-none transition"
-              style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
-            />
+        <header className="h-[66px] px-4 md:px-8 flex items-center justify-between shrink-0 relative gap-3" style={{ background: C.surface, backdropFilter:'blur(18px)', borderBottom:`1.5px solid ${C.border}` }}>
+          
+          <div className="flex items-center gap-3 flex-1 md:flex-none">
+            {/* Mobile Hamburger Menu */}
+            <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden p-1.5 -ml-1.5 text-xl rounded-lg" style={{ color: C.txt }}>
+              <i className="ri-menu-line"></i>
+            </button>
+
+            {/* Search */}
+            <div className="relative w-full max-w-[200px] md:w-72 z-10">
+              <i className="ri-search-line absolute left-3.5 top-2.5 text-sm" style={{ color: C.txtFad }}></i>
+              <input type="text" placeholder="Tìm bài hát..."
+                value={query} onChange={e=>setQuery(e.target.value)}
+                className="w-full py-2 pl-10 pr-4 text-sm rounded-full outline-none transition"
+                style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
+              />
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* User Name slightly moved to the left from center - Hidden on mobile */}
+          {user && (
+            <div className="hidden md:flex absolute left-[45%] top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none items-center justify-center">
+              <span className="text-3xl lg:text-4xl font-extrabold" style={{ color: C.primarySolid, fontFamily: F.cursive, textShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
+                {user.name}
+              </span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 md:gap-3 z-10 shrink-0">
             {/* Add button */}
             <button onClick={()=>setAddModal(true)}
-              className="flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-full text-white shadow-md transition-all"
+              className="flex items-center gap-1 md:gap-2 text-sm font-bold px-3 py-2 md:px-4 md:py-2 rounded-full text-white shadow-md transition-all hover:scale-105"
               style={{ background: C.primary, boxShadow:`0 4px 14px ${C.primaryGlow}` }}
             >
-              <i className="ri-youtube-line text-base"></i> Thêm Nhạc
+              <i className="ri-youtube-line text-base"></i> <span className="hidden md:inline">Thêm Nhạc</span>
             </button>
 
             {/* Profile & Theme Customization Button */}
             <button
               onClick={() => setProfileModal(true)}
               title="Tùy chỉnh Hồ Sơ & Màu Sắc Giao Diện"
-              className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full transition-all shadow-sm"
+              className="flex items-center gap-1 md:gap-2 text-sm font-semibold px-3 py-2 md:px-4 md:py-2 rounded-full transition-all shadow-sm hover:scale-105"
               style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
             >
               <i className="ri-palette-line text-base" style={{ color: C.primarySolid }}></i>
-              <span>Giao Diện &amp; Profile</span>
+              <span className="hidden lg:inline">Giao Diện &amp; Profile</span>
             </button>
 
-            {/* User Avatar & Name */}
+            {/* User Avatar & Name (Original Right Side) */}
             {user ? (
               <div
                 onClick={() => setProfileModal(true)}
-                className="flex items-center gap-2.5 pl-3 cursor-pointer group"
+                className="flex items-center gap-2 pl-2 md:pl-3 cursor-pointer group ml-0 md:ml-1"
                 style={{ borderLeft:`1.5px solid ${C.border}` }}
                 title="Bấm để chỉnh sửa Profile"
               >
                 <img src={user.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
-                  alt={user.name} className="w-9 h-9 rounded-full object-cover group-hover:scale-105 transition" style={{ border:`2px solid ${C.borderSel}` }}
+                  alt={user.name} className="w-8 h-8 md:w-9 md:h-9 rounded-full object-cover group-hover:scale-105 transition" style={{ border:`2px solid ${C.borderSel}` }}
                 />
-                <div className="flex flex-col leading-tight">
+                <div className="hidden md:flex flex-col leading-tight">
                   <span className="text-xs font-bold group-hover:underline" style={{ color: C.txt }}>{user.name}</span>
-                  <span className="text-[10px] font-semibold uppercase" style={{ color: C.primarySolid }}>Admin ✦</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.primarySolid }}>{user.role === 'admin' ? 'Admin ✦' : 'Member'}</span>
                 </div>
-                <button onClick={(e) => { e.stopPropagation(); logout(); }} title="Đăng xuất" className="p-2 rounded-full" style={{ color: C.txtFad }}>
-                  <i className="ri-logout-box-r-line text-base"></i>
+                <button onClick={(e) => { e.stopPropagation(); logout(); }} title="Đăng xuất" className="hidden md:block p-1.5 md:p-2 rounded-full hover:scale-110 transition" style={{ color: C.txtFad }}>
+                  <i className="ri-logout-box-r-line text-base hover:text-red-500 transition"></i>
                 </button>
               </div>
             ) : (
@@ -1046,65 +1133,67 @@ export default function App() {
                 className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full transition"
                 style={btn}
               >
-                <i className="ri-lock-line"></i> Đăng Nhập
+                <i className="ri-lock-line"></i> <span className="hidden md:inline">Đăng Nhập</span>
               </button>
             )}
           </div>
         </header>
 
         {/* Scrollable content */}
-        <div className="flex-1 p-7 overflow-y-auto">
+        <div className="flex-1 p-4 md:p-7 overflow-y-auto">
 
-          {/* ── Hero Banner ─────────────────────── */}
-          <div className="relative rounded-3xl overflow-hidden mb-7 p-8"
-            style={{ background: C.surface, border:`1.5px solid ${C.border}`, boxShadow:'0 8px 40px rgba(0,0,0,0.06)' }}
-          >
-            {/* Blobs */}
-            <div className="absolute top-6 right-10 w-36 h-36 rounded-full pointer-events-none float-anim opacity-50"
-              style={{ background:`radial-gradient(circle,${C.borderSel},transparent)` }} />
-            <div className="absolute bottom-4 right-40 w-20 h-20 rounded-full pointer-events-none float-anim opacity-30"
-              style={{ background:`radial-gradient(circle,${C.primarySolid},transparent)`, animationDelay:'1.5s' }} />
+          {tab === 'home' ? (
+            /* ── Hero Banner ─────────────────────── */
+            <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden rounded-3xl p-6 md:p-8 shadow-sm min-h-[400px]"
+              style={{ background: C.surface, border:`1.5px solid ${C.border}`, boxShadow:'0 8px 40px rgba(0,0,0,0.06)' }}
+            >
+              {/* Blobs */}
+              <div className="absolute top-10 right-20 w-32 h-32 md:w-48 md:h-48 rounded-full pointer-events-none float-anim opacity-50"
+                style={{ background:`radial-gradient(circle,${C.borderSel},transparent)` }} />
+              <div className="absolute bottom-10 left-20 w-24 h-24 md:w-32 md:h-32 rounded-full pointer-events-none float-anim opacity-30"
+                style={{ background:`radial-gradient(circle,${C.primarySolid},transparent)`, animationDelay:'1.5s' }} />
 
-            <div className="relative z-10 max-w-lg">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-4"
-                style={{ background: C.tag, color: C.txt, border:`1px solid ${C.border}` }}>
-                <span style={{ fontFamily: F.cursive, fontSize:'16px' }}>✦ Không gian nhạc cá nhân ✦</span>
-              </span>
-              <h1 className="leading-tight mb-1" style={{ color: C.txt, fontFamily: F.heading, fontSize:'36px', fontWeight:800 }}>
-                Thư giãn &amp; thưởng thức
-              </h1>
-              <p style={{ fontFamily: F.cursive, fontSize:'38px', color: C.primarySolid, marginBottom:'12px', lineHeight:1.3 }}>
-                từng giai điệu ✨
-              </p>
-              <p className="text-sm mb-6 leading-relaxed" style={{ color: C.txtSub }}>
-                Trang nhạc được tạo riêng cho bạn — chọn bài hát yêu thích hoặc thêm nhạc từ YouTube bất kỳ lúc nào.
-              </p>
-              <button onClick={random}
-                className="flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold text-white transition-all shadow-lg"
-                style={{ background: C.primary, boxShadow:`0 6px 20px ${C.primaryGlow}` }}
-              >
-                <i className="ri-shuffle-line text-lg"></i> Phát Ngẫu Nhiên
-              </button>
+              <div className="relative z-10 max-w-2xl text-center flex flex-col items-center">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 md:px-4 md:py-1.5 rounded-full text-xs font-bold mb-4 md:mb-6"
+                  style={{ background: C.tag, color: C.txt, border:`1px solid ${C.border}` }}>
+                  <span style={{ fontFamily: F.cursive }} className="text-[16px] md:text-[18px]">✦ Không gian nhạc cá nhân ✦</span>
+                </span>
+                <h1 className="leading-tight mb-4 text-3xl md:text-[42px]" style={{ color: C.txt, fontFamily: F.heading, fontWeight:800 }}>
+                  Thư giãn &amp; thưởng thức<br/>
+                  <span className="text-4xl md:text-[48px]" style={{ fontFamily: F.cursive, color: C.primarySolid, lineHeight:1.4 }}>
+                    từng giai điệu ✨
+                  </span>
+                </h1>
+                <p className="text-sm md:text-base mb-6 md:mb-8 leading-relaxed max-w-md" style={{ color: C.txtSub }}>
+                  Trang nhạc được tạo riêng cho bạn — khám phá, tạo danh sách phát và đắm chìm vào không gian âm nhạc không giới hạn.
+                </p>
+                <button onClick={() => setTab('library')}
+                  className="flex items-center gap-2 px-8 py-4 rounded-full text-base font-bold text-white transition-all shadow-lg hover:scale-105 hover:-translate-y-1"
+                  style={{ background: C.primary, boxShadow:`0 6px 20px ${C.primaryGlow}` }}
+                >
+                  <i className="ri-music-2-line text-xl"></i> Khám Phá Thư Viện
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* ── Section heading ─────────────────── */}
+              <div className="flex items-center gap-3 mb-4">
+                <h2 style={{ color: C.txt, fontFamily: F.heading, fontSize:'22px', fontWeight:700 }}>
+                  {tab === 'favorites' ? '🤍 Yêu Thích' : activePlaylist ? `🎵 ${activePlaylist.name}` : '🎵 Thư Viện Nhạc'}
+                </h2>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: C.tag, color: C.tagTxt, border:`1px solid ${C.tagBd}` }}>
+                  {list.length} bài
+                </span>
+                {activePlaylist && (
+                  <button onClick={() => handleDeletePlaylist(activePlaylist._id)} className="ml-auto text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center"
+                    style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+                    <i className="ri-delete-bin-line mr-1"></i> Xóa Playlist
+                  </button>
+                )}
+              </div>
 
-          {/* ── Section heading ─────────────────── */}
-          <div className="flex items-center gap-3 mb-4">
-            <h2 style={{ color: C.txt, fontFamily: F.heading, fontSize:'22px', fontWeight:700 }}>
-              {tab === 'favorites' ? '🤍 Yêu Thích' : activePlaylist ? `🎵 ${activePlaylist.name}` : '🎵 Thư Viện Nhạc'}
-            </h2>
-            <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: C.tag, color: C.tagTxt, border:`1px solid ${C.tagBd}` }}>
-              {list.length} bài
-            </span>
-            {activePlaylist && (
-              <button onClick={() => handleDeletePlaylist(activePlaylist._id)} className="ml-auto text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center"
-                style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
-                <i className="ri-delete-bin-line mr-1"></i> Xóa Playlist
-              </button>
-            )}
-          </div>
-
-          {/* ── Song list ───────────────────────── */}
+              {/* ── Song list ───────────────────────── */}
           <div className="flex flex-col gap-2">
             {list.length === 0 ? (
               <div className="text-center py-16">
@@ -1170,6 +1259,8 @@ export default function App() {
               );
             })}
           </div>
+          </>
+          )}
         </div>
       </main>
 
@@ -1474,14 +1565,14 @@ export default function App() {
             {addTab === 'spotify' && (
               <form onSubmit={addSpotify} className="flex flex-col gap-4">
                 <div>
-                  <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Đường dẫn Spotify</label>
-                  <input type="text" placeholder="https://open.spotify.com/track/..." value={spotifyUrl} onChange={e=>setSpotifyUrl(e.target.value)}
+                  <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Đường dẫn Spotify (Bài hát / Playlist)</label>
+                  <input type="text" placeholder="https://open.spotify.com/..." value={spotifyUrl} onChange={e=>setSpotifyUrl(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
                     style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
                     autoFocus
                   />
                   <p className="text-[11px] mt-1.5" style={{ color: C.txtFad }}>
-                    ℹ️ Copy link bài hát từ Spotify → chia sẻ → "Copy link"
+                    ℹ️ Copy link bài hát hoặc playlist từ Spotify → chia sẻ → "Copy link"
                   </p>
                 </div>
                 {addErr && <p className="text-xs font-semibold text-red-500">{addErr}</p>}
@@ -1611,7 +1702,7 @@ export default function App() {
 
       {/* ── BOTTOM PLAYER ─────────────────────── */}
       <footer
-        className="w-full flex items-center px-8 justify-between shrink-0 z-50 transition-all h-[88px]"
+        className="w-full flex flex-row items-center px-4 md:px-8 justify-between shrink-0 z-50 transition-all h-[80px] md:h-[88px]"
         style={{
           background: C.surface,
           backdropFilter: 'blur(24px)',
@@ -1620,12 +1711,12 @@ export default function App() {
         }}>
 
         {/* Track Info */}
-        <div className="flex items-center gap-4 w-64 shrink-0">
+        <div className="flex items-center gap-2 md:gap-4 flex-1 md:flex-none md:w-64 min-w-0 pr-2">
           {track ? (
             <>
               <div className="relative shrink-0">
                 <img src={track.thumbnail} alt={track.title}
-                  className="w-14 h-14 rounded-2xl object-cover"
+                  className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl object-cover"
                   style={{ border:`2px solid ${C.border}`, boxShadow:'0 4px 14px rgba(0,0,0,0.1)' }}
                 />
                 {playing && (
@@ -1645,19 +1736,19 @@ export default function App() {
               </div>
             </>
           ) : (
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: C.tag }}>
-                <i className="ri-music-2-line text-xl" style={{ color: C.txtFad }}></i>
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center" style={{ background: C.tag }}>
+                <i className="ri-music-2-line text-lg md:text-xl" style={{ color: C.txtFad }}></i>
               </div>
-              <span className="text-xs font-semibold" style={{ color: C.txtFad }}>Chưa chọn bài hát~</span>
+              <span className="text-[10px] md:text-xs font-semibold" style={{ color: C.txtFad }}>Chưa chọn bài hát~</span>
             </div>
           )}
         </div>
 
         {/* Controls + Progress */}
-        <div className="flex flex-col items-center gap-1.5 flex-1 max-w-lg px-6">
-          <div className="flex items-center gap-5">
-            <button onClick={random} title="Phát ngẫu nhiên" style={{ color: C.txtFad }}>
+        <div className="flex flex-col items-center gap-1.5 flex-[2] md:flex-1 max-w-lg px-2 md:px-6">
+          <div className="flex items-center justify-center gap-2 md:gap-5 w-full">
+            <button onClick={random} title="Phát ngẫu nhiên" style={{ color: C.txtFad }} className="hidden sm:block">
               <i className="ri-shuffle-line text-lg"></i>
             </button>
 
@@ -1704,11 +1795,22 @@ export default function App() {
                   style={{ color: track&&favs.includes(track.id) ? C.primarySolid : C.txtFad }}>
                   <i className={track&&favs.includes(track.id) ? 'ri-heart-fill text-lg' : 'ri-heart-line'}></i>
                 </button>
+                <button onClick={cycleSleepTimer} title={sleepTimer ? `Hẹn giờ tắt: ${sleepTimer} phút (còn ${Math.ceil(sleepTimeLeft/60)} phút)` : 'Hẹn giờ tắt nhạc'}
+                  className="relative p-1 transition cursor-pointer"
+                  style={{ color: sleepTimer > 0 ? C.primarySolid : C.txtFad }}>
+                  <i className={sleepTimer > 0 ? 'ri-timer-fill text-lg' : 'ri-timer-line text-lg'}></i>
+                  {sleepTimer > 0 && (
+                    <span className="absolute -top-1 -right-2 text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center text-white shadow-xs"
+                      style={{ background: C.primarySolid }}>
+                      {sleepTimer}
+                    </span>
+                  )}
+                </button>
               </div>
 
-              {/* Timeline */}
-              <div className="flex items-center gap-3 w-full">
-                <span className="text-[11px] font-mono w-9 text-right shrink-0" style={{ color: C.txtFad }}>{fmt(curTime)}</span>
+              {/* Timeline (hidden on very small screens if needed, but we keep it here) */}
+              <div className="flex items-center gap-2 md:gap-3 w-full">
+                <span className="text-[10px] md:text-[11px] font-mono w-7 md:w-9 text-right shrink-0" style={{ color: C.txtFad }}>{fmt(curTime)}</span>
                 <input type="range" min="0" max={dur||100} value={curTime} onChange={seek}
                   className="flex-1" style={{ accentColor: C.primarySolid }} />
                 <span className="text-[11px] font-mono w-9 shrink-0" style={{ color: C.txtFad }}>{fmt(dur)}</span>
@@ -1716,7 +1818,7 @@ export default function App() {
         </div>
 
         {/* Volume */}
-        <div className="flex items-center justify-end gap-3 w-64 shrink-0">
+        <div className="hidden md:flex items-center justify-end gap-3 w-64 shrink-0">
           <button onClick={toggleMute} style={{ color: muted||vol===0 ? '#f43f5e' : C.txtFad }}>
             <i className={`text-lg ${muted||vol===0 ? 'ri-volume-mute-fill' : vol<50 ? 'ri-volume-down-fill' : 'ri-volume-up-fill'}`}></i>
           </button>
