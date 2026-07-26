@@ -1,5 +1,6 @@
 const Music = require('../models/Music');
 const axios = require('axios');
+const ytSearch = require('yt-search');
 
 const getSongs = async (req, res) => {
   try {
@@ -63,5 +64,23 @@ const deleteSong = async (req, res) => {
   }
 };
 
-module.exports = { getSongs, parseYouTubeUrl, addSong, deleteSong };
+const searchYouTube = async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query) return res.status(400).json({ message: 'Query is required' });
+    const r = await ytSearch(query);
+    const video = r.videos[0];
+    if (!video) return res.status(404).json({ message: 'No video found' });
+    res.json({
+      youtubeId: video.videoId,
+      title: video.title,
+      artist: video.author.name,
+      thumbnail: video.thumbnail,
+      duration: video.timestamp
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
+module.exports = { getSongs, parseYouTubeUrl, addSong, deleteSong, searchYouTube };

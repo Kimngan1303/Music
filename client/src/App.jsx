@@ -337,9 +337,7 @@ export default function App() {
 
   const play = trk => {
     setTrack(trk); setPlaying(true);
-    if (trk.sourceType === 'spotify') {
-      yt.current?.stopVideo?.();
-    } else {
+    if (trk.youtubeId) {
       yt.current?.loadVideoById?.(trk.youtubeId);
     }
   };
@@ -481,30 +479,41 @@ export default function App() {
       const m = spotifyUrl.match(/spotify\.com\/(?:intl-[a-z]+\/)?track\/([A-Za-z0-9]+)/);
       const tid = m?.[1];
       if (!tid) throw new Error('Đường dẫn Spotify không hợp lệ! Ví dụ: https://open.spotify.com/track/...');
-      let s = {
-        id: 's'+Date.now(),
-        sourceType: 'spotify',
-        spotifyId: tid,
-        title: 'Spotify Track',
-        artist: 'Spotify Artist',
-        thumbnail: `https://open.spotify.com/embed/track/${tid}`,
-        duration: '0:00'
-      };
+      let title = 'Spotify Track';
+      let artist = 'Spotify Artist';
+      let thumbnail = `https://open.spotify.com/embed/track/${tid}`;
+      
       // Try oEmbed for metadata
       try {
         const o = await axios.get(`https://open.spotify.com/oembed?url=https://open.spotify.com/track/${tid}`);
-        s.title     = o.data?.title     || s.title;
-        s.artist    = o.data?.provider_name || 'Spotify';
-        s.thumbnail = o.data?.thumbnail_url || s.thumbnail;
+        title     = o.data?.title     || title;
+        artist    = o.data?.provider_name || 'Spotify';
+        thumbnail = o.data?.thumbnail_url || thumbnail;
       } catch {}
+
+      // Convert to YouTube Track via Backend Search
+      const searchRes = await axios.get(`/api/music/search?query=${encodeURIComponent(title + ' ' + artist)}`);
+      if (!searchRes.data?.youtubeId) throw new Error('Không thể tìm thấy bài hát này trên hệ thống âm thanh.');
+      
+      let s = {
+        id: 's'+Date.now(),
+        sourceType: 'youtube', // Save as youtube so it plays with normal controls
+        youtubeId: searchRes.data.youtubeId,
+        spotifyId: tid, // keep for reference
+        title: title,
+        artist: artist,
+        thumbnail: thumbnail, // use Spotify's thumbnail!
+        duration: searchRes.data.duration || '3:00'
+      };
+
       setSongs(p => {
         const updated = [s, ...p];
         if (user) localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
         return updated;
       });
-      setTrack(s);
+      setTrack(s); play(s);
       setAddModal(false); setSpotifyUrl('');
-    } catch(err) { setAddErr(err.message||'Lỗi không xác định.'); }
+    } catch(err) { setAddErr(err.response?.data?.message || err.message || 'Lỗi không xác định.'); }
     finally { setAdding(false); }
   };
 
@@ -1252,9 +1261,8 @@ export default function App() {
 
       {/* ── BOTTOM PLAYER ─────────────────────── */}
       <footer
-        className="w-full flex items-center px-8 justify-between shrink-0 z-50 transition-all"
+        className="w-full flex items-center px-8 justify-between shrink-0 z-50 transition-all h-[88px]"
         style={{
-          height: track?.sourceType === 'spotify' ? '108px' : '88px',
           background: C.surface,
           backdropFilter: 'blur(24px)',
           borderTop: `1.5px solid ${C.border}`,
@@ -1298,24 +1306,10 @@ export default function App() {
 
         {/* Controls + Progress */}
         <div className="flex flex-col items-center gap-1.5 flex-1 max-w-lg px-6">
-
-          {/* Spotify: embed iframe directly in footer center */}
-          {track?.sourceType === 'spotify' ? (
-            <iframe
-              key={track.spotifyId}
-              src={`https://open.spotify.com/embed/track/${track.spotifyId}?utm_source=generator&theme=0`}
-              width="100%"
-              height="90"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              style={{ border:'none', borderRadius:'12px', display:'block' }}
-              title={track.title}
-            />
-          ) : (
-            <>
-              <div className="flex items-center gap-5">
-                <button onClick={random} title="Phát ngẫu nhiên" style={{ color: C.txtFad }}>
-                  <i className="ri-shuffle-line text-lg"></i>
-                </button>
+          <div className="flex items-center gap-5">
+            <button onClick={random} title="Phát ngẫu nhiên" style={{ color: C.txtFad }}>
+              <i className="ri-shuffle-line text-lg"></i>
+            </button>
 
                 {/* Repeat Mode Button */}
                 <button
@@ -1368,9 +1362,7 @@ export default function App() {
                 <input type="range" min="0" max={dur||100} value={curTime} onChange={seek}
                   className="flex-1" style={{ accentColor: C.primarySolid }} />
                 <span className="text-[11px] font-mono w-9 shrink-0" style={{ color: C.txtFad }}>{fmt(dur)}</span>
-              </div>
-            </>
-          )}
+          </div>
         </div>
 
         {/* Volume */}
