@@ -188,9 +188,10 @@ export default function App() {
   const [vol,        setVol]        = useState(80);
   const [muted,      setMuted]      = useState(false);
   const [addModal,   setAddModal]   = useState(false);
-  const [addTab,     setAddTab]     = useState('youtube'); // 'youtube' | 'spotify'
+  const [addTab,     setAddTab]     = useState('youtube'); // 'youtube' | 'spotify' | 'playlist'
   const [ytUrl,      setYtUrl]      = useState('');
   const [spotifyUrl, setSpotifyUrl] = useState('');
+  const [playlistUrl, setPlaylistUrl] = useState('');
   const [adding,     setAdding]     = useState(false);
   const [addErr,     setAddErr]     = useState('');
 
@@ -596,6 +597,34 @@ export default function App() {
       setTrack(s); play(s);
       setAddModal(false); setSpotifyUrl('');
     } catch(err) { setAddErr(err.response?.data?.message || err.message || 'Lỗi không xác định.'); }
+    finally { setAdding(false); }
+  };
+
+  const addYouTubePlaylist = async e => {
+    e.preventDefault(); if (!playlistUrl.trim()) return;
+    setAdding(true); setAddErr('');
+    try {
+      const res = await axios.post('/api/music/playlist', {
+        playlistUrl,
+        addedBy: user?._id || null
+      });
+      
+      const newSongs = res.data;
+      if (!newSongs || newSongs.length === 0) throw new Error("Không lấy được bài hát nào từ Playlist.");
+
+      setSongs(p => {
+        const updated = [...newSongs, ...p];
+        localStorage.setItem(songsKey(user?._id), JSON.stringify(updated));
+        return updated;
+      });
+      
+      setTrack(newSongs[0]); 
+      play(newSongs[0]);
+      setAddModal(false); 
+      setPlaylistUrl('');
+    } catch(err) { 
+      setAddErr(err.response?.data?.message || err.message || 'Lỗi không xác định.'); 
+    }
     finally { setAdding(false); }
   };
 
@@ -1258,21 +1287,30 @@ export default function App() {
             <div className="flex gap-2 mb-5 p-1 rounded-2xl" style={{ background: C.tag }}>
               <button
                 onClick={() => { setAddTab('youtube'); setAddErr(''); }}
-                className="flex-1 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
                 style={addTab === 'youtube'
                   ? { background: C.primary, color:'#fff', boxShadow:`0 2px 12px ${C.primaryGlow}` }
                   : { color: C.txtSub }}
               >
-                <i className="ri-youtube-fill"></i> YouTube
+                <i className="ri-youtube-fill"></i> Bài Hát
               </button>
               <button
                 onClick={() => { setAddTab('spotify'); setAddErr(''); }}
-                className="flex-1 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
                 style={addTab === 'spotify'
                   ? { background:'#1DB954', color:'#fff', boxShadow:'0 2px 12px rgba(29,185,84,0.4)' }
                   : { color: C.txtSub }}
               >
                 <i className="ri-spotify-fill"></i> Spotify
+              </button>
+              <button
+                onClick={() => { setAddTab('playlist'); setAddErr(''); }}
+                className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
+                style={addTab === 'playlist'
+                  ? { background: '#f59e0b', color:'#fff', boxShadow:'0 2px 12px rgba(245, 158, 11, 0.4)' }
+                  : { color: C.txtSub }}
+              >
+                <i className="ri-play-list-2-fill"></i> Playlist (YT)
               </button>
             </div>
 
@@ -1332,6 +1370,36 @@ export default function App() {
                     style={{ background:'#1DB954', boxShadow:'0 6px 18px rgba(29,185,84,0.35)' }}>
                     {adding ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-spotify-fill"></i>}
                     Thêm vào Thư Viện
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Playlist form */}
+            {addTab === 'playlist' && (
+              <form onSubmit={addYouTubePlaylist} className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Đường dẫn Playlist YouTube</label>
+                  <input type="text" placeholder="https://www.youtube.com/playlist?list=..." value={playlistUrl} onChange={e=>setPlaylistUrl(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
+                    style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
+                    autoFocus
+                  />
+                  <p className="text-[11px] mt-1.5" style={{ color: C.txtFad }}>
+                    ℹ️ Tự động quét toàn bộ bài hát trong Playlist.
+                  </p>
+                </div>
+                {addErr && <p className="text-xs font-semibold text-red-500">{addErr}</p>}
+                <div className="flex gap-3 mt-1">
+                  <button type="button" onClick={() => { setAddModal(false); setAddErr(''); }}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold" style={btn}>
+                    Hủy
+                  </button>
+                  <button type="submit" disabled={adding}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg"
+                    style={{ background: '#f59e0b', boxShadow: '0 6px 18px rgba(245, 158, 11, 0.35)' }}>
+                    {adding ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-play-list-add-line"></i>}
+                    Thêm Toàn Bộ
                   </button>
                 </div>
               </form>
