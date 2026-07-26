@@ -1714,8 +1714,8 @@ export default function App() {
               ) : playlists.map(p => {
                 const inPlaylist = p.songs.includes(songToAdd.id);
                 return (
-                  <button key={p._id} onClick={() => inPlaylist ? handleRemoveFromPlaylist(p._id, songToAdd.id) : handleAddToPlaylist(p._id, songToAdd.id)}
-                    className="flex items-center justify-between px-4 py-3 rounded-xl transition"
+                    <button key={p._id} onClick={() => inPlaylist ? handleRemoveFromPlaylist(p._id, songToAdd.id) : handleAddToPlaylist(p._id, songToAdd.id)}
+                      className="flex items-center justify-between px-4 py-3 rounded-xl transition-all hover:opacity-80 active:scale-[0.98] active:opacity-60"
                     style={{ background: C.tag, border:`1px solid ${inPlaylist ? C.primarySolid : C.border}` }}>
                     <span className="text-sm font-semibold truncate" style={{ color: inPlaylist ? C.primarySolid : C.txt }}>{p.name}</span>
                     <i className={inPlaylist ? "ri-check-line text-lg" : "ri-add-line text-lg"} style={{ color: inPlaylist ? C.primarySolid : C.txtSub }}></i>
