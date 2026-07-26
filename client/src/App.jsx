@@ -1124,7 +1124,7 @@ export default function App() {
                   <span className="text-xs font-bold group-hover:underline" style={{ color: C.txt }}>{user.name}</span>
                   <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.primarySolid }}>{user.role === 'admin' ? 'Admin ✦' : 'Member'}</span>
                 </div>
-                <button onClick={(e) => { e.stopPropagation(); logout(); }} title="Đăng xuất" className="hidden md:block p-1.5 md:p-2 rounded-full hover:scale-110 transition" style={{ color: C.txtFad }}>
+                <button onClick={(e) => { e.stopPropagation(); logout(); }} title="Đăng xuất" className="p-1.5 md:p-2 rounded-full hover:scale-110 transition" style={{ color: C.txtFad }}>
                   <i className="ri-logout-box-r-line text-base hover:text-red-500 transition"></i>
                 </button>
               </div>
@@ -1702,7 +1702,7 @@ export default function App() {
 
       {/* ── BOTTOM PLAYER ─────────────────────── */}
       <footer
-        className="w-full flex flex-row items-center px-2 md:px-8 justify-between shrink-0 z-50 transition-all h-[65px] md:h-[88px]"
+        className="w-full flex flex-row items-center px-2 md:px-8 justify-between shrink-0 z-50 transition-all h-[75px] pb-3 md:pb-0 md:h-[88px]"
         style={{
           background: C.surface,
           backdropFilter: 'blur(24px)',
