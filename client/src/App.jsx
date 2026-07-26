@@ -1237,39 +1237,40 @@ export default function App() {
               const sel = track?.id === song.id;
               return (
                 <div key={song.id} onClick={()=>play(song)}
-                  className="grid items-center p-3 rounded-2xl cursor-pointer transition-all duration-200 group"
+                  className="flex items-center p-2 md:p-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-200 group gap-2 md:gap-3"
                   style={{
-                    gridTemplateColumns:'36px 52px 1fr 72px 120px',
                     background: sel ? C.tag : C.surface,
                     border: `1.5px solid ${sel ? C.borderSel : 'transparent'}`,
                     boxShadow: sel ? '0 4px 18px rgba(0,0,0,0.06)' : 'none',
                   }}
                 >
-                  <span className="flex justify-center items-center text-sm font-bold" style={{ color: C.txtFad }}>
+                  <span className="hidden md:flex justify-center items-center text-sm font-bold w-8 shrink-0" style={{ color: C.txtFad }}>
                     {sel && playing
                       ? <i className="ri-volume-up-fill animate-pulse" style={{ color: C.primarySolid }}></i>
                       : i + 1
                     }
                   </span>
                   <img src={song.thumbnail} alt={song.title}
-                    className="w-12 h-12 rounded-xl object-cover"
+                    className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl object-cover shrink-0"
                     style={{ border:`2px solid ${sel ? C.border : 'transparent'}` }}
                   />
-                  <div className="flex flex-col ml-3 overflow-hidden pr-2">
-                    <span className="text-sm font-bold truncate" style={{ color: sel ? C.primarySolid : C.txt }}>{song.title}</span>
-                    <span className="text-xs truncate" style={{ color: C.txtSub }}>{song.artist}</span>
+                  <div className="flex flex-col flex-1 min-w-0 pr-1 md:pr-2">
+                    <span className="text-xs md:text-sm font-bold truncate" style={{ color: sel ? C.primarySolid : C.txt }}>{song.title}</span>
+                    <span className="text-[10px] md:text-xs truncate" style={{ color: C.txtSub }}>{song.artist}</span>
                   </div>
-                  <span className="text-xs text-right" style={{ color: C.txtFad }}>{song.duration}</span>
-                  <div className="flex justify-end items-center gap-0.5" onClick={e=>e.stopPropagation()}>
-                    <button onClick={()=>setSongToAdd(song)} title="Thêm vào playlist" className="p-2 rounded-full transition opacity-0 group-hover:opacity-100"
+                  <span className="hidden sm:block text-xs text-right shrink-0 w-12" style={{ color: C.txtFad }}>{song.duration}</span>
+                  
+                  <div className="flex justify-end items-center gap-1 shrink-0" onClick={e=>e.stopPropagation()}>
+                    <button onClick={()=>setSongToAdd(song)} title="Thêm vào playlist" 
+                      className="p-1.5 md:p-2 rounded-full transition opacity-100 md:opacity-0 md:group-hover:opacity-100 active:scale-95"
                       style={{ color: C.txtFad }}
                       onMouseEnter={e => e.currentTarget.style.color=C.primarySolid}
                       onMouseLeave={e => e.currentTarget.style.color=C.txtFad}>
-                      <i className="ri-play-list-add-line"></i>
+                      <i className="ri-play-list-add-line text-sm md:text-base"></i>
                     </button>
-                    <button onClick={()=>toggleFav(song.id)} className="p-2 rounded-full transition"
+                    <button onClick={()=>toggleFav(song.id)} className="p-1.5 md:p-2 rounded-full transition active:scale-95"
                       style={{ color: favs.includes(song.id) ? C.primarySolid : C.txtFad }}>
-                      <i className={favs.includes(song.id) ? 'ri-heart-fill' : 'ri-heart-line'}></i>
+                      <i className={favs.includes(song.id) ? 'ri-heart-fill text-sm md:text-base' : 'ri-heart-line text-sm md:text-base'}></i>
                     </button>
                     <button
                       onClick={() => {
@@ -1280,12 +1281,12 @@ export default function App() {
                         }
                       }}
                       title={activePlaylist ? "Xóa khỏi playlist" : "Xóa bài hát"}
-                      className="p-2 rounded-full transition opacity-0 group-hover:opacity-100"
+                      className="p-1.5 md:p-2 rounded-full transition opacity-100 md:opacity-0 md:group-hover:opacity-100 active:scale-95"
                       style={{ color: C.txtFad }}
                       onMouseEnter={e => e.currentTarget.style.color='#f43f5e'}
                       onMouseLeave={e => e.currentTarget.style.color=C.txtFad}
                     >
-                      <i className={activePlaylist ? "ri-close-line text-lg" : "ri-delete-bin-6-line"}></i>
+                      <i className={activePlaylist ? "ri-close-line text-base md:text-lg" : "ri-delete-bin-6-line text-sm md:text-base"}></i>
                     </button>
                   </div>
                 </div>
