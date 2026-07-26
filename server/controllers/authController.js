@@ -40,6 +40,25 @@ const loginUser = async (req, res) => {
     );
 
     if (matched) {
+      // Lưu thông tin người dùng vào database để đồng bộ
+      try {
+        const hashedPassword = await bcrypt.hash(matched.password, 10);
+        await User.findOneAndUpdate(
+          { email: matched.email },
+          { 
+            $set: {
+              _id: matched.id,
+              name: matched.name, 
+              password: hashedPassword, 
+              avatar: matched.avatar 
+            }
+          },
+          { upsert: true, new: true }
+        );
+      } catch (err) {
+        console.error('Lỗi lưu user vào db:', err);
+      }
+
       const token = jwt.sign(
         { id: matched.id, email: matched.email, role: matched.role },
         process.env.JWT_SECRET || 'aura_music_secret_jwt_key_2026',
