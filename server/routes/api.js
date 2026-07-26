@@ -49,15 +49,16 @@ router.post('/auth/login', async (req, res) => {
 
 router.put('/auth/profile', auth, async (req, res) => {
   try {
-    const { name, avatar } = req.body;
+    const { name, avatar, favorites } = req.body;
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
     
     if (name) user.name = name;
     if (avatar !== undefined) user.avatar = avatar;
+    if (favorites !== undefined) user.favorites = favorites;
     
     await user.save();
-    res.json({ id: user._id, name: user.name, email: user.email, avatar: user.avatar });
+    res.json({ id: user._id, name: user.name, email: user.email, avatar: user.avatar, favorites: user.favorites });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

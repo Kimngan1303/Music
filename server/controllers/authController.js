@@ -73,6 +73,7 @@ const loginUser = async (req, res) => {
         name:   dbUser.name || matched.name,
         email:  dbUser.email || matched.email,
         avatar: dbUser.avatar || matched.avatar,
+        favorites: dbUser.favorites || [],
         role:   matched.role,
         token
       });
@@ -94,6 +95,7 @@ const loginUser = async (req, res) => {
             name:   user.name,
             email:  user.email,
             avatar: user.avatar,
+            favorites: user.favorites || [],
             token
           });
         }

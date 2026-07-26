@@ -284,13 +284,6 @@ export default function App() {
       if (!saved) return null; // Not logged in — show landing page
 
       let userData = JSON.parse(saved);
-      // Apply any custom profile edits (name/avatar) saved separately
-      const customProfile = localStorage.getItem(`aura_custom_profile_${userData._id}`);
-      if (customProfile) {
-        const cp = JSON.parse(customProfile);
-        if (cp.name)   userData.name   = cp.name;
-        if (cp.avatar) userData.avatar = cp.avatar;
-      }
       return userData;
     } catch {
       return null;
@@ -633,11 +626,19 @@ export default function App() {
     else       { setMuted(true);  yt.current?.setVolume?.(0); }
   };
 
-  const toggleFav = id => setFavs(p => {
-    const updated = p.includes(id) ? p.filter(x=>x!==id) : [...p,id];
-    if (user) localStorage.setItem(favsKey(user._id), JSON.stringify(updated));
-    return updated;
-  });
+  const toggleFav = id => {
+    setFavs(p => {
+      const updated = p.includes(id) ? p.filter(x=>x!==id) : [...p,id];
+      if (user) {
+        localStorage.setItem(favsKey(user._id), JSON.stringify(updated));
+        // Sync to backend
+        axios.put('/api/auth/profile', { favorites: updated }, {
+          headers: { Authorization: `Bearer ${user.token}` }
+        }).catch(err => console.error("Failed to sync favorites", err));
+      }
+      return updated;
+    });
+  };
 
   const deleteSong = id => {
     setSongs(p => {
@@ -647,7 +648,12 @@ export default function App() {
     });
     setFavs(p => {
       const updated = p.filter(x => x !== id);
-      if (user) localStorage.setItem(favsKey(user._id), JSON.stringify(updated));
+      if (user) {
+        localStorage.setItem(favsKey(user._id), JSON.stringify(updated));
+        axios.put('/api/auth/profile', { favorites: updated }, {
+          headers: { Authorization: `Bearer ${user.token}` }
+        }).catch(()=>{});
+      }
       return updated;
     });
     if (track?.id === id) {
@@ -665,18 +671,16 @@ export default function App() {
       const r = await axios.post('/api/auth/login', { email, password: pwd });
       if (r.data?.token) {
         let loggedInUser = r.data;
-        try {
-          const customProfile = localStorage.getItem(`aura_custom_profile_${loggedInUser._id}`);
-          if (customProfile) {
-            const cp = JSON.parse(customProfile);
-            if (cp.name) loggedInUser.name = cp.name;
-            if (cp.avatar) loggedInUser.avatar = cp.avatar;
-          }
-        } catch (err) {}
-
         setUser(loggedInUser);
         localStorage.setItem('aura_user', JSON.stringify(loggedInUser));
         localStorage.setItem('aura_token', loggedInUser.token);
+        
+        // Sync favorites from backend
+        if (loggedInUser.favorites) {
+          setFavs(loggedInUser.favorites);
+          localStorage.setItem(favsKey(loggedInUser._id), JSON.stringify(loggedInUser.favorites));
+        }
+
         setLoginModal(false);
         setPage('app');
       }
@@ -710,7 +714,6 @@ export default function App() {
         avatar: editAvatar.trim() || user.avatar
       };
       setUser(updated);
-      localStorage.setItem(`aura_custom_profile_${updated._id}`, JSON.stringify({ name: updated.name, avatar: updated.avatar }));
       localStorage.setItem('aura_user', JSON.stringify(updated));
 
       // Save to backend
