@@ -1145,7 +1145,7 @@ export default function App() {
                 />
                 <div className="hidden md:flex flex-col leading-tight">
                   <span className="text-xs font-bold group-hover:underline" style={{ color: C.txt }}>{user.name}</span>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.primarySolid }}>{user.role === 'admin' ? 'Admin ✦' : 'Member'}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.primarySolid }}>{user.role === 'admin' ? 'Admin ✦' : (user.email === 'unnull@gmail.com' ? 'cciuoi' : 'Member')}</span>
                 </div>
                 <button onClick={(e) => { e.stopPropagation(); logout(); }} title="Đăng xuất" className="p-1.5 md:p-2 rounded-full hover:scale-110 transition" style={{ color: C.txtFad }}>
                   <i className="ri-logout-box-r-line text-base hover:text-red-500 transition"></i>
