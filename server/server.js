@@ -18,11 +18,18 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/music', require('./routes/musicRoutes'));
 app.use('/api', require('./routes/api'));
 
-// Serve client dist static files if built
+// Serve client dist static files if built (local dev only)
 app.use(express.static('../client/dist'));
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Aura Music Server running on http://localhost:${PORT}`);
-});
+// Only listen when run directly (not when imported by Vercel)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Aura Music Server running on http://localhost:${PORT}`);
+  });
+}
+
+// Export for Vercel serverless
+module.exports = app;
+
