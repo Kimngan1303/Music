@@ -24,6 +24,14 @@ const loginUser = async (req, res) => {
         avatar:   'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
         role:     'user',
       },
+      {
+        email:    process.env.USER3_EMAIL    || 'madu@gmail.com',
+        password: process.env.USER3_PASSWORD || 'madu',
+        id:       'user-madu',
+        name:     'Madu',
+        avatar:   'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=150&auto=format&fit=crop&q=80',
+        role:     'user',
+      },
     ];
 
     // Check against hardcoded accounts (case-insensitive email)
