@@ -1061,20 +1061,20 @@ export default function App() {
       <main className="flex-1 flex flex-col overflow-hidden">
 
         {/* Header */}
-        <header className="h-[66px] px-4 md:px-8 flex items-center justify-between shrink-0 relative gap-3" style={{ background: C.surface, backdropFilter:'blur(18px)', borderBottom:`1.5px solid ${C.border}` }}>
+        <header className="h-[60px] md:h-[66px] px-2 md:px-8 flex items-center justify-between shrink-0 relative gap-2 md:gap-3" style={{ background: C.surface, backdropFilter:'blur(18px)', borderBottom:`1.5px solid ${C.border}` }}>
           
-          <div className="flex items-center gap-3 flex-1 md:flex-none">
+          <div className="flex items-center gap-2 md:gap-3 flex-1 md:flex-none">
             {/* Mobile Hamburger Menu */}
-            <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden p-1.5 -ml-1.5 text-xl rounded-lg" style={{ color: C.txt }}>
+            <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden p-1 -ml-1 text-lg rounded-lg" style={{ color: C.txt }}>
               <i className="ri-menu-line"></i>
             </button>
 
             {/* Search */}
-            <div className="relative w-full max-w-[200px] md:w-72 z-10">
-              <i className="ri-search-line absolute left-3.5 top-2.5 text-sm" style={{ color: C.txtFad }}></i>
-              <input type="text" placeholder="Tìm bài hát..."
+            <div className="relative w-full max-w-[140px] sm:max-w-[180px] md:w-72 z-10">
+              <i className="ri-search-line absolute left-3 top-2 text-xs md:text-sm md:left-3.5 md:top-2.5" style={{ color: C.txtFad }}></i>
+              <input type="text" placeholder="Tìm kiếm..."
                 value={query} onChange={e=>setQuery(e.target.value)}
-                className="w-full py-2 pl-10 pr-4 text-sm rounded-full outline-none transition"
+                className="w-full py-1.5 md:py-2 pl-8 md:pl-10 pr-3 md:pr-4 text-xs md:text-sm rounded-full outline-none transition"
                 style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
               />
             </div>
@@ -1089,23 +1089,23 @@ export default function App() {
             </div>
           )}
 
-          <div className="flex items-center gap-2 md:gap-3 z-10 shrink-0">
+          <div className="flex items-center gap-1.5 md:gap-3 z-10 shrink-0">
             {/* Add button */}
             <button onClick={()=>setAddModal(true)}
-              className="flex items-center gap-1 md:gap-2 text-sm font-bold px-3 py-2 md:px-4 md:py-2 rounded-full text-white shadow-md transition-all hover:scale-105"
+              className="flex items-center gap-1 md:gap-2 text-[11px] md:text-sm font-bold px-2 py-1.5 md:px-4 md:py-2 rounded-full text-white shadow-md transition-all hover:scale-105"
               style={{ background: C.primary, boxShadow:`0 4px 14px ${C.primaryGlow}` }}
             >
-              <i className="ri-youtube-line text-base"></i> <span className="hidden md:inline">Thêm Nhạc</span>
+              <i className="ri-youtube-line text-sm md:text-base"></i> <span className="hidden md:inline">Thêm Nhạc</span>
             </button>
 
             {/* Profile & Theme Customization Button */}
             <button
               onClick={() => setProfileModal(true)}
               title="Tùy chỉnh Hồ Sơ & Màu Sắc Giao Diện"
-              className="flex items-center gap-1 md:gap-2 text-sm font-semibold px-3 py-2 md:px-4 md:py-2 rounded-full transition-all shadow-sm hover:scale-105"
+              className="flex items-center gap-1 md:gap-2 text-[11px] md:text-sm font-semibold px-2 py-1.5 md:px-4 md:py-2 rounded-full transition-all shadow-sm hover:scale-105"
               style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
             >
-              <i className="ri-palette-line text-base" style={{ color: C.primarySolid }}></i>
+              <i className="ri-palette-line text-sm md:text-base" style={{ color: C.primarySolid }}></i>
               <span className="hidden lg:inline">Giao Diện &amp; Profile</span>
             </button>
 
@@ -1113,12 +1113,12 @@ export default function App() {
             {user ? (
               <div
                 onClick={() => setProfileModal(true)}
-                className="flex items-center gap-2 pl-2 md:pl-3 cursor-pointer group ml-0 md:ml-1"
+                className="flex items-center gap-1 md:gap-2.5 pl-1.5 md:pl-3 cursor-pointer group ml-0 md:ml-1"
                 style={{ borderLeft:`1.5px solid ${C.border}` }}
                 title="Bấm để chỉnh sửa Profile"
               >
                 <img src={user.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
-                  alt={user.name} className="w-8 h-8 md:w-9 md:h-9 rounded-full object-cover group-hover:scale-105 transition" style={{ border:`2px solid ${C.borderSel}` }}
+                  alt={user.name} className="w-7 h-7 md:w-9 md:h-9 rounded-full object-cover group-hover:scale-105 transition" style={{ border:`2px solid ${C.borderSel}` }}
                 />
                 <div className="hidden md:flex flex-col leading-tight">
                   <span className="text-xs font-bold group-hover:underline" style={{ color: C.txt }}>{user.name}</span>
@@ -1702,7 +1702,7 @@ export default function App() {
 
       {/* ── BOTTOM PLAYER ─────────────────────── */}
       <footer
-        className="w-full flex flex-row items-center px-4 md:px-8 justify-between shrink-0 z-50 transition-all h-[80px] md:h-[88px]"
+        className="w-full flex flex-row items-center px-2 md:px-8 justify-between shrink-0 z-50 transition-all h-[65px] md:h-[88px]"
         style={{
           background: C.surface,
           backdropFilter: 'blur(24px)',
@@ -1711,19 +1711,19 @@ export default function App() {
         }}>
 
         {/* Track Info */}
-        <div className="flex items-center gap-2 md:gap-4 flex-1 md:flex-none md:w-64 min-w-0 pr-2">
+        <div className="flex items-center gap-2 md:gap-4 flex-1 md:flex-none md:w-64 min-w-0 pr-1 md:pr-2">
           {track ? (
             <>
               <div className="relative shrink-0">
                 <img src={track.thumbnail} alt={track.title}
-                  className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl object-cover"
+                  className="w-8 h-8 md:w-14 md:h-14 rounded-lg md:rounded-2xl object-cover"
                   style={{ border:`2px solid ${C.border}`, boxShadow:'0 4px 14px rgba(0,0,0,0.1)' }}
                 />
                 {playing && (
-                  <div className="absolute inset-0 rounded-2xl flex items-center justify-center" style={{ background:'rgba(0,0,0,0.25)' }}>
-                    <span className="flex gap-0.5 items-end h-4">
+                  <div className="absolute inset-0 rounded-lg md:rounded-2xl flex items-center justify-center" style={{ background:'rgba(0,0,0,0.25)' }}>
+                    <span className="flex gap-[1px] md:gap-0.5 items-end h-3 md:h-4">
                       {['100%','50%','75%'].map((h,i) => (
-                        <span key={i} className="w-1 rounded-full animate-pulse text-white"
+                        <span key={i} className="w-[1.5px] md:w-1 rounded-full animate-pulse text-white"
                           style={{ background: '#fff', height:h, animationDelay:`${i*0.2}s` }} />
                       ))}
                     </span>
@@ -1731,25 +1731,25 @@ export default function App() {
                 )}
               </div>
               <div className="flex flex-col overflow-hidden">
-                <span className="text-sm font-bold truncate" style={{ color: C.txt }}>{track.title}</span>
-                <span className="text-xs truncate" style={{ color: C.txtSub }}>{track.artist}</span>
+                <span className="text-[11px] md:text-sm font-bold truncate" style={{ color: C.txt }}>{track.title}</span>
+                <span className="text-[9px] md:text-xs truncate" style={{ color: C.txtSub }}>{track.artist}</span>
               </div>
             </>
           ) : (
-            <div className="flex items-center gap-2 md:gap-3">
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center" style={{ background: C.tag }}>
-                <i className="ri-music-2-line text-lg md:text-xl" style={{ color: C.txtFad }}></i>
+            <div className="flex items-center gap-1.5 md:gap-3">
+              <div className="w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-2xl flex items-center justify-center" style={{ background: C.tag }}>
+                <i className="ri-music-2-line text-sm md:text-xl" style={{ color: C.txtFad }}></i>
               </div>
-              <span className="text-[10px] md:text-xs font-semibold" style={{ color: C.txtFad }}>Chưa chọn bài hát~</span>
+              <span className="text-[9px] md:text-xs font-semibold" style={{ color: C.txtFad }}>Chưa chọn bài hát~</span>
             </div>
           )}
         </div>
 
         {/* Controls + Progress */}
-        <div className="flex flex-col items-center gap-1.5 flex-[2] md:flex-1 max-w-lg px-2 md:px-6">
-          <div className="flex items-center justify-center gap-2 md:gap-5 w-full">
+        <div className="flex flex-col items-center gap-1 md:gap-1.5 flex-[1.5] md:flex-1 max-w-lg px-1 md:px-6">
+          <div className="flex items-center justify-center gap-1 md:gap-5 w-full">
             <button onClick={random} title="Phát ngẫu nhiên" style={{ color: C.txtFad }} className="hidden sm:block">
-              <i className="ri-shuffle-line text-lg"></i>
+              <i className="ri-shuffle-line text-sm md:text-lg"></i>
             </button>
 
                 {/* Repeat Mode Button */}
@@ -1765,31 +1765,31 @@ export default function App() {
                   className="relative p-1 transition cursor-pointer"
                   style={{ color: repeatMode !== 'off' ? C.primarySolid : C.txtFad }}
                 >
-                  <i className={repeatMode === 'one' ? 'ri-repeat-2-line text-lg font-bold' : 'ri-repeat-line text-lg'}></i>
+                  <i className={repeatMode === 'one' ? 'ri-repeat-2-line text-sm md:text-lg font-bold' : 'ri-repeat-line text-sm md:text-lg'}></i>
                   {repeatMode === 'one' && (
-                    <span className="absolute -top-1 -right-1 text-[9px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center text-white shadow-xs"
+                    <span className="absolute -top-1 -right-1 text-[7px] md:text-[9px] font-black rounded-full w-2.5 h-2.5 md:w-3.5 md:h-3.5 flex items-center justify-center text-white shadow-xs"
                       style={{ background: C.primarySolid }}>
                       1
                     </span>
                   )}
                   {repeatMode === 'all' && (
-                    <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
+                    <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1.5 md:h-1.5 rounded-full"
                       style={{ background: C.primarySolid }}>
                     </span>
                   )}
                 </button>
 
                 <button onClick={prevTrack} title="Bài trước" style={{ color: C.txtSub }}>
-                  <i className="ri-skip-back-fill text-2xl"></i>
+                  <i className="ri-skip-back-fill text-lg md:text-2xl"></i>
                 </button>
                 <button onClick={togglePlay}
                   title={playing ? 'Tạm dừng' : 'Phát'}
-                  className="w-12 h-12 rounded-full text-white text-xl flex items-center justify-center shadow-lg transition-transform hover:scale-105"
+                  className="w-9 h-9 md:w-12 md:h-12 rounded-full text-white text-sm md:text-xl flex items-center justify-center shadow-lg transition-transform hover:scale-105"
                   style={{ background: C.primary, boxShadow:`0 4px 18px ${C.primaryGlow}` }}>
                   <i className={playing ? 'ri-pause-fill' : 'ri-play-fill'}></i>
                 </button>
                 <button onClick={nextTrack} title="Bài tiếp" style={{ color: C.txtSub }}>
-                  <i className="ri-skip-forward-fill text-2xl"></i>
+                  <i className="ri-skip-forward-fill text-lg md:text-2xl"></i>
                 </button>
                 <button onClick={()=>track&&toggleFav(track.id)} title="Yêu thích"
                   style={{ color: track&&favs.includes(track.id) ? C.primarySolid : C.txtFad }}>
