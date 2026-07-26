@@ -335,10 +335,36 @@ export default function App() {
     return () => clearInterval(t);
   }, [playing]);
 
-  const play = trk => {
+  const play = async trk => {
     setTrack(trk); setPlaying(true);
-    if (trk.youtubeId) {
-      yt.current?.loadVideoById?.(trk.youtubeId);
+    let yid = trk.youtubeId;
+    
+    // Auto-migrate old Spotify tracks
+    if (!yid && trk.sourceType === 'spotify') {
+      try {
+        const searchRes = await axios.get(`/api/music/search?query=${encodeURIComponent(trk.title + ' ' + trk.artist)}`);
+        yid = searchRes.data?.youtubeId;
+        if (yid) {
+          trk.youtubeId = yid;
+          trk.sourceType = 'youtube';
+          // Update in storage silently
+          setSongs(prev => {
+            const updated = prev.map(s => s.id === trk.id ? { ...s, youtubeId: yid, sourceType: 'youtube' } : s);
+            if (user) localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
+            return updated;
+          });
+        }
+      } catch (e) {
+        console.error("Failed to auto-migrate spotify track", e);
+      }
+    }
+
+    if (yid) {
+      yt.current?.loadVideoById?.(yid);
+      setTimeout(() => { yt.current?.playVideo?.(); }, 300);
+    } else {
+      // If still no yid, just stop
+      setPlaying(false);
     }
   };
 
