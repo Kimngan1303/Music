@@ -478,7 +478,7 @@ export default function App() {
       silentAudio = document.createElement('audio');
       silentAudio.id = 'silent-audio';
       silentAudio.loop = true;
-      silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+      silentAudio.src = '/silent.mp3';
       document.body.appendChild(silentAudio);
     }
     if (playing) {
@@ -883,7 +883,7 @@ export default function App() {
   if (!user && page === 'landing') {
     return (
       <div className="relative min-h-screen w-screen overflow-hidden flex flex-col" style={{ background: C.bg, fontFamily: F.body }}>
-        <div id="yt-player" className="fixed top-0 left-0 w-[1px] h-[1px] opacity-[0.01] pointer-events-none z-[-1]" />
+        <div id="yt-player" className="fixed top-0 left-0 pointer-events-none z-[-50]" style={{ width: '300px', height: '300px', opacity: 1 }} />
 
         {/* Background decorative blobs */}
         <div className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full pointer-events-none opacity-30"
@@ -980,7 +980,7 @@ export default function App() {
   if (!user && page === 'login') {
     return (
       <div className="flex h-screen w-screen items-center justify-center p-4 relative overflow-hidden" style={{ background: C.bg, fontFamily: F.body }}>
-        <div id="yt-player" className="fixed top-0 left-0 w-[1px] h-[1px] opacity-[0.01] pointer-events-none z-[-1]" />
+        <div id="yt-player" className="fixed top-0 left-0 pointer-events-none z-[-50]" style={{ width: '300px', height: '300px', opacity: 1 }} />
 
         {/* Decorative background blobs */}
         <div className="absolute top-12 left-16 w-64 h-64 rounded-full pointer-events-none float-anim opacity-40"
@@ -1064,7 +1064,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden" style={{ background: C.bg, fontFamily: F.body }}>
-      <div id="yt-player" className="fixed top-0 left-0 w-[1px] h-[1px] opacity-[0.01] pointer-events-none z-[-1]" />
+      <div id="yt-player" className="fixed top-0 left-0 pointer-events-none z-[-50]" style={{ width: '300px', height: '300px', opacity: 1 }} />
 
       {/* ── TOP ROW: sidebar + main ─────────────────── */}
       <div className="flex flex-1 overflow-hidden relative">
