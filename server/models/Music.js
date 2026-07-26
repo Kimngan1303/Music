@@ -7,7 +7,8 @@ const musicSchema = new mongoose.Schema({
   artist: { type: String, required: true },
   thumbnail: { type: String, required: true },
   duration: { type: String, default: '3:30' },
-  addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  addedBy: { type: String },
+  id: { type: String }, // Custom ID to match frontend's s12345 format
   createdAt: { type: Date, default: Date.now }
 });
 

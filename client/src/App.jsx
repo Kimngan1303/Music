@@ -235,14 +235,47 @@ export default function App() {
   // Reload songs and favs when user logs in or out
   useEffect(() => {
     const uid = user?._id || 'guest';
+    let localSongs = [];
     try {
       const savedSongs = localStorage.getItem(songsKey(uid));
-      setSongs(savedSongs ? JSON.parse(savedSongs) : []);
+      localSongs = savedSongs ? JSON.parse(savedSongs) : [];
+      setSongs(localSongs);
       
       const savedFavs = localStorage.getItem(favsKey(uid));
       setFavs(savedFavs ? JSON.parse(savedFavs) : []);
     } catch (e) {
       console.error("Failed to load user data", e);
+    }
+    
+    // If logged in, fetch from backend to sync across devices
+    if (user) {
+      axios.get(`/api/music?userId=${user._id}`).then(res => {
+        if (res.data && res.data.length > 0) {
+          // Merge backend songs with local songs, preferring backend if duplicate
+          const backendSongs = res.data.map(dbSong => ({
+            id: dbSong.id,
+            sourceType: 'youtube',
+            youtubeId: dbSong.youtubeId,
+            title: dbSong.title,
+            artist: dbSong.artist,
+            thumbnail: dbSong.thumbnail,
+            duration: dbSong.duration
+          }));
+          
+          const merged = [...backendSongs];
+          // Add any local songs that aren't in backend yet
+          localSongs.forEach(ls => {
+            if (!merged.find(ms => ms.id === ls.id)) {
+              merged.push(ls);
+              // Push this local song to backend too
+              axios.post('/api/music', { ...ls, addedBy: user._id }).catch(()=>{});
+            }
+          });
+          
+          setSongs(merged);
+          localStorage.setItem(songsKey(uid), JSON.stringify(merged));
+        }
+      }).catch(console.error);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?._id]);
@@ -506,7 +539,10 @@ export default function App() {
       try { const o = await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${vid}&format=json`); s.title = o.data?.title||s.title; s.artist = o.data?.author_name||s.artist; } catch {}
       setSongs(p => {
         const updated = [s, ...p];
-        if (user) localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
+        if (user) {
+          localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
+          axios.post('/api/music', { ...s, addedBy: user._id }).catch(()=>{});
+        }
         return updated;
       });
       setAddModal(false); setYtUrl(''); play(s);
@@ -551,7 +587,10 @@ export default function App() {
 
       setSongs(p => {
         const updated = [s, ...p];
-        if (user) localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
+        if (user) {
+          localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
+          axios.post('/api/music', { ...s, addedBy: user._id }).catch(()=>{});
+        }
         return updated;
       });
       setTrack(s); play(s);

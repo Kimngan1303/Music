@@ -4,7 +4,11 @@ const ytSearch = require('yt-search');
 
 const getSongs = async (req, res) => {
   try {
-    const songs = await Music.find().sort({ createdAt: -1 });
+    const { userId } = req.query;
+    // If userId is provided, fetch only their songs. Otherwise return empty array (we don't want cross-user leak)
+    if (!userId) return res.json([]);
+    
+    const songs = await Music.find({ addedBy: userId }).sort({ createdAt: -1 });
     res.json(songs);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -38,16 +42,23 @@ const parseYouTubeUrl = async (req, res) => {
 
 const addSong = async (req, res) => {
   try {
-    const { youtubeId, youtubeUrl, title, artist, thumbnail, duration } = req.body;
-    const song = await Music.create({
-      youtubeId,
-      youtubeUrl,
-      title,
-      artist,
-      thumbnail,
-      duration,
-      addedBy: req.user ? req.user.id : null
-    });
+    const { id, youtubeId, youtubeUrl, title, artist, thumbnail, duration, addedBy } = req.body;
+    
+    // Upsert the song so we don't get duplicates if they re-add or sync
+    const song = await Music.findOneAndUpdate(
+      { id }, // match by frontend ID
+      {
+        id,
+        youtubeId,
+        youtubeUrl,
+        title,
+        artist,
+        thumbnail,
+        duration,
+        addedBy
+      },
+      { new: true, upsert: true }
+    );
     res.status(201).json(song);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -57,7 +68,7 @@ const addSong = async (req, res) => {
 const deleteSong = async (req, res) => {
   try {
     const { id } = req.params;
-    await Music.findByIdAndDelete(id);
+    await Music.findOneAndDelete({ id });
     res.json({ message: 'Song removed' });
   } catch (error) {
     res.status(500).json({ message: error.message });
