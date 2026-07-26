@@ -802,7 +802,7 @@ export default function App() {
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md" style={{ background: C.primary }}>
               <i className="ri-disc-fill text-xl text-white spin-slow"></i>
             </div>
-            <span style={{ fontFamily: F.cursive, fontSize:'26px', color: C.primarySolid, lineHeight:1 }}>AuraMusic</span>
+            <span style={{ fontFamily: F.cursive, fontSize:'26px', color: C.primarySolid, lineHeight:1 }}>LittleLove</span>
           </div>
           <button
             onClick={() => setPage('login')}
@@ -824,7 +824,7 @@ export default function App() {
           {/* Headline */}
           <div className="flex flex-col gap-2">
             <h1 style={{ fontFamily: F.cursive, fontSize:'clamp(48px,8vw,88px)', color: C.primarySolid, lineHeight:1.05 }}>
-              AuraMusic
+              LittleLove
             </h1>
             <p style={{ fontFamily: F.brand, fontSize:'clamp(13px,2vw,18px)', color: C.txtSub, letterSpacing:'0.15em', textTransform:'uppercase', fontWeight:600 }}>
               Không gian âm nhạc cá nhân của bạn
@@ -872,7 +872,7 @@ export default function App() {
         {/* Footer */}
         <footer className="relative z-10 text-center pb-6 pt-2">
           <p style={{ color: C.txtFad, fontSize:'11px', fontFamily: F.brand, letterSpacing:'0.15em' }}>
-            © 2024 AuraMusic · Personal Edition
+            © 2024 LittleLove · Personal Edition
           </p>
         </footer>
       </div>
@@ -899,7 +899,7 @@ export default function App() {
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md" style={{ background: C.primary }}>
               <i className="ri-disc-fill text-3xl text-white spin-slow"></i>
             </div>
-            <h1 style={{ fontFamily: F.cursive, fontSize:'34px', color: C.primarySolid, lineHeight:1.1 }}>AuraMusic</h1>
+            <h1 style={{ fontFamily: F.cursive, fontSize:'34px', color: C.primarySolid, lineHeight:1.1 }}>LittleLove</h1>
             <p style={{ fontFamily: F.brand, fontSize:'11px', letterSpacing:'0.25em', color: C.txtFad, textTransform:'uppercase', fontWeight:600, marginTop:'2px' }}>
               Personal Music Space
             </p>
@@ -992,7 +992,7 @@ export default function App() {
             <i className={`ri-disc-fill text-[22px] text-white ${playing?'spin-slow':''}`}></i>
           </div>
           <div className="flex flex-col leading-none">
-            <span style={{ fontFamily: F.cursive, fontSize:'28px', color: C.primarySolid, lineHeight:1.1 }}>AuraMusic</span>
+            <span style={{ fontFamily: F.cursive, fontSize:'28px', color: C.primarySolid, lineHeight:1.1 }}>LittleLove</span>
             <span style={{ fontFamily: F.brand, fontSize:'10px', letterSpacing:'0.25em', color: C.txtFad, textTransform:'uppercase', fontWeight:600 }}>Personal Music Space</span>
           </div>
         </div>
