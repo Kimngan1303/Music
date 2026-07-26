@@ -218,7 +218,7 @@ export default function App() {
 
       let userData = JSON.parse(saved);
       // Apply any custom profile edits (name/avatar) saved separately
-      const customProfile = localStorage.getItem('aura_custom_profile');
+      const customProfile = localStorage.getItem(`aura_custom_profile_${userData._id}`);
       if (customProfile) {
         const cp = JSON.parse(customProfile);
         if (cp.name)   userData.name   = cp.name;
@@ -538,7 +538,7 @@ export default function App() {
       if (r.data?.token) {
         let loggedInUser = r.data;
         try {
-          const customProfile = localStorage.getItem('aura_custom_profile');
+          const customProfile = localStorage.getItem(`aura_custom_profile_${loggedInUser._id}`);
           if (customProfile) {
             const cp = JSON.parse(customProfile);
             if (cp.name) loggedInUser.name = cp.name;
@@ -582,7 +582,7 @@ export default function App() {
         avatar: editAvatar.trim() || user.avatar
       };
       setUser(updated);
-      localStorage.setItem('aura_custom_profile', JSON.stringify({ name: updated.name, avatar: updated.avatar }));
+      localStorage.setItem(`aura_custom_profile_${updated._id}`, JSON.stringify({ name: updated.name, avatar: updated.avatar }));
       localStorage.setItem('aura_user', JSON.stringify(updated));
     }
     localStorage.setItem('aura_theme_key', themeKey);
@@ -1140,11 +1140,11 @@ export default function App() {
         </header>
 
         {/* Scrollable content */}
-        <div className="flex-1 p-4 md:p-7 overflow-y-auto">
+        <div className="flex-1 p-4 pt-8 md:p-7 md:pt-7 overflow-y-auto">
 
           {tab === 'home' ? (
             /* ── Hero Banner ─────────────────────── */
-            <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden rounded-3xl p-6 md:p-8 shadow-sm min-h-[400px]"
+            <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden rounded-3xl p-6 md:p-8 mt-4 md:mt-0 shadow-sm min-h-[400px]"
               style={{ background: C.surface, border:`1.5px solid ${C.border}`, boxShadow:'0 8px 40px rgba(0,0,0,0.06)' }}
             >
               {/* Blobs */}
