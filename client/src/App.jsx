@@ -531,7 +531,7 @@ export default function App() {
 
     if (yid) {
       yt.current?.loadVideoById?.(yid);
-      setTimeout(() => { yt.current?.playVideo?.(); }, 300);
+      yt.current?.playVideo?.();
     } else {
       // If still no yid, just stop
       setPlaying(false);
