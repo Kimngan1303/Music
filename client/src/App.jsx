@@ -362,6 +362,19 @@ export default function App() {
         setPlaylists(res.data);
         localStorage.setItem(playlistsKey(user._id), JSON.stringify(res.data));
       }).catch(console.error);
+
+      // Fetch latest profile & favorites
+      axios.get('/api/auth/me', { headers: { Authorization: `Bearer ${user.token}` } }).then(res => {
+        const dbProfile = res.data;
+        const updatedUser = { ...user, name: dbProfile.name, avatar: dbProfile.avatar, favorites: dbProfile.favorites };
+        setUser(updatedUser);
+        localStorage.setItem('aura_user', JSON.stringify(updatedUser));
+        
+        if (dbProfile.favorites) {
+          setFavs(dbProfile.favorites);
+          localStorage.setItem(favsKey(user._id), JSON.stringify(dbProfile.favorites));
+        }
+      }).catch(console.error);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?._id]);
