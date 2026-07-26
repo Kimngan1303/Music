@@ -337,7 +337,11 @@ export default function App() {
 
   const play = trk => {
     setTrack(trk); setPlaying(true);
-    yt.current?.loadVideoById?.(trk.youtubeId);
+    if (trk.sourceType === 'spotify') {
+      yt.current?.stopVideo?.();
+    } else {
+      yt.current?.loadVideoById?.(trk.youtubeId);
+    }
   };
 
   const togglePlay = () => {
