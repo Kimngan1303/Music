@@ -1332,11 +1332,11 @@ export default function App() {
                 {addErr && <p className="text-xs font-semibold text-red-500">{addErr}</p>}
                 <div className="flex gap-3 mt-1">
                   <button type="button" onClick={() => { setAddModal(false); setAddErr(''); }}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold" style={btn}>
+                    className="w-28 shrink-0 py-2.5 rounded-xl text-sm font-bold" style={btn}>
                     Hủy
                   </button>
                   <button type="submit" disabled={adding}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg"
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg whitespace-nowrap"
                     style={{ background: C.primary, boxShadow:`0 6px 18px ${C.primaryGlow}` }}>
                     {adding ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-add-line"></i>}
                     Thêm &amp; Phát
@@ -1366,11 +1366,11 @@ export default function App() {
                 </div>
                 <div className="flex gap-3 mt-1">
                   <button type="button" onClick={() => { setAddModal(false); setAddErr(''); }}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold" style={btn}>
+                    className="w-28 shrink-0 py-2.5 rounded-xl text-sm font-bold" style={btn}>
                     Hủy
                   </button>
                   <button type="submit" disabled={adding}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg"
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg whitespace-nowrap"
                     style={{ background:'#1DB954', boxShadow:'0 6px 18px rgba(29,185,84,0.35)' }}>
                     {adding ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-spotify-fill"></i>}
                     Thêm vào Thư Viện
@@ -1396,11 +1396,11 @@ export default function App() {
                 {addErr && <p className="text-xs font-semibold text-red-500">{addErr}</p>}
                 <div className="flex gap-3 mt-1">
                   <button type="button" onClick={() => { setAddModal(false); setAddErr(''); }}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold" style={btn}>
+                    className="w-28 shrink-0 py-2.5 rounded-xl text-sm font-bold" style={btn}>
                     Hủy
                   </button>
                   <button type="submit" disabled={adding}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg"
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg whitespace-nowrap"
                     style={{ background: '#f59e0b', boxShadow: '0 6px 18px rgba(245, 158, 11, 0.35)' }}>
                     {adding ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-play-list-add-line"></i>}
                     Thêm Toàn Bộ
