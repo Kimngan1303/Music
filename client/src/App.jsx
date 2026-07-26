@@ -204,6 +204,14 @@ export default function App() {
     }
   });
 
+  // Page routing: 'landing' | 'login' | 'app'
+  // If user already logged in (from localStorage), go straight to app
+  const [page, setPage] = useState(() => {
+    try {
+      return localStorage.getItem('aura_user') ? 'app' : 'landing';
+    } catch { return 'landing'; }
+  });
+
   const [loginModal, setLoginModal] = useState(false);
   const [email,      setEmail]      = useState('admin@auramusic.com');
   const [pwd,        setPwd]        = useState('admin123');
@@ -401,6 +409,7 @@ export default function App() {
         localStorage.setItem('aura_user', JSON.stringify(loggedInUser));
         localStorage.setItem('aura_token', loggedInUser.token);
         setLoginModal(false);
+        setPage('app');
       }
     } catch(err) { setLoginErr(err.response?.data?.message || 'Thông tin không chính xác.'); }
     finally { setLoggingIn(false); }
@@ -410,6 +419,7 @@ export default function App() {
     setUser(null);
     setTrack(null);
     setPlaying(false);
+    setPage('landing');
     try {
       yt.current?.stopVideo?.();
     } catch (e) {}
@@ -462,8 +472,105 @@ export default function App() {
   const glass = { background: C.surface, backdropFilter: 'blur(20px)', border: `1.5px solid ${C.border}` };
   const btn   = { background: C.btn, color: C.btnTxt, border: `1.5px solid ${C.btnBd}` };
 
-  // ── FULLSCREEN LOGIN SCREEN WHEN LOGGED OUT ──
-  if (!user) {
+  // ── LANDING PAGE ──────────────────────────────────────────
+  if (!user && page === 'landing') {
+    return (
+      <div className="relative min-h-screen w-screen overflow-hidden flex flex-col" style={{ background: C.bg, fontFamily: F.body }}>
+        <div id="yt-player" className="absolute -top-[9999px] -left-[9999px] opacity-0 pointer-events-none" />
+
+        {/* Background decorative blobs */}
+        <div className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full pointer-events-none opacity-30"
+          style={{ background:`radial-gradient(circle at 30% 30%,${C.primarySolid},transparent 70%)`, transform:'translate(-30%,-30%)' }} />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full pointer-events-none opacity-20 float-anim"
+          style={{ background:`radial-gradient(circle at 70% 70%,${C.borderSel},transparent 70%)`, transform:'translate(30%,30%)', animationDelay:'2s' }} />
+        <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] rounded-full pointer-events-none opacity-10"
+          style={{ background:`radial-gradient(circle,${C.primarySolid},transparent)`, transform:'translate(-50%,-50%)' }} />
+
+        {/* Nav bar */}
+        <header className="relative z-10 flex items-center justify-between px-10 py-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md" style={{ background: C.primary }}>
+              <i className="ri-disc-fill text-xl text-white spin-slow"></i>
+            </div>
+            <span style={{ fontFamily: F.cursive, fontSize:'26px', color: C.primarySolid, lineHeight:1 }}>AuraMusic</span>
+          </div>
+          <button
+            onClick={() => setPage('login')}
+            className="px-6 py-2.5 rounded-full text-sm font-semibold shadow-md transition-transform hover:scale-105 cursor-pointer"
+            style={{ background: C.primary, color: '#fff', boxShadow:`0 4px 16px ${C.primaryGlow}` }}
+          >
+            Đăng nhập
+          </button>
+        </header>
+
+        {/* Hero section */}
+        <main className="relative z-10 flex flex-col items-center justify-center flex-1 text-center px-6 py-16 gap-8">
+          {/* Spinning disc icon */}
+          <div className="w-28 h-28 rounded-full flex items-center justify-center shadow-2xl mb-2"
+            style={{ background: C.primary, boxShadow:`0 20px 60px ${C.primaryGlow}` }}>
+            <i className="ri-disc-fill text-6xl text-white spin-slow"></i>
+          </div>
+
+          {/* Headline */}
+          <div className="flex flex-col gap-2">
+            <h1 style={{ fontFamily: F.cursive, fontSize:'clamp(48px,8vw,88px)', color: C.primarySolid, lineHeight:1.05 }}>
+              AuraMusic
+            </h1>
+            <p style={{ fontFamily: F.brand, fontSize:'clamp(13px,2vw,18px)', color: C.txtSub, letterSpacing:'0.15em', textTransform:'uppercase', fontWeight:600 }}>
+              Không gian âm nhạc cá nhân của bạn
+            </p>
+          </div>
+
+          {/* Description */}
+          <p style={{ fontFamily: F.body, fontSize:'clamp(14px,1.8vw,17px)', color: C.txtSub, maxWidth:'520px', lineHeight:1.8 }}>
+            Tạo thư viện nhạc riêng từ YouTube, lưu bài yêu thích,
+            tùy chỉnh giao diện theo phong cách của bạn.
+          </p>
+
+          {/* Feature pills */}
+          <div className="flex flex-wrap gap-3 justify-center">
+            {[
+              { icon: 'ri-youtube-fill',    label: 'Stream từ YouTube'     },
+              { icon: 'ri-heart-fill',      label: 'Bài hát yêu thích'    },
+              { icon: 'ri-palette-fill',    label: 'Giao diện Pastel'      },
+              { icon: 'ri-repeat-line',     label: 'Phát & Lặp lại'        },
+            ].map(f => (
+              <span key={f.label} className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold"
+                style={{ background: C.tag, border:`1.5px solid ${C.tagBd}`, color: C.tagTxt }}>
+                <i className={`${f.icon} text-base`}></i>
+                {f.label}
+              </span>
+            ))}
+          </div>
+
+          {/* CTA button */}
+          <button
+            onClick={() => setPage('login')}
+            className="mt-4 px-10 py-4 rounded-2xl text-lg font-bold text-white flex items-center gap-3 shadow-2xl transition-all hover:scale-105 hover:shadow-3xl cursor-pointer"
+            style={{ background: C.primary, boxShadow:`0 8px 32px ${C.primaryGlow}` }}
+          >
+            <i className="ri-headphone-fill text-xl"></i>
+            Bắt đầu nghe nhạc
+            <i className="ri-arrow-right-line text-xl"></i>
+          </button>
+
+          <p style={{ color: C.txtFad, fontSize:'12px', marginTop:'4px' }}>
+            ✦ Dành riêng cho bạn • Private Music Space ✦
+          </p>
+        </main>
+
+        {/* Footer */}
+        <footer className="relative z-10 text-center pb-6 pt-2">
+          <p style={{ color: C.txtFad, fontSize:'11px', fontFamily: F.brand, letterSpacing:'0.15em' }}>
+            © 2024 AuraMusic · Personal Edition
+          </p>
+        </footer>
+      </div>
+    );
+  }
+
+  // ── FULLSCREEN LOGIN SCREEN ────────────────────────────────
+  if (!user && page === 'login') {
     return (
       <div className="flex h-screen w-screen items-center justify-center p-4 relative overflow-hidden" style={{ background: C.bg, fontFamily: F.body }}>
         <div id="yt-player" className="absolute -top-[9999px] -left-[9999px] opacity-0 pointer-events-none" />
@@ -477,7 +584,7 @@ export default function App() {
         {/* Login Card */}
         <div className="w-full max-w-md rounded-3xl p-8 shadow-2xl relative z-10"
           style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border:`1.5px solid ${C.border}`, boxShadow:'0 25px 70px rgba(0,0,0,0.12)' }}>
-          
+
           <div className="text-center mb-6">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md" style={{ background: C.primary }}>
               <i className="ri-disc-fill text-3xl text-white spin-slow"></i>
@@ -536,13 +643,24 @@ export default function App() {
             </button>
           </form>
 
-          <p className="text-center text-[11px] mt-6" style={{ color: C.txtFad }}>
+          {/* Back to landing */}
+          <button
+            onClick={() => setPage('landing')}
+            className="mt-4 w-full text-center text-xs py-2 rounded-xl transition hover:opacity-70 cursor-pointer"
+            style={{ color: C.txtFad }}
+          >
+            ← Quay lại trang chủ
+          </button>
+
+          <p className="text-center text-[11px] mt-3" style={{ color: C.txtFad }}>
             ✦ Aura Music • Personal Edition ✦
           </p>
         </div>
       </div>
     );
   }
+
+
 
 
   return (
