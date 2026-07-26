@@ -573,6 +573,21 @@ export default function App() {
     play(songs[Math.floor(Math.random() * songs.length)]);
   };
 
+  // Background playback control for mobile
+  useEffect(() => {
+    if ('mediaSession' in navigator && track) {
+      navigator.mediaSession.metadata = new window.MediaMetadata({
+        title: track.title,
+        artist: track.artist,
+        artwork: [ { src: track.thumbnail, sizes: '512x512', type: 'image/jpeg' } ]
+      });
+      navigator.mediaSession.setActionHandler('play', () => { yt.current?.playVideo?.(); setPlaying(true); });
+      navigator.mediaSession.setActionHandler('pause', () => { yt.current?.pauseVideo?.(); setPlaying(false); });
+      navigator.mediaSession.setActionHandler('previoustrack', prevTrack);
+      navigator.mediaSession.setActionHandler('nexttrack', nextTrack);
+    }
+  }, [track, songs]);
+
   const seek  = e => { const t = +e.target.value; setCurTime(t); yt.current?.seekTo?.(t, true); };
   const changeVol = e => { const v = +e.target.value; setVol(v); setMuted(v===0); yt.current?.setVolume?.(v); };
   const toggleMute = () => {
