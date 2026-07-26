@@ -496,7 +496,11 @@ export default function App() {
         setLoginModal(false);
         setPage('app');
       }
-    } catch(err) { setLoginErr(err.response?.data?.message || 'Thông tin không chính xác.'); }
+    } catch(err) { 
+      console.error("Login Error:", err);
+      const msg = err.response?.data?.message || err.message || 'Thông tin không chính xác.';
+      setLoginErr(msg.includes('50') ? 'Máy chủ đang bảo trì hoặc mất kết nối (Lỗi 5xx).' : msg); 
+    }
     finally { setLoggingIn(false); }
   };
 
