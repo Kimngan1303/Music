@@ -9,7 +9,7 @@ const loginUser = async (req, res) => {
     // List of hardcoded accounts (from .env)
     const hardcodedAccounts = [
       {
-        email:    process.env.ADMIN_EMAIL    || 'admin@auramusic.com',
+        email:    process.env.ADMIN_EMAIL    || 'admin@gmail.com',
         password: process.env.ADMIN_PASSWORD || 'admin123',
         id:       'admin-owner',
         name:     'Chủ sở hữu (Admin)',
