@@ -1,7 +1,7 @@
 const Music = require('../models/Music');
 const axios = require('axios');
 const ytSearch = require('yt-search');
-const { Innertube } = require('youtubei.js');
+const { Innertube, UniversalCache } = require('youtubei.js');
 
 const getSongs = async (req, res) => {
   try {
@@ -86,28 +86,47 @@ const addPlaylist = async (req, res) => {
       return res.status(400).json({ message: 'Đường dẫn Playlist YouTube không hợp lệ!' });
     }
 
-    const yt = await Innertube.create();
+    const yt = await Innertube.create({ cache: new UniversalCache(false) });
     const playlist = await yt.getPlaylist(listId);
     
     if (!playlist || !playlist.items || playlist.items.length === 0) {
       return res.status(404).json({ message: 'Playlist trống hoặc không có quyền truy cập.' });
     }
 
-    const songsToUpsert = playlist.items.map(item => {
-      // Get title (sometimes it's nested in text objects)
+    const songsToUpsert = playlist.items.map((item, idx) => {
       let title = 'Unknown Title';
-      if (item.title) title = typeof item.title === 'string' ? item.title : item.title.text || title;
-      
-      // Get artist
       let artist = 'Unknown Artist';
-      if (item.author) artist = typeof item.author === 'string' ? item.author : item.author.name || artist;
+      let duration = '3:30'; // default
+      let vid = null;
+
+      if (item.type === 'LockupView' || item.type === 'PlaylistVideoView') {
+        vid = item.content_id || (item.metadata && item.metadata.content_id);
+        title = item.metadata?.title?.text || title;
+        
+        try {
+          const rows = item.metadata?.metadata?.metadata_rows || [];
+          if (rows.length > 0 && rows[0].metadata_parts) {
+            artist = rows[0].metadata_parts[0]?.text?.text || artist;
+          }
+        } catch(e) {}
+        
+        // duration might be buried in accessibility_context
+        try {
+           const label = item.renderer_context?.accessibility_context?.label || '';
+           const durMatch = label.match(/(\d+)\s*minutes?,\s*(\d+)\s*seconds?/);
+           if (durMatch) duration = `${durMatch[1]}:${durMatch[2].padStart(2, '0')}`;
+        } catch(e) {}
+      } else {
+        // Fallback for older youtubei.js PlaylistVideo type
+        if (item.title) title = typeof item.title === 'string' ? item.title : item.title.text || title;
+        if (item.author) artist = typeof item.author === 'string' ? item.author : item.author.name || artist;
+        if (item.duration && item.duration.text) duration = item.duration.text;
+        vid = item.id;
+      }
       
-      // Format duration (e.g. { seconds: 210 } -> '3:30' or item.duration.text)
-      let duration = '0:00';
-      if (item.duration && item.duration.text) duration = item.duration.text;
-      
-      const vid = item.id;
-      const sId = 's' + vid + Date.now(); // Ensure unique-ish local ID
+      if (!vid) vid = 'unknown_' + idx;
+
+      const sId = 's' + vid + Date.now() + '_' + idx; // Ensure unique local ID
 
       return {
         id: sId,
