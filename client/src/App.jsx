@@ -651,8 +651,11 @@ export default function App() {
 
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden" style={{ background: C.bg, fontFamily: F.body }}>
+    <div className="flex flex-col h-screen w-screen overflow-hidden" style={{ background: C.bg, fontFamily: F.body }}>
       <div id="yt-player" className="absolute -top-[9999px] -left-[9999px] opacity-0 pointer-events-none" />
+
+      {/* ── TOP ROW: sidebar + main ─────────────────── */}
+      <div className="flex flex-1 overflow-hidden">
 
       {/* ── SIDEBAR ─────────────────────────────── */}
       <aside className="w-60 flex flex-col gap-5 p-6 shrink-0" style={{ ...glass, borderRight: `1.5px solid ${C.border}`, borderTop:'none', borderBottom:'none', borderLeft:'none' }}>
@@ -702,7 +705,7 @@ export default function App() {
       </aside>
 
       {/* ── MAIN ──────────────────────────────────── */}
-      <main className="flex-1 flex flex-col overflow-hidden pb-24">
+      <main className="flex-1 flex flex-col overflow-hidden">
 
         {/* Header */}
         <header className="h-[66px] px-8 flex items-center justify-between shrink-0" style={{ background: C.surface, backdropFilter:'blur(18px)', borderBottom:`1.5px solid ${C.border}` }}>
@@ -870,6 +873,8 @@ export default function App() {
           </div>
         </div>
       </main>
+
+      </div>{/* ── END TOP ROW (sidebar + main) ── */}
 
       {/* ── PROFILE & THEME CUSTOMIZATION MODAL ───────────── */}
       {profileModal && (
@@ -1132,7 +1137,7 @@ export default function App() {
       )}
 
       {/* ── BOTTOM PLAYER ─────────────────────── */}
-      <footer className="fixed bottom-0 left-0 w-full h-[88px] flex items-center px-8 justify-between z-50"
+      <footer className="w-full h-[88px] flex items-center px-8 justify-between shrink-0 z-50"
         style={{ background: C.surface, backdropFilter:'blur(24px)', borderTop:`1.5px solid ${C.border}`, boxShadow:'0 -6px 28px rgba(0,0,0,0.06)' }}>
 
         {/* Track Info */}
