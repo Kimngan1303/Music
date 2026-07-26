@@ -478,6 +478,23 @@ export default function App() {
     return () => clearInterval(t);
   }, [playing]);
 
+  // Native silent audio to trick mobile browsers into keeping audio session alive in background
+  useEffect(() => {
+    let silentAudio = document.getElementById('silent-audio');
+    if (!silentAudio) {
+      silentAudio = document.createElement('audio');
+      silentAudio.id = 'silent-audio';
+      silentAudio.loop = true;
+      silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+      document.body.appendChild(silentAudio);
+    }
+    if (playing) {
+      silentAudio.play().catch(() => {});
+    } else {
+      silentAudio.pause();
+    }
+  }, [playing]);
+
   // Sleep Timer logic
   useEffect(() => {
     let interval;
