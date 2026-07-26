@@ -185,17 +185,14 @@ export default function App() {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('aura_user');
-      let userData = saved ? JSON.parse(saved) : {
-        _id: 'admin-owner',
-        name: 'Chủ sở hữu (Admin)',
-        email: 'admin@auramusic.com',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        role: 'admin'
-      };
+      if (!saved) return null; // Not logged in — show landing page
+
+      let userData = JSON.parse(saved);
+      // Apply any custom profile edits (name/avatar) saved separately
       const customProfile = localStorage.getItem('aura_custom_profile');
       if (customProfile) {
         const cp = JSON.parse(customProfile);
-        if (cp.name) userData.name = cp.name;
+        if (cp.name)   userData.name   = cp.name;
         if (cp.avatar) userData.avatar = cp.avatar;
       }
       return userData;
@@ -203,6 +200,7 @@ export default function App() {
       return null;
     }
   });
+
 
   // Page routing: 'landing' | 'login' | 'app'
   // Always start at landing page on fresh visit
