@@ -180,6 +180,20 @@ export default function App() {
     } catch (e) {}
     return [];
   });
+
+  // Reload songs and favs when user logs in or out
+  useEffect(() => {
+    const uid = user?._id || 'guest';
+    try {
+      const savedSongs = localStorage.getItem(songsKey(uid));
+      setSongs(savedSongs ? JSON.parse(savedSongs) : []);
+      
+      const savedFavs = localStorage.getItem(favsKey(uid));
+      setFavs(savedFavs ? JSON.parse(savedFavs) : []);
+    } catch (e) {
+      console.error("Failed to load user data", e);
+    }
+  }, [user?._id]);
   const [query,      setQuery]      = useState('');
   const [curTime,    setCurTime]    = useState(0);
   const [dur,        setDur]        = useState(0);
