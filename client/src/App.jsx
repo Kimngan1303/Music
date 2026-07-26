@@ -177,7 +177,9 @@ export default function App() {
   const [vol,        setVol]        = useState(80);
   const [muted,      setMuted]      = useState(false);
   const [addModal,   setAddModal]   = useState(false);
+  const [addTab,     setAddTab]     = useState('youtube'); // 'youtube' | 'spotify'
   const [ytUrl,      setYtUrl]      = useState('');
+  const [spotifyUrl, setSpotifyUrl] = useState('');
   const [adding,     setAdding]     = useState(false);
   const [addErr,     setAddErr]     = useState('');
 
@@ -446,7 +448,7 @@ export default function App() {
       const m = ytUrl.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
       const vid = m?.[2]?.length===11 ? m[2] : null;
       if (!vid) throw new Error('Đường dẫn YouTube không hợp lệ!');
-      let s = { id:'s'+Date.now(), youtubeId:vid, title:'YouTube Song', artist:'YouTube Creator', thumbnail:`https://img.youtube.com/vi/${vid}/hqdefault.jpg`, duration:'3:30' };
+      let s = { id:'s'+Date.now(), sourceType:'youtube', youtubeId:vid, title:'YouTube Song', artist:'YouTube Creator', thumbnail:`https://img.youtube.com/vi/${vid}/hqdefault.jpg`, duration:'3:30' };
       try { const o = await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${vid}&format=json`); s.title = o.data?.title||s.title; s.artist = o.data?.author_name||s.artist; } catch {}
       setSongs(p => {
         const updated = [s, ...p];
@@ -454,6 +456,41 @@ export default function App() {
         return updated;
       });
       setAddModal(false); setYtUrl(''); play(s);
+    } catch(err) { setAddErr(err.message||'Lỗi không xác định.'); }
+    finally { setAdding(false); }
+  };
+
+  const addSpotify = async e => {
+    e.preventDefault(); if (!spotifyUrl.trim()) return;
+    setAdding(true); setAddErr('');
+    try {
+      // Parse Spotify track ID from various URL formats
+      const m = spotifyUrl.match(/spotify\.com\/(?:intl-[a-z]+\/)?track\/([A-Za-z0-9]+)/);
+      const tid = m?.[1];
+      if (!tid) throw new Error('Đường dẫn Spotify không hợp lệ! Ví dụ: https://open.spotify.com/track/...');
+      let s = {
+        id: 's'+Date.now(),
+        sourceType: 'spotify',
+        spotifyId: tid,
+        title: 'Spotify Track',
+        artist: 'Spotify Artist',
+        thumbnail: `https://open.spotify.com/embed/track/${tid}`,
+        duration: '0:00'
+      };
+      // Try oEmbed for metadata
+      try {
+        const o = await axios.get(`https://open.spotify.com/oembed?url=https://open.spotify.com/track/${tid}`);
+        s.title     = o.data?.title     || s.title;
+        s.artist    = o.data?.provider_name || 'Spotify';
+        s.thumbnail = o.data?.thumbnail_url || s.thumbnail;
+      } catch {}
+      setSongs(p => {
+        const updated = [s, ...p];
+        localStorage.setItem('aura_songs', JSON.stringify(updated));
+        return updated;
+      });
+      setTrack(s);
+      setAddModal(false); setSpotifyUrl('');
     } catch(err) { setAddErr(err.message||'Lỗi không xác định.'); }
     finally { setAdding(false); }
   };
@@ -1098,41 +1135,123 @@ export default function App() {
 
       {/* ── ADD SONG MODAL ─────────────────────── */}
       {addModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4"
-          style={{ background:'rgba(0,0,0,0.4)', backdropFilter:'blur(14px)' }}>
+        <div className="fixed inset-0 flex items-center justify-center z-[60] p-4"
+          style={{ background:'rgba(0,0,0,0.4)', backdropFilter:'blur(14px)' }}
+          onClick={e => { if (e.target === e.currentTarget) { setAddModal(false); setAddErr(''); }}}>
           <div className="w-full max-w-sm rounded-3xl p-8 shadow-2xl"
             style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border:`1.5px solid ${C.border}`, boxShadow:'0 20px 60px rgba(0,0,0,0.18)' }}>
+            {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <h3 className="flex items-center gap-2" style={{ fontFamily: F.heading, fontSize:'20px', fontWeight:700, color: C.txt }}>
-                <i className="ri-youtube-fill text-red-400 text-2xl"></i> Thêm Nhạc YouTube
+                <i className="ri-music-fill" style={{ color: C.primarySolid }}></i> Thêm Nhạc
               </h3>
-              <button onClick={()=>setAddModal(false)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: C.tag, color: C.txtFad }}>
+              <button onClick={() => { setAddModal(false); setAddErr(''); }} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: C.tag, color: C.txtFad }}>
                 <i className="ri-close-line"></i>
               </button>
             </div>
-            <form onSubmit={addSong} className="flex flex-col gap-4">
-              <div>
-                <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Đường dẫn YouTube</label>
-                <input type="text" placeholder="https://www.youtube.com/watch?v=..." value={ytUrl} onChange={e=>setYtUrl(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
-                />
-              </div>
-              {addErr && <p className="text-xs font-semibold text-red-500">{addErr}</p>}
-              <div className="flex gap-3 mt-1">
-                <button type="button" onClick={()=>setAddModal(false)}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-bold" style={btn}>
-                  Hủy
-                </button>
-                <button type="submit" disabled={adding}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg"
-                  style={{ background: C.primary, boxShadow:`0 6px 18px ${C.primaryGlow}` }}>
-                  {adding ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-add-line"></i>}
-                  Thêm &amp; Phát
-                </button>
-              </div>
-            </form>
+
+            {/* Source Tabs */}
+            <div className="flex gap-2 mb-5 p-1 rounded-2xl" style={{ background: C.tag }}>
+              <button
+                onClick={() => { setAddTab('youtube'); setAddErr(''); }}
+                className="flex-1 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                style={addTab === 'youtube'
+                  ? { background: C.primary, color:'#fff', boxShadow:`0 2px 12px ${C.primaryGlow}` }
+                  : { color: C.txtSub }}
+              >
+                <i className="ri-youtube-fill"></i> YouTube
+              </button>
+              <button
+                onClick={() => { setAddTab('spotify'); setAddErr(''); }}
+                className="flex-1 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                style={addTab === 'spotify'
+                  ? { background:'#1DB954', color:'#fff', boxShadow:'0 2px 12px rgba(29,185,84,0.4)' }
+                  : { color: C.txtSub }}
+              >
+                <i className="ri-spotify-fill"></i> Spotify
+              </button>
+            </div>
+
+            {/* YouTube form */}
+            {addTab === 'youtube' && (
+              <form onSubmit={addSong} className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Đường dẫn YouTube</label>
+                  <input type="text" placeholder="https://www.youtube.com/watch?v=..." value={ytUrl} onChange={e=>setYtUrl(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
+                    style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
+                    autoFocus
+                  />
+                </div>
+                {addErr && <p className="text-xs font-semibold text-red-500">{addErr}</p>}
+                <div className="flex gap-3 mt-1">
+                  <button type="button" onClick={() => { setAddModal(false); setAddErr(''); }}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold" style={btn}>
+                    Hủy
+                  </button>
+                  <button type="submit" disabled={adding}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg"
+                    style={{ background: C.primary, boxShadow:`0 6px 18px ${C.primaryGlow}` }}>
+                    {adding ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-add-line"></i>}
+                    Thêm &amp; Phát
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Spotify form */}
+            {addTab === 'spotify' && (
+              <form onSubmit={addSpotify} className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Đường dẫn Spotify</label>
+                  <input type="text" placeholder="https://open.spotify.com/track/..." value={spotifyUrl} onChange={e=>setSpotifyUrl(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
+                    style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
+                    autoFocus
+                  />
+                  <p className="text-[11px] mt-1.5" style={{ color: C.txtFad }}>
+                    ℹ️ Copy link bài hát từ Spotify → chia sẻ → "Copy link"
+                  </p>
+                </div>
+                {addErr && <p className="text-xs font-semibold text-red-500">{addErr}</p>}
+                <div className="p-3 rounded-xl text-xs" style={{ background: C.tag, border:`1px solid ${C.border}`, color: C.txtSub }}>
+                  <i className="ri-information-line mr-1"></i>
+                  Spotify player sẽ hiện trực tiếp — cần tài khoản Spotify để phát toàn bộ.
+                </div>
+                <div className="flex gap-3 mt-1">
+                  <button type="button" onClick={() => { setAddModal(false); setAddErr(''); }}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold" style={btn}>
+                    Hủy
+                  </button>
+                  <button type="submit" disabled={adding}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg"
+                    style={{ background:'#1DB954', boxShadow:'0 6px 18px rgba(29,185,84,0.35)' }}>
+                    {adding ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-spotify-fill"></i>}
+                    Thêm vào Thư Viện
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* ── SPOTIFY EMBED PLAYER (floats above footer when Spotify track active) */}
+      {track?.sourceType === 'spotify' && (
+        <div className="fixed bottom-[100px] right-6 z-[55] rounded-2xl overflow-hidden shadow-2xl" style={{ border:`2px solid #1DB954`, width:'320px' }}>
+          <div className="flex items-center justify-between px-3 py-1.5" style={{ background:'#1DB954' }}>
+            <span className="text-white text-xs font-bold flex items-center gap-1.5">
+              <i className="ri-spotify-fill"></i> Spotify Player
+            </span>
+            <button onClick={() => setTrack(null)} className="text-white opacity-70 hover:opacity-100 text-xs">✕</button>
+          </div>
+          <iframe
+            src={`https://open.spotify.com/embed/track/${track.spotifyId}?utm_source=generator&theme=0`}
+            width="320" height="80"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            style={{ border:'none', display:'block' }}
+            title={track.title}
+          />
         </div>
       )}
 
