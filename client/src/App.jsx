@@ -149,12 +149,8 @@ const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
 ];
 
-const DEFAULT_SONGS = [
-  { id:'s1', youtubeId:'L0MK7qz13bU', title:'Thiên Lý Ơi',         artist:'Jack - J97',                    thumbnail:'https://img.youtube.com/vi/L0MK7qz13bU/hqdefault.jpg', duration:'3:45' },
-  { id:'s2', youtubeId:'abPMYC62668', title:'Cắt Đôi Nỗi Sầu',     artist:'Tăng Duy Tân',                  thumbnail:'https://img.youtube.com/vi/abPMYC62668/hqdefault.jpg', duration:'3:12' },
-  { id:'s3', youtubeId:'kJQP7kiw5Fk', title:'Despacito',            artist:'Luis Fonsi ft. Daddy Yankee',   thumbnail:'https://img.youtube.com/vi/kJQP7kiw5Fk/hqdefault.jpg', duration:'4:42' },
-  { id:'s4', youtubeId:'Xp8-pIdKx1A', title:'Chúng Ta Của Tương Lai', artist:'Sơn Tùng M-TP',              thumbnail:'https://img.youtube.com/vi/Xp8-pIdKx1A/hqdefault.jpg', duration:'4:08' },
-];
+// Start with empty library — user adds their own songs
+const DEFAULT_SONGS = [];
 
 export default function App() {
   const [songs, setSongs] = useState(() => {
@@ -173,7 +169,7 @@ export default function App() {
       const saved = localStorage.getItem('aura_favs');
       if (saved !== null) return JSON.parse(saved);
     } catch (e) {}
-    return ['s1'];
+    return [];
   });
   const [query,      setQuery]      = useState('');
   const [curTime,    setCurTime]    = useState(0);
