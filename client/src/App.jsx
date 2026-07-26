@@ -1203,7 +1203,7 @@ export default function App() {
               {/* ── Section heading ─────────────────── */}
               <div className="flex items-center gap-3 mb-4">
                 <h2 style={{ color: C.txt, fontFamily: F.heading, fontSize:'22px', fontWeight:700 }}>
-                  {tab === 'favorites' ? '🤍 Yêu Thích' : activePlaylist ? `🎶 ${activePlaylist.name}` : '🎶 Thư Viện Nhạc'}
+                  {tab === 'favorites' ? '🤍 Yêu Thích' : activePlaylist ? `✨🎶 ${activePlaylist.name}` : '✨🎶 Thư Viện Nhạc'}
                 </h2>
                 <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: C.tag, color: C.tagTxt, border:`1px solid ${C.tagBd}` }}>
                   {list.length} bài
