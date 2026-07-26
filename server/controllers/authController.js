@@ -41,15 +41,18 @@ const loginUser = async (req, res) => {
 
     if (matched) {
       // Lưu thông tin người dùng vào database để đồng bộ
+      let dbUser;
       try {
         const hashedPassword = await bcrypt.hash(matched.password, 10);
-        await User.findOneAndUpdate(
+        dbUser = await User.findOneAndUpdate(
           { email: matched.email },
           { 
             $set: {
               _id: matched.id,
-              name: matched.name, 
-              password: hashedPassword, 
+              password: hashedPassword
+            },
+            $setOnInsert: {
+              name: matched.name,
               avatar: matched.avatar 
             }
           },
@@ -57,6 +60,7 @@ const loginUser = async (req, res) => {
         );
       } catch (err) {
         console.error('Lỗi lưu user vào db:', err);
+        dbUser = matched;
       }
 
       const token = jwt.sign(
@@ -65,10 +69,10 @@ const loginUser = async (req, res) => {
         { expiresIn: '30d' }
       );
       return res.json({
-        _id:    matched.id,
-        name:   matched.name,
-        email:  matched.email,
-        avatar: matched.avatar,
+        _id:    dbUser._id || matched.id,
+        name:   dbUser.name || matched.name,
+        email:  dbUser.email || matched.email,
+        avatar: dbUser.avatar || matched.avatar,
         role:   matched.role,
         token
       });

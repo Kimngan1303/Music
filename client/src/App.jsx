@@ -640,7 +640,7 @@ export default function App() {
   };
 
   // Save Profile & Theme updates
-  const handleSaveProfileAndTheme = (e) => {
+  const handleSaveProfileAndTheme = async (e) => {
     e.preventDefault();
     if (user) {
       const updated = {
@@ -651,6 +651,16 @@ export default function App() {
       setUser(updated);
       localStorage.setItem(`aura_custom_profile_${updated._id}`, JSON.stringify({ name: updated.name, avatar: updated.avatar }));
       localStorage.setItem('aura_user', JSON.stringify(updated));
+
+      // Save to backend
+      try {
+        await axios.put('/api/auth/profile', {
+          name: updated.name,
+          avatar: updated.avatar
+        });
+      } catch (err) {
+        console.error("Failed to save profile to server", err);
+      }
     }
     localStorage.setItem('aura_theme_key', themeKey);
     setProfileModal(false);
