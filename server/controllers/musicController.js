@@ -85,7 +85,7 @@ const addPlaylist = async (req, res) => {
       return res.status(400).json({ message: 'Đường dẫn Playlist YouTube không hợp lệ!' });
     }
 
-    const { Innertube, UniversalCache } = require('youtubei.js');
+    const { Innertube, UniversalCache } = await import('youtubei.js');
     const yt = await Innertube.create({ cache: new UniversalCache(false) });
     const playlist = await yt.getPlaylist(listId);
     
