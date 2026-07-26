@@ -471,22 +471,14 @@ export default function App() {
     return () => clearInterval(t);
   }, [playing]);
 
-  // Native silent audio to trick mobile browsers into keeping audio session alive in background
+  // Setup fallback loop listener for iOS background
   useEffect(() => {
     let silentAudio = document.getElementById('silent-audio');
-    if (!silentAudio) {
-      silentAudio = document.createElement('audio');
-      silentAudio.id = 'silent-audio';
-      silentAudio.loop = true;
-      silentAudio.src = '/silent.mp3';
-      document.body.appendChild(silentAudio);
-    }
-    if (playing) {
-      silentAudio.play().catch(() => {});
-    } else {
-      silentAudio.pause();
-    }
-  }, [playing]);
+    if (!silentAudio) return;
+    const handleEnded = () => { silentAudio.currentTime = 0; silentAudio.play().catch(()=>{}); };
+    silentAudio.addEventListener('ended', handleEnded);
+    return () => { silentAudio.removeEventListener('ended', handleEnded); };
+  }, []);
 
   // Sleep Timer logic
   useEffect(() => {
@@ -883,6 +875,7 @@ export default function App() {
   if (!user && page === 'landing') {
     return (
       <div className="relative min-h-screen w-screen overflow-hidden flex flex-col" style={{ background: C.bg, fontFamily: F.body }}>
+        <audio id="silent-audio" src="/silent.mp3" loop preload="auto" style={{ display: 'none' }}></audio>
         <div id="yt-player" className="fixed top-0 left-0 pointer-events-none z-[-50]" style={{ width: '300px', height: '300px', opacity: 1 }} />
 
         {/* Background decorative blobs */}
@@ -980,6 +973,7 @@ export default function App() {
   if (!user && page === 'login') {
     return (
       <div className="flex h-screen w-screen items-center justify-center p-4 relative overflow-hidden" style={{ background: C.bg, fontFamily: F.body }}>
+        <audio id="silent-audio" src="/silent.mp3" loop preload="auto" style={{ display: 'none' }}></audio>
         <div id="yt-player" className="fixed top-0 left-0 pointer-events-none z-[-50]" style={{ width: '300px', height: '300px', opacity: 1 }} />
 
         {/* Decorative background blobs */}
@@ -1064,6 +1058,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden" style={{ background: C.bg, fontFamily: F.body }}>
+      <audio id="silent-audio" src="/silent.mp3" loop preload="auto" style={{ display: 'none' }}></audio>
       <div id="yt-player" className="fixed top-0 left-0 pointer-events-none z-[-50]" style={{ width: '300px', height: '300px', opacity: 1 }} />
 
       {/* ── TOP ROW: sidebar + main ─────────────────── */}
