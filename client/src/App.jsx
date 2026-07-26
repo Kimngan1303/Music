@@ -785,7 +785,7 @@ export default function App() {
         localStorage.setItem(playlistsKey(user._id), JSON.stringify(up));
         return up;
       });
-      setSongToAdd(null);
+      // Do not close modal immediately so user can see the success tick
     } catch(err) { console.error(err); }
   };
 
