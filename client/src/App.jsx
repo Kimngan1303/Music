@@ -1176,7 +1176,7 @@ export default function App() {
         {/* Footer */}
         <footer className="relative z-10 text-center pb-6 pt-2">
           <p style={{ color: C.txtFad, fontSize:'11px', fontFamily: F.brand, letterSpacing:'0.15em' }}>
-            © 2024 LittleLove · Personal Edition
+            © 2026 LittleLove · Personal Edition
           </p>
         </footer>
       </div>
