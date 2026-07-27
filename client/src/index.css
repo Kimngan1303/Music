@@ -6,28 +6,28 @@
 
 
 :root {
-  --nude-50:  #fdf8f5;
-  --nude-100: #faf0e8;
-  --nude-200: #f5e3d3;
-  --nude-300: #edd0b8;
-  --nude-400: #e0b89a;
-  --nude-500: #c9967a;
-  --nude-600: #b47a5c;
-  --nude-700: #9a6048;
-  --rose-100: #fdf0ee;
-  --rose-200: #f9ddd8;
-  --rose-300: #f4c2b8;
-  --rose-400: #e8a09a;
-  --rose-500: #d97e78;
-  --blush:    #f2d0c8;
-  --warm:     #e8c4a8;
-  --cream:    #fef9f5;
+  --nude-50:  #f8ece0;
+  --nude-100: #f0dfcf;
+  --nude-200: #e8d0bc;
+  --nude-300: #dcbaa1;
+  --nude-400: #d0a285;
+  --nude-500: #be8665;
+  --nude-600: #a76b4a;
+  --nude-700: #8c5234;
+  --rose-100: #f8dbd6;
+  --rose-200: #f2c0b7;
+  --rose-300: #e99f94;
+  --rose-400: #da7b6e;
+  --rose-500: #c9574a;
+  --blush:    #e5b3a8;
+  --warm:     #d8a788;
+  --cream:    #f7ebd9;
 }
 
 * { box-sizing: border-box; }
 
 body {
-  background: linear-gradient(145deg, #fdf8f5 0%, #faf3ee 40%, #fdf0eb 100%);
+  background: linear-gradient(145deg, #f5e8dc 0%, #ead7c5 50%, #f0e0d0 100%);
   min-height: 100vh;
   font-family: 'DM Sans', sans-serif;
 }
