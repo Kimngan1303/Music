@@ -80,7 +80,7 @@ const deleteSong = async (req, res) => {
 
 const addPlaylist = async (req, res) => {
   try {
-    const { playlistUrl, addedBy } = req.body;
+    const { playlistUrl, addedBy, inLibrary } = req.body;
     const match = playlistUrl.match(/[?&]list=([^#\&\?]+)/);
     let listId = match ? match[1] : null;
     if (listId && !listId.startsWith('VL')) {
@@ -142,7 +142,8 @@ const addPlaylist = async (req, res) => {
         artist: artist,
         thumbnail: `https://img.youtube.com/vi/${vid}/hqdefault.jpg`,
         duration: duration,
-        addedBy: addedBy || null
+        addedBy: addedBy || null,
+        inLibrary: inLibrary !== undefined ? inLibrary : true
       };
     });
 
@@ -178,7 +179,7 @@ const searchYouTube = async (req, res) => {
 
 const addSpotifyPlaylist = async (req, res) => {
   try {
-    const { playlistUrl, addedBy } = req.body;
+    const { playlistUrl, addedBy, inLibrary } = req.body;
     if (!playlistUrl) return res.status(400).json({ message: 'Missing playlistUrl' });
 
     // Ensure it is a valid Spotify URL
@@ -220,7 +221,8 @@ const addSpotifyPlaylist = async (req, res) => {
             artist: artist,
             thumbnail: video.thumbnail, // fallback to YouTube thumbnail, or use track.album?.images[0]?.url if available, but spotify-url-info getTracks doesn't always return full images
             duration: video.timestamp || '3:00',
-            addedBy: addedBy || null
+            addedBy: addedBy || null,
+            inLibrary: inLibrary !== undefined ? inLibrary : true
           });
         }
       } catch (err) {

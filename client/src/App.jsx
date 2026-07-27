@@ -922,7 +922,7 @@ export default function App() {
           const updated = [s, ...p];
           if (user) {
             localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
-            axios.post('/api/music', { ...s, addedBy: user._id }).catch(()=>{});
+            axios.post('/api/music', { ...s, addedBy: user._id, inLibrary: s.inLibrary }).catch(()=>{});
           }
           return updated;
         });
@@ -943,7 +943,8 @@ export default function App() {
       const isPlaylistTab = tab.startsWith('playlist_');
       const res = await axios.post('/api/music/spotify-playlist', {
         playlistUrl: spotifyUrl,
-        addedBy: user?._id || null
+        addedBy: user?._id || null,
+        inLibrary: !isPlaylistTab
       });
       
       const newSongs = res.data;
@@ -981,9 +982,11 @@ export default function App() {
     e.preventDefault(); if (!playlistUrl.trim()) return;
     setAdding(true); setAddErr('');
     try {
+      const isPlaylistTab = tab.startsWith('playlist_');
       const res = await axios.post('/api/music/playlist', {
         playlistUrl,
-        addedBy: user?._id || null
+        addedBy: user?._id || null,
+        inLibrary: !isPlaylistTab
       });
       
       const newSongs = res.data;
