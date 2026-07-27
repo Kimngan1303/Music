@@ -45,10 +45,10 @@ const loginUser = async (req, res) => {
       try {
         const hashedPassword = await bcrypt.hash(matched.password, 10);
         dbUser = await User.findOneAndUpdate(
-          { email: matched.email },
+          { _id: matched.id },
           { 
             $set: {
-              _id: matched.id,
+              email: matched.email,
               password: hashedPassword
             },
             $setOnInsert: {
