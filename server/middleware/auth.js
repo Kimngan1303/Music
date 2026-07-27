@@ -8,7 +8,7 @@ module.exports = function (req, res, next) {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'aura_music_secret_jwt_key_2026');
     req.user = decoded;
     next();
   } catch (err) {
