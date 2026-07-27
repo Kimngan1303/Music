@@ -6,7 +6,7 @@
 
 
 :root {
-  --nude-50:  #f8ece0;
+  --nude-50: #f8ece0;
   --nude-100: #f0dfcf;
   --nude-200: #e8d0bc;
   --nude-300: #dcbaa1;
@@ -19,12 +19,14 @@
   --rose-300: #e99f94;
   --rose-400: #da7b6e;
   --rose-500: #c9574a;
-  --blush:    #e5b3a8;
-  --warm:     #d8a788;
-  --cream:    #f7ebd9;
+  --blush: #e5b3a8;
+  --warm: #d8a788;
+  --cream: #f7ebd9;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   background: linear-gradient(145deg, #f5e8dc 0%, #ead7c5 50%, #f0e0d0 100%);
@@ -33,16 +35,34 @@ body {
 }
 
 @keyframes spinSlow {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
-.spin-slow { animation: spinSlow 12s linear infinite; }
+
+.spin-slow {
+  animation: spinSlow 12s linear infinite;
+}
 
 @keyframes floatUp {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-8px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
 }
-.float-anim { animation: floatUp 4s ease-in-out infinite; }
+
+.float-anim {
+  animation: floatUp 4s ease-in-out infinite;
+}
 
 /* Range input */
 input[type='range'] {
@@ -54,6 +74,7 @@ input[type='range'] {
   outline: none;
   cursor: pointer;
 }
+
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 14px;
@@ -61,23 +82,41 @@ input[type='range']::-webkit-slider-thumb {
   border-radius: 50%;
   background: #c9967a;
   cursor: pointer;
-  box-shadow: 0 0 6px rgba(180,122,92,0.45);
+  box-shadow: 0 0 6px rgba(180, 122, 92, 0.45);
   transition: transform 0.15s;
 }
+
 input[type='range']::-webkit-slider-thumb:hover {
   transform: scale(1.3);
 }
 
 /* Dynamic Gradient Flow Animations for Mix Themes */
 @keyframes gradientFlow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 @keyframes glowPulse {
-  0%, 100% { opacity: 0.6; transform: scale(1); }
-  50% { opacity: 0.95; transform: scale(1.08); }
+
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.95;
+    transform: scale(1.08);
+  }
 }
 
 .animated-gradient-bg {
@@ -91,10 +130,226 @@ input[type='range']::-webkit-slider-thumb:hover {
 }
 
 /* Custom Scrollbar */
-::-webkit-scrollbar       { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(180, 140, 120, 0.35); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(180, 140, 120, 0.65); }
-.custom-scrollbar::-webkit-scrollbar { width: 4px; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 99px; }
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
 
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(180, 140, 120, 0.35);
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(180, 140, 120, 0.65);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 99px;
+}
+
+/* ── Liquid Metal Button Styles (JolyUI Liquid Metal Effect) ── */
+@keyframes liquidMetalFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes liquidRipple {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.75;
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(4.5);
+    opacity: 0;
+  }
+}
+
+@keyframes metalShimmer {
+  0% {
+    transform: translateX(-150%) rotate(25deg);
+  }
+
+  100% {
+    transform: translateX(150%) rotate(25deg);
+  }
+}
+
+.liquid-metal-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background-size: 220% 220% !important;
+  animation: liquidMetalFlow 6s ease infinite !important;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease !important;
+}
+
+.liquid-metal-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.08);
+}
+
+.liquid-metal-btn:active {
+  transform: translateY(1px) scale(0.96) !important;
+}
+
+.liquid-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 70%);
+  pointer-events: none;
+  animation: liquidRipple 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+.liquid-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.45) 50%,
+      transparent 100%);
+  pointer-events: none;
+  animation: metalShimmer 3.2s ease-in-out infinite;
+}
+
+
+
+
+
+/* ── Cyber Music Fish (Chú cá đeo tai nghe phát nhạc) ── */
+@keyframes cyberFishSwim {
+  0% {
+    left: 2%;
+    bottom: 25px;
+    transform: scaleX(1) translateY(0px) rotate(-2deg);
+  }
+
+  25% {
+    bottom: 55px;
+    transform: scaleX(1) translateY(-12px) rotate(3deg);
+  }
+
+  48% {
+    left: 78%;
+    bottom: 20px;
+    transform: scaleX(1) translateY(8px) rotate(-2deg);
+  }
+
+  50% {
+    left: 80%;
+    bottom: 20px;
+    transform: scaleX(-1) translateY(8px) rotate(2deg);
+  }
+
+  75% {
+    bottom: 50px;
+    transform: scaleX(-1) translateY(-15px) rotate(-3deg);
+  }
+
+  98% {
+    left: 4%;
+    bottom: 30px;
+    transform: scaleX(-1) translateY(4px) rotate(2deg);
+  }
+
+  100% {
+    left: 2%;
+    bottom: 25px;
+    transform: scaleX(1) translateY(0px) rotate(-2deg);
+  }
+}
+
+@keyframes tailWagFast {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  50% {
+    transform: rotate(20deg);
+  }
+}
+
+@keyframes finFlapCyber {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  50% {
+    transform: rotate(-25deg);
+  }
+}
+
+@keyframes musicNoteFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.5) rotate(0deg);
+  }
+
+  30% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-55px) scale(1.2) rotate(25deg);
+  }
+}
+
+.cyber-fish-container {
+  position: absolute;
+  z-index: 20;
+  width: 100px;
+  height: 65px;
+  animation: cyberFishSwim 20s ease-in-out infinite;
+  cursor: pointer;
+  filter: drop-shadow(0 6px 20px rgba(0, 242, 254, 0.55));
+  transition: filter 0.3s, transform 0.3s;
+}
+
+.cyber-fish-container:hover {
+  filter: drop-shadow(0 10px 30px rgba(247, 37, 133, 0.9)) scale(1.15);
+}
+
+.cyber-fish-tail {
+  transform-origin: 22px 32px;
+  animation: tailWagFast 0.45s ease-in-out infinite;
+}
+
+.cyber-fish-fin {
+  transform-origin: 45px 35px;
+  animation: finFlapCyber 0.9s ease-in-out infinite;
+}
+
+.cyber-music-note {
+  position: absolute;
+  pointer-events: none;
+  font-size: 14px;
+  animation: musicNoteFloat 2.8s ease-out infinite;
+  user-select: none;
+}

@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import BubbleCanvas from './components/BubbleCanvas';
 
 // ─── Typography ──────────────────────────────────────────
 const F = {
-  heading:    "'Playfair Display', Georgia, serif",
-  brand:      "'Cormorant Garamond', Georgia, serif",
-  cursive:    "'Great Vibes', cursive",
-  body:       "'DM Sans', sans-serif",
+  heading: "'Playfair Display', Georgia, serif",
+  brand: "'Cormorant Garamond', Georgia, serif",
+  cursive: "'Great Vibes', cursive",
+  body: "'DM Sans', sans-serif",
 };
 
 // ─── Pre-curated Theme Palettes (Mix-Color Animated + Pastel + Dark) ───────────────────
@@ -366,6 +367,214 @@ const THEMES = {
 
 
 
+// ─── Cyber Music Fish Component (Chú cá đeo tai nghe phát nhạc) ───
+function CyberMusicFish() {
+  const [notes, setNotes] = useState([
+    { id: 1, symbol: '🎵', left: '15px', delay: '0s' },
+    { id: 2, symbol: '🎶', left: '45px', delay: '0.9s' },
+    { id: 3, symbol: '✨', left: '75px', delay: '1.8s' },
+  ]);
+  const [wiggle, setWiggle] = useState(false);
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    setWiggle(true);
+    setTimeout(() => setWiggle(false), 800);
+    const symbols = ['🎵', '🎶', '🎼', '✨', '💜'];
+    const newNote = {
+      id: Date.now(),
+      symbol: symbols[Math.floor(Math.random() * symbols.length)],
+      left: `${Math.random() * 60 + 10}px`,
+      delay: '0s'
+    };
+    setNotes(prev => [...prev.slice(-6), newNote]);
+  };
+
+  return (
+    <div
+      onClick={handleClick}
+      className={`cyber-fish-container pointer-events-auto ${wiggle ? 'scale-125' : ''}`}
+      title="Nhấp vào chú cá DJ đeo tai nghe! 🎧🐟"
+    >
+      {/* Floating Music Notes & Stars */}
+      {notes.map(n => (
+        <span
+          key={n.id}
+          className="cyber-music-note"
+          style={{ left: n.left, top: '-5px', animationDelay: n.delay }}
+        >
+          {n.symbol}
+        </span>
+      ))}
+
+      {/* SVG Glowing Cyber Fish with Headphones */}
+      <svg viewBox="0 0 120 70" className="w-full h-full">
+        <defs>
+          {/* Neon Body Gradient */}
+          <linearGradient id="cyberBody" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#00f2fe" />
+            <stop offset="50%" stopColor="#4facfe" />
+            <stop offset="85%" stopColor="#9d4edd" />
+            <stop offset="100%" stopColor="#f72585" />
+          </linearGradient>
+
+          {/* Fin Translucent Neon Gradient */}
+          <linearGradient id="cyberFin" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="rgba(0, 242, 254, 0.9)" />
+            <stop offset="50%" stopColor="rgba(157, 78, 221, 0.7)" />
+            <stop offset="100%" stopColor="rgba(247, 37, 133, 0.35)" />
+          </linearGradient>
+
+          {/* Headphone Metallic Gradient */}
+          <linearGradient id="headphoneGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#7209b7" />
+            <stop offset="50%" stopColor="#3a0ca3" />
+            <stop offset="100%" stopColor="#4cc9f0" />
+          </linearGradient>
+        </defs>
+
+        {/* Tail Fin */}
+        <g className="cyber-fish-tail">
+          <path d="M 24 35 C 6 18, 2 5, 0 22 C -2 35, 2 48, 0 52 C 6 65, 24 52, 24 35 Z" fill="url(#cyberFin)" stroke="#00f2fe" strokeWidth="0.8" />
+          <path d="M 22 35 C 10 25, 6 15, 3 28 C 6 42, 10 48, 22 35 Z" fill="rgba(255, 255, 255, 0.4)" />
+        </g>
+
+        {/* Side Fin */}
+        <path className="cyber-fish-fin" d="M 52 38 C 45 52, 32 55, 42 40 Z" fill="url(#cyberFin)" stroke="#f72585" strokeWidth="0.8" />
+
+        {/* Top Dorsal Fin */}
+        <path d="M 40 22 C 52 10, 70 14, 65 24 Z" fill="url(#cyberFin)" stroke="#00f2fe" strokeWidth="0.8" />
+
+        {/* Fish Main Body */}
+        <path
+          d="M 20 35 C 28 16, 68 15, 95 32 C 102 35, 102 37, 95 40 C 68 56, 28 54, 20 35 Z"
+          fill="url(#cyberBody)"
+          stroke="rgba(255,255,255,0.6)"
+          strokeWidth="1.2"
+        />
+
+        {/* Glowing Circuit Scales Lines */}
+        <path d="M 42 28 Q 48 35 42 42" stroke="rgba(0, 242, 254, 0.7)" strokeWidth="1.2" fill="none" />
+        <path d="M 54 26 Q 60 35 54 44" stroke="rgba(247, 37, 133, 0.7)" strokeWidth="1.2" fill="none" />
+        <path d="M 66 28 Q 72 35 66 42" stroke="rgba(255, 255, 255, 0.7)" strokeWidth="1.2" fill="none" />
+
+        {/* Belly Glow */}
+        <path d="M 30 38 C 45 46, 75 44, 90 37 C 75 49, 45 49, 30 38 Z" fill="rgba(255, 255, 255, 0.35)" />
+
+        {/* Cute Sparkling Eye */}
+        <circle cx="86" cy="31" r="5" fill="#0f0c29" stroke="#00f2fe" strokeWidth="1" />
+        <circle cx="88" cy="29" r="2" fill="#ffffff" />
+        <circle cx="84.5" cy="33" r="1" fill="#4cc9f0" />
+
+        {/* Cute Pink Cheek Blush */}
+        <ellipse cx="90" cy="38" rx="3.5" ry="2" fill="rgba(247, 37, 133, 0.6)" />
+
+        {/* 🎧 NEON MUSIC HEADPHONES OVER HEAD */}
+        {/* Headphone Band */}
+        <path
+          d="M 76 22 C 78 12, 92 12, 96 24"
+          fill="none"
+          stroke="url(#headphoneGrad)"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+        />
+
+        {/* Left Earcup */}
+        <g>
+          <rect x="73" y="20" width="7" height="15" rx="3.5" fill="#f72585" stroke="#ffffff" strokeWidth="1" />
+          <circle cx="76.5" cy="27.5" r="2" fill="#00f2fe" />
+        </g>
+
+        {/* Right Earcup (over ear/head) */}
+        <g>
+          <rect x="92" y="21" width="7" height="15" rx="3.5" fill="#4cc9f0" stroke="#ffffff" strokeWidth="1" />
+          <circle cx="95.5" cy="28.5" r="2" fill="#f72585" />
+        </g>
+
+        {/* Equalizer frequency glow on headphones */}
+        <line x1="70" y1="27" x2="66" y2="27" stroke="#00f2fe" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="68" y1="24" x2="64" y2="24" stroke="#f72585" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="69" y1="30" x2="65" y2="30" stroke="#4cc9f0" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    </div>
+  );
+}
+
+// ─── Liquid Metal Button Component (JolyUI 3D Liquid Metal Ripple Effect) ───
+function LiquidMetalBtn({ children, type = "button", onClick, style, className = "", variant = "primary" }) {
+  const [ripples, setRipples] = useState([]);
+  const [isPressed, setIsPressed] = useState(false);
+  const btnRef = useRef(null);
+
+  const handleClick = (e) => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const id = Date.now() + Math.random();
+      setRipples((prev) => [...prev, { x, y, id }]);
+      setTimeout(() => {
+        setRipples((prev) => prev.filter((r) => r.id !== id));
+      }, 650);
+    }
+    if (onClick) onClick(e);
+  };
+
+  const baseMetalStyle = variant === 'cancel'
+    ? {
+      background: 'linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02), rgba(255,255,255,0.12))',
+      border: '1.5px solid rgba(255,255,255,0.18)',
+      boxShadow: isPressed
+        ? 'inset 0 3px 6px rgba(0,0,0,0.5)'
+        : '0 4px 15px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.3)',
+    }
+    : {
+      background: style?.background || 'linear-gradient(135deg, #00f2fe, #4facfe, #9d4edd, #f72585)',
+      boxShadow: isPressed
+        ? 'inset 0 3px 8px rgba(0,0,0,0.4)'
+        : style?.boxShadow || '0 6px 20px rgba(0,242,254,0.4), inset 0 1px 2px rgba(255,255,255,0.5)',
+    };
+
+  return (
+    <button
+      ref={btnRef}
+      type={type}
+      onClick={handleClick}
+      onMouseDown={() => setIsPressed(true)}
+      onMouseUp={() => setIsPressed(false)}
+      onMouseLeave={() => setIsPressed(false)}
+      className={`liquid-metal-btn relative flex-1 py-3 px-5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 cursor-pointer outline-none transition-all ${className}`}
+      style={{
+        ...style,
+        ...baseMetalStyle,
+        transform: isPressed ? 'scale(0.96) translateY(1px)' : undefined,
+      }}
+    >
+      {/* Liquid Shimmer Light */}
+      <span className="liquid-shimmer opacity-60" />
+
+      {/* Ripple Animation Effects */}
+      {ripples.map((r) => (
+        <span
+          key={r.id}
+          className="liquid-ripple"
+          style={{
+            left: `${r.x}px`,
+            top: `${r.y}px`,
+            width: '24px',
+            height: '24px',
+          }}
+        />
+      ))}
+
+      {/* Button Content */}
+      <span className="relative z-10 flex items-center justify-center gap-2 drop-shadow-sm">
+        {children}
+      </span>
+    </button>
+  );
+}
+
 // Preset Avatars for quick selection
 const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
@@ -381,7 +590,7 @@ const DEFAULT_SONGS = [];
 export default function App() {
   // ── Helper: per-user localStorage keys ──────────────────
   const songsKey = (uid) => `aura_songs_${uid || 'guest'}`;
-  const favsKey  = (uid) => `aura_favs_${uid || 'guest'}`;
+  const favsKey = (uid) => `aura_favs_${uid || 'guest'}`;
 
   // Get user ID from localStorage at init time (before user state resolves)
   const initUserId = (() => {
@@ -392,18 +601,18 @@ export default function App() {
     try {
       const saved = localStorage.getItem(songsKey(initUserId));
       if (saved !== null) return JSON.parse(saved);
-    } catch (e) {}
+    } catch (e) { }
     return [];
   });
 
-  const [track,      setTrack]      = useState(null);
-  const [playing,    setPlaying]    = useState(false);
-  const [tab,        setTab]        = useState('home');
-  const [favs,       setFavs]       = useState(() => {
+  const [track, setTrack] = useState(null);
+  const [playing, setPlaying] = useState(false);
+  const [tab, setTab] = useState('home');
+  const [favs, setFavs] = useState(() => {
     try {
       const saved = localStorage.getItem(favsKey(initUserId));
       if (saved !== null) return JSON.parse(saved);
-    } catch (e) {}
+    } catch (e) { }
     return [];
   });
   const playlistsKey = uid => `aura_playlists_${uid}`;
@@ -412,7 +621,7 @@ export default function App() {
     try {
       const saved = localStorage.getItem(playlistsKey(initUserId));
       if (saved !== null) return JSON.parse(saved);
-    } catch (e) {}
+    } catch (e) { }
     return [];
   });
 
@@ -421,20 +630,20 @@ export default function App() {
   const [songToAdd, setSongToAdd] = useState(null); // Which song is currently selected to be added to a playlist
 
 
-  const [query,      setQuery]      = useState('');
-  const [curTime,    setCurTime]    = useState(0);
-  const [dur,        setDur]        = useState(0);
-  const [vol,        setVol]        = useState(80);
-  const [muted,      setMuted]      = useState(false);
+  const [query, setQuery] = useState('');
+  const [curTime, setCurTime] = useState(0);
+  const [dur, setDur] = useState(0);
+  const [vol, setVol] = useState(80);
+  const [muted, setMuted] = useState(false);
   const [sleepTimer, setSleepTimer] = useState(0);
   const [sleepTimeLeft, setSleepTimeLeft] = useState(0);
-  const [addModal,   setAddModal]   = useState(false);
-  const [addTab,     setAddTab]     = useState('youtube'); // 'youtube' | 'spotify' | 'playlist'
-  const [ytUrl,      setYtUrl]      = useState('');
+  const [addModal, setAddModal] = useState(false);
+  const [addTab, setAddTab] = useState('youtube'); // 'youtube' | 'spotify' | 'playlist'
+  const [ytUrl, setYtUrl] = useState('');
   const [spotifyUrl, setSpotifyUrl] = useState('');
   const [playlistUrl, setPlaylistUrl] = useState('');
-  const [adding,     setAdding]     = useState(false);
-  const [addErr,     setAddErr]     = useState('');
+  const [adding, setAdding] = useState(false);
+  const [addErr, setAddErr] = useState('');
 
   // User Auth & Profile State
   const [user, setUser] = useState(() => {
@@ -456,16 +665,16 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [loginModal, setLoginModal] = useState(false);
-  const [email,      setEmail]      = useState('');
-  const [pwd,        setPwd]        = useState('');
-  const [loginErr,   setLoginErr]   = useState('');
-  const [loggingIn,  setLoggingIn]  = useState(false);
+  const [email, setEmail] = useState('');
+  const [pwd, setPwd] = useState('');
+  const [loginErr, setLoginErr] = useState('');
+  const [loggingIn, setLoggingIn] = useState(false);
 
 
   // Profile & Theme Customization Modal
   const [profileModal, setProfileModal] = useState(false);
-  const [editName,     setEditName]     = useState('');
-  const [editAvatar,   setEditAvatar]   = useState('');
+  const [editName, setEditName] = useState('');
+  const [editAvatar, setEditAvatar] = useState('');
   const avatarFileInputRef = useRef(null);
 
   // Reload songs and favs when user logs in or out
@@ -476,16 +685,16 @@ export default function App() {
       const savedSongs = localStorage.getItem(songsKey(uid));
       localSongs = savedSongs ? JSON.parse(savedSongs) : [];
       setSongs(localSongs);
-      
+
       const savedFavs = localStorage.getItem(favsKey(uid));
       setFavs(savedFavs ? JSON.parse(savedFavs) : []);
-      
+
       const savedPlaylists = localStorage.getItem(playlistsKey(uid));
       setPlaylists(savedPlaylists ? JSON.parse(savedPlaylists) : []);
     } catch (e) {
       console.error("Failed to load user data", e);
     }
-    
+
     // If logged in, fetch from backend to sync across devices
     if (user) {
       axios.get(`/api/music?userId=${user._id}`).then(res => {
@@ -500,7 +709,7 @@ export default function App() {
             duration: dbSong.duration,
             inLibrary: dbSong.inLibrary !== undefined ? dbSong.inLibrary : true
           }));
-          
+
           setSongs(backendSongs);
           localStorage.setItem(songsKey(user._id), JSON.stringify(backendSongs));
         }
@@ -518,7 +727,7 @@ export default function App() {
         const updatedUser = { ...user, name: dbProfile.name, avatar: dbProfile.avatar, favorites: dbProfile.favorites };
         setUser(updatedUser);
         localStorage.setItem('aura_user', JSON.stringify(updatedUser));
-        
+
         if (dbProfile.favorites) {
           setFavs(dbProfile.favorites);
           localStorage.setItem(favsKey(user._id), JSON.stringify(dbProfile.favorites));
@@ -591,12 +800,12 @@ export default function App() {
       const savedSongs = localStorage.getItem(songsKey(user._id));
       if (savedSongs !== null) setSongs(JSON.parse(savedSongs));
       else setSongs([]);
-    } catch {}
+    } catch { }
     try {
       const savedFavs = localStorage.getItem(favsKey(user._id));
       if (savedFavs !== null) setFavs(JSON.parse(savedFavs));
       else setFavs([]);
-    } catch {}
+    } catch { }
   }, [user?._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Init YT Player
@@ -604,8 +813,8 @@ export default function App() {
     const init = () => {
       if (yt.current || !window.YT?.Player) return;
       yt.current = new window.YT.Player('yt-player', {
-        height:'1', width:'1', videoId:'',
-        playerVars: { autoplay:1, controls:0, disablekb:1, fs:0, rel:0, playsinline: 1 },
+        height: '1', width: '1', videoId: '',
+        playerVars: { autoplay: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, playsinline: 1 },
         events: {
           onReady: () => yt.current.setVolume(80),
           onStateChange: e => {
@@ -615,7 +824,7 @@ export default function App() {
               try {
                 yt.current?.unMute?.();
                 yt.current?.setVolume?.(vol || 80);
-              } catch(err) {}
+              } catch (err) { }
             }
             else if (e.data === window.YT.PlayerState.PAUSED) {
               setPlaying(false);
@@ -643,7 +852,7 @@ export default function App() {
         setCurTime(yt.current?.getCurrentTime?.() || 0);
         const d = yt.current?.getDuration?.() || 0;
         if (d > 0) setDur(d);
-      } catch {}
+      } catch { }
     }, 500);
     return () => clearInterval(t);
   }, [playing]);
@@ -687,7 +896,7 @@ export default function App() {
   const play = trk => {
     setTrack(trk); setPlaying(true);
     let yid = trk.youtubeId;
-    
+
     // Auto-migrate old Spotify tracks
     if (!yid && trk.sourceType === 'spotify') {
       axios.get(`/api/music/search?query=${encodeURIComponent(trk.title + ' ' + trk.artist)}`)
@@ -719,8 +928,8 @@ export default function App() {
       try {
         yt.current?.unMute?.();
         yt.current?.setVolume?.(vol || 80);
-      } catch(err) {}
-      
+      } catch (err) { }
+
       yt.current?.loadVideoById?.(yid);
       yt.current?.playVideo?.();
     } else {
@@ -731,16 +940,16 @@ export default function App() {
 
   const togglePlay = () => {
     if (!track) { if (songs[0]) play(songs[0]); return; }
-    if (playing) { 
-      yt.current?.pauseVideo?.(); 
-      setPlaying(false); 
-    } else { 
+    if (playing) {
+      yt.current?.pauseVideo?.();
+      setPlaying(false);
+    } else {
       try {
         yt.current?.unMute?.();
         yt.current?.setVolume?.(vol || 80);
-      } catch(err) {}
-      yt.current?.playVideo?.();  
-      setPlaying(true);  
+      } catch (err) { }
+      yt.current?.playVideo?.();
+      setPlaying(true);
     }
   };
 
@@ -771,38 +980,38 @@ export default function App() {
       navigator.mediaSession.metadata = new window.MediaMetadata({
         title: track.title,
         artist: track.artist,
-        artwork: [ { src: track.thumbnail, sizes: '512x512', type: 'image/jpeg' } ]
+        artwork: [{ src: track.thumbnail, sizes: '512x512', type: 'image/jpeg' }]
       });
       try {
         navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
-      } catch(err){}
-      navigator.mediaSession.setActionHandler('play', () => { 
+      } catch (err) { }
+      navigator.mediaSession.setActionHandler('play', () => {
         const audio = document.getElementById('silent-audio');
-        if (audio) audio.play().catch(()=>{});
-        yt.current?.playVideo?.(); 
-        setPlaying(true); 
+        if (audio) audio.play().catch(() => { });
+        yt.current?.playVideo?.();
+        setPlaying(true);
       });
-      navigator.mediaSession.setActionHandler('pause', () => { 
+      navigator.mediaSession.setActionHandler('pause', () => {
         const audio = document.getElementById('silent-audio');
         if (audio) audio.pause();
-        yt.current?.pauseVideo?.(); 
-        setPlaying(false); 
+        yt.current?.pauseVideo?.();
+        setPlaying(false);
       });
       navigator.mediaSession.setActionHandler('previoustrack', prevTrack);
       navigator.mediaSession.setActionHandler('nexttrack', nextTrack);
     }
   }, [track, songs]);
 
-  const seek  = e => { const t = +e.target.value; setCurTime(t); yt.current?.seekTo?.(t, true); };
-  const changeVol = e => { const v = +e.target.value; setVol(v); setMuted(v===0); yt.current?.setVolume?.(v); };
+  const seek = e => { const t = +e.target.value; setCurTime(t); yt.current?.seekTo?.(t, true); };
+  const changeVol = e => { const v = +e.target.value; setVol(v); setMuted(v === 0); yt.current?.setVolume?.(v); };
   const toggleMute = () => {
-    if (muted) { setMuted(false); yt.current?.setVolume?.(vol||80); }
-    else       { setMuted(true);  yt.current?.setVolume?.(0); }
+    if (muted) { setMuted(false); yt.current?.setVolume?.(vol || 80); }
+    else { setMuted(true); yt.current?.setVolume?.(0); }
   };
 
   const toggleFav = id => {
     setFavs(p => {
-      const updated = p.includes(id) ? p.filter(x=>x!==id) : [...p,id];
+      const updated = p.includes(id) ? p.filter(x => x !== id) : [...p, id];
       if (user) {
         localStorage.setItem(favsKey(user._id), JSON.stringify(updated));
         // Sync to backend
@@ -826,7 +1035,7 @@ export default function App() {
         localStorage.setItem(favsKey(user._id), JSON.stringify(updated));
         axios.put('/api/auth/profile', { favorites: updated }, {
           headers: { Authorization: `Bearer ${user.token}` }
-        }).catch(()=>{});
+        }).catch(() => { });
       }
       return updated;
     });
@@ -835,7 +1044,7 @@ export default function App() {
       setPlaying(false);
       yt.current?.stopVideo?.();
     }
-    axios.delete('/api/music/' + id).catch(() => {});
+    axios.delete('/api/music/' + id).catch(() => { });
   };
 
 
@@ -848,7 +1057,7 @@ export default function App() {
         setUser(loggedInUser);
         localStorage.setItem('aura_user', JSON.stringify(loggedInUser));
         localStorage.setItem('aura_token', loggedInUser.token);
-        
+
         // Sync favorites from backend
         if (loggedInUser.favorites) {
           setFavs(loggedInUser.favorites);
@@ -858,10 +1067,10 @@ export default function App() {
         setLoginModal(false);
         setPage('app');
       }
-    } catch(err) { 
+    } catch (err) {
       console.error("Login Error:", err);
       const msg = err.response?.data?.message || err.message || 'Thông tin không chính xác.';
-      setLoginErr(msg.includes('50') ? 'Máy chủ đang bảo trì hoặc mất kết nối (Lỗi 5xx).' : msg); 
+      setLoginErr(msg.includes('50') ? 'Máy chủ đang bảo trì hoặc mất kết nối (Lỗi 5xx).' : msg);
     }
     finally { setLoggingIn(false); }
   };
@@ -873,7 +1082,7 @@ export default function App() {
     setPage('landing');
     try {
       yt.current?.stopVideo?.();
-    } catch (e) {}
+    } catch (e) { }
     localStorage.removeItem('aura_user');
     localStorage.removeItem('aura_token');
   };
@@ -911,7 +1120,7 @@ export default function App() {
     setAdding(true); setAddErr('');
     try {
       const m = ytUrl.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
-      const vid = m?.[2]?.length===11 ? m[2] : null;
+      const vid = m?.[2]?.length === 11 ? m[2] : null;
       if (!vid) throw new Error('Đường dẫn YouTube không hợp lệ!');
       const isPlaylistTab = tab.startsWith('playlist_');
       const existingSong = songs.find(song => song.youtubeId === vid);
@@ -919,23 +1128,23 @@ export default function App() {
       if (existingSong) {
         s = existingSong;
       } else {
-        s = { id:'s'+Date.now(), sourceType:'youtube', youtubeId:vid, title:'YouTube Song', artist:'YouTube Creator', thumbnail:`https://img.youtube.com/vi/${vid}/hqdefault.jpg`, duration:'3:30', inLibrary: !isPlaylistTab };
-        try { const o = await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${vid}&format=json`); s.title = o.data?.title||s.title; s.artist = o.data?.author_name||s.artist; } catch {}
+        s = { id: 's' + Date.now(), sourceType: 'youtube', youtubeId: vid, title: 'YouTube Song', artist: 'YouTube Creator', thumbnail: `https://img.youtube.com/vi/${vid}/hqdefault.jpg`, duration: '3:30', inLibrary: !isPlaylistTab };
+        try { const o = await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${vid}&format=json`); s.title = o.data?.title || s.title; s.artist = o.data?.author_name || s.artist; } catch { }
         setSongs(p => {
           const updated = [s, ...p];
           if (user) {
             localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
-            axios.post('/api/music', { ...s, addedBy: user._id, inLibrary: s.inLibrary }).catch(()=>{});
+            axios.post('/api/music', { ...s, addedBy: user._id, inLibrary: s.inLibrary }).catch(() => { });
           }
           return updated;
         });
       }
       setAddModal(false); setYtUrl(''); play(s);
-      
+
       if (isPlaylistTab) {
         handleAddToPlaylist(tab.split('_')[1], s.id);
       }
-    } catch(err) { setAddErr(err.message||'Lỗi không xác định.'); }
+    } catch (err) { setAddErr(err.message || 'Lỗi không xác định.'); }
     finally { setAdding(false); }
   };
 
@@ -949,7 +1158,7 @@ export default function App() {
         addedBy: user?._id || null,
         inLibrary: !isPlaylistTab
       });
-      
+
       const newSongs = res.data;
       if (!newSongs || newSongs.length === 0) throw new Error("Không lấy được bài hát nào từ Spotify.");
 
@@ -968,16 +1177,16 @@ export default function App() {
         }
         return updated;
       });
-      
-      setTrack(finalSongs[0]); 
+
+      setTrack(finalSongs[0]);
       play(finalSongs[0]);
-      setAddModal(false); 
+      setAddModal(false);
       setSpotifyUrl('');
-      
+
       if (tab.startsWith('playlist_')) {
         handleAddToPlaylist(tab.split('_')[1], null, finalSongs.map(ns => ns.id));
       }
-    } catch(err) { setAddErr(err.response?.data?.message || err.message || 'Lỗi không xác định.'); }
+    } catch (err) { setAddErr(err.response?.data?.message || err.message || 'Lỗi không xác định.'); }
     finally { setAdding(false); }
   };
 
@@ -991,7 +1200,7 @@ export default function App() {
         addedBy: user?._id || null,
         inLibrary: !isPlaylistTab
       });
-      
+
       const newSongs = res.data;
       if (!newSongs || newSongs.length === 0) throw new Error("Không lấy được bài hát nào từ Playlist.");
 
@@ -1007,17 +1216,17 @@ export default function App() {
         localStorage.setItem(songsKey(user?._id), JSON.stringify(updated));
         return updated;
       });
-      
-      setTrack(finalSongs[0]); 
+
+      setTrack(finalSongs[0]);
       play(finalSongs[0]);
-      setAddModal(false); 
+      setAddModal(false);
       setPlaylistUrl('');
-      
+
       if (tab.startsWith('playlist_')) {
         handleAddToPlaylist(tab.split('_')[1], null, finalSongs.map(ns => ns.id));
       }
-    } catch(err) { 
-      setAddErr(err.response?.data?.message || err.message || 'Lỗi không xác định.'); 
+    } catch (err) {
+      setAddErr(err.response?.data?.message || err.message || 'Lỗi không xác định.');
     }
     finally { setAdding(false); }
   };
@@ -1035,14 +1244,14 @@ export default function App() {
       setPlaylistModal(false);
       setNewPlaylistName('');
       setTab(`playlist_${res.data._id}`);
-    } catch(err) {
+    } catch (err) {
       console.error(err);
       alert('Lỗi tạo playlist: ' + (err.response?.data?.message || err.message));
     }
   };
 
   const handleDeletePlaylist = async id => {
-    if(!window.confirm('Bạn có chắc muốn xóa danh sách phát này không?')) return;
+    if (!window.confirm('Bạn có chắc muốn xóa danh sách phát này không?')) return;
     try {
       await axios.delete(`/api/playlists/${id}`);
       setPlaylists(p => {
@@ -1050,8 +1259,8 @@ export default function App() {
         localStorage.setItem(playlistsKey(user._id), JSON.stringify(up));
         return up;
       });
-      if(tab === `playlist_${id}`) setTab('home');
-    } catch(err) { console.error(err); }
+      if (tab === `playlist_${id}`) setTab('home');
+    } catch (err) { console.error(err); }
   };
 
   const handleAddToPlaylist = async (playlistId, songId, songIds = null) => {
@@ -1064,7 +1273,7 @@ export default function App() {
         return up;
       });
       // Do not close modal immediately so user can see the success tick
-    } catch(err) { console.error(err); }
+    } catch (err) { console.error(err); }
   };
 
   const handleRemoveFromPlaylist = async (playlistId, songId) => {
@@ -1075,10 +1284,10 @@ export default function App() {
         localStorage.setItem(playlistsKey(user._id), JSON.stringify(up));
         return up;
       });
-    } catch(err) { console.error(err); }
+    } catch (err) { console.error(err); }
   };
 
-  const fmt = s => isNaN(s)||s<0 ? '0:00' : `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+  const fmt = s => isNaN(s) || s < 0 ? '0:00' : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
   const activePlaylist = tab.startsWith('playlist_') ? playlists.find(p => p._id === tab.split('_')[1]) : null;
 
@@ -1091,7 +1300,7 @@ export default function App() {
     });
 
   const glass = { background: C.surface, backdropFilter: 'blur(20px)', border: `1.5px solid ${C.border}` };
-  const btn   = { background: C.btn, color: C.btnTxt, border: `1.5px solid ${C.btnBd}` };
+  const btn = { background: C.btn, color: C.btnTxt, border: `1.5px solid ${C.btnBd}` };
 
   // ── LANDING PAGE ──────────────────────────────────────────
   if (!user && page === 'landing') {
@@ -1102,11 +1311,11 @@ export default function App() {
 
         {/* Background decorative blobs */}
         <div className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full pointer-events-none opacity-30"
-          style={{ background:`radial-gradient(circle at 30% 30%,${C.primarySolid},transparent 70%)`, transform:'translate(-30%,-30%)' }} />
+          style={{ background: `radial-gradient(circle at 30% 30%,${C.primarySolid},transparent 70%)`, transform: 'translate(-30%,-30%)' }} />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full pointer-events-none opacity-20 float-anim"
-          style={{ background:`radial-gradient(circle at 70% 70%,${C.borderSel},transparent 70%)`, transform:'translate(30%,30%)', animationDelay:'2s' }} />
+          style={{ background: `radial-gradient(circle at 70% 70%,${C.borderSel},transparent 70%)`, transform: 'translate(30%,30%)', animationDelay: '2s' }} />
         <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] rounded-full pointer-events-none opacity-10"
-          style={{ background:`radial-gradient(circle,${C.primarySolid},transparent)`, transform:'translate(-50%,-50%)' }} />
+          style={{ background: `radial-gradient(circle,${C.primarySolid},transparent)`, transform: 'translate(-50%,-50%)' }} />
 
         {/* Nav bar */}
         <header className="relative z-10 flex items-center justify-between px-10 py-5">
@@ -1114,12 +1323,12 @@ export default function App() {
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md" style={{ background: C.primary }}>
               <i className="ri-disc-fill text-xl text-white spin-slow"></i>
             </div>
-            <span style={{ fontFamily: F.cursive, fontSize:'26px', color: C.primarySolid, lineHeight:1 }}>LittleLove</span>
+            <span style={{ fontFamily: F.cursive, fontSize: '26px', color: C.primarySolid, lineHeight: 1 }}>LittleLove</span>
           </div>
           <button
             onClick={() => setPage('login')}
             className="px-6 py-2.5 rounded-full text-sm font-semibold shadow-md transition-transform hover:scale-105 cursor-pointer"
-            style={{ background: C.primary, color: '#fff', boxShadow:`0 4px 16px ${C.primaryGlow}` }}
+            style={{ background: C.primary, color: '#fff', boxShadow: `0 4px 16px ${C.primaryGlow}` }}
           >
             Đăng nhập
           </button>
@@ -1129,22 +1338,22 @@ export default function App() {
         <main className="relative z-10 flex flex-col items-center justify-center flex-1 text-center px-6 py-16 gap-8">
           {/* Spinning disc icon */}
           <div className="w-28 h-28 rounded-full flex items-center justify-center shadow-2xl mb-2"
-            style={{ background: C.primary, boxShadow:`0 20px 60px ${C.primaryGlow}` }}>
+            style={{ background: C.primary, boxShadow: `0 20px 60px ${C.primaryGlow}` }}>
             <i className="ri-disc-fill text-6xl text-white spin-slow"></i>
           </div>
 
           {/* Headline */}
           <div className="flex flex-col gap-2">
-            <h1 style={{ fontFamily: F.cursive, fontSize:'clamp(48px,8vw,88px)', color: C.primarySolid, lineHeight:1.05 }}>
+            <h1 style={{ fontFamily: F.cursive, fontSize: 'clamp(48px,8vw,88px)', color: C.primarySolid, lineHeight: 1.05 }}>
               LittleLove
             </h1>
-            <p style={{ fontFamily: F.brand, fontSize:'clamp(13px,2vw,18px)', color: C.txtSub, letterSpacing:'0.15em', textTransform:'uppercase', fontWeight:600 }}>
+            <p style={{ fontFamily: F.brand, fontSize: 'clamp(13px,2vw,18px)', color: C.txtSub, letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 600 }}>
               Không gian âm nhạc cá nhân của bạn
             </p>
           </div>
 
           {/* Description */}
-          <p style={{ fontFamily: F.body, fontSize:'clamp(14px,1.8vw,17px)', color: C.txtSub, maxWidth:'520px', lineHeight:1.8 }}>
+          <p style={{ fontFamily: F.body, fontSize: 'clamp(14px,1.8vw,17px)', color: C.txtSub, maxWidth: '520px', lineHeight: 1.8 }}>
             Tạo thư viện nhạc riêng từ YouTube, lưu bài yêu thích,
             tùy chỉnh giao diện theo phong cách của bạn.
           </p>
@@ -1152,13 +1361,13 @@ export default function App() {
           {/* Feature pills */}
           <div className="flex flex-wrap gap-3 justify-center">
             {[
-              { icon: 'ri-youtube-fill',    label: 'Stream từ YouTube'     },
-              { icon: 'ri-heart-fill',      label: 'Bài hát yêu thích'    },
-              { icon: 'ri-palette-fill',    label: 'Giao diện Pastel'      },
-              { icon: 'ri-repeat-line',     label: 'Phát & Lặp lại'        },
+              { icon: 'ri-youtube-fill', label: 'Stream từ YouTube' },
+              { icon: 'ri-heart-fill', label: 'Bài hát yêu thích' },
+              { icon: 'ri-palette-fill', label: 'Giao diện Pastel' },
+              { icon: 'ri-repeat-line', label: 'Phát & Lặp lại' },
             ].map(f => (
               <span key={f.label} className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold"
-                style={{ background: C.tag, border:`1.5px solid ${C.tagBd}`, color: C.tagTxt }}>
+                style={{ background: C.tag, border: `1.5px solid ${C.tagBd}`, color: C.tagTxt }}>
                 <i className={`${f.icon} text-base`}></i>
                 {f.label}
               </span>
@@ -1169,21 +1378,21 @@ export default function App() {
           <button
             onClick={() => setPage('login')}
             className="mt-4 px-10 py-4 rounded-2xl text-lg font-bold text-white flex items-center gap-3 shadow-2xl transition-all hover:scale-105 hover:shadow-3xl cursor-pointer"
-            style={{ background: C.primary, boxShadow:`0 8px 32px ${C.primaryGlow}` }}
+            style={{ background: C.primary, boxShadow: `0 8px 32px ${C.primaryGlow}` }}
           >
             <i className="ri-headphone-fill text-xl"></i>
             Bắt đầu nghe nhạc
             <i className="ri-arrow-right-line text-xl"></i>
           </button>
 
-          <p style={{ color: C.txtFad, fontSize:'12px', marginTop:'4px' }}>
+          <p style={{ color: C.txtFad, fontSize: '12px', marginTop: '4px' }}>
             ✦ Dành riêng cho bạn • Private Music Space ✦
           </p>
         </main>
 
         {/* Footer */}
         <footer className="relative z-10 text-center pb-6 pt-2">
-          <p style={{ color: C.txtFad, fontSize:'11px', fontFamily: F.brand, letterSpacing:'0.15em' }}>
+          <p style={{ color: C.txtFad, fontSize: '11px', fontFamily: F.brand, letterSpacing: '0.15em' }}>
             © 2026 LittleLove · Personal Edition
           </p>
         </footer>
@@ -1200,20 +1409,20 @@ export default function App() {
 
         {/* Decorative background blobs */}
         <div className="absolute top-12 left-16 w-64 h-64 rounded-full pointer-events-none float-anim opacity-40"
-          style={{ background:`radial-gradient(circle,${C.borderSel},transparent)` }} />
+          style={{ background: `radial-gradient(circle,${C.borderSel},transparent)` }} />
         <div className="absolute bottom-12 right-20 w-80 h-80 rounded-full pointer-events-none float-anim opacity-30"
-          style={{ background:`radial-gradient(circle,${C.primarySolid},transparent)`, animationDelay:'1.5s' }} />
+          style={{ background: `radial-gradient(circle,${C.primarySolid},transparent)`, animationDelay: '1.5s' }} />
 
         {/* Login Card */}
         <div className="w-full max-w-md rounded-3xl p-8 shadow-2xl relative z-10"
-          style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border:`1.5px solid ${C.border}`, boxShadow:'0 25px 70px rgba(0,0,0,0.12)' }}>
+          style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 25px 70px rgba(0,0,0,0.12)' }}>
 
           <div className="text-center mb-6">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md" style={{ background: C.primary }}>
               <i className="ri-disc-fill text-3xl text-white spin-slow"></i>
             </div>
-            <h1 style={{ fontFamily: F.cursive, fontSize:'34px', color: C.primarySolid, lineHeight:1.1 }}>LittleLove</h1>
-            <p style={{ fontFamily: F.brand, fontSize:'11px', letterSpacing:'0.25em', color: C.txtFad, textTransform:'uppercase', fontWeight:600, marginTop:'2px' }}>
+            <h1 style={{ fontFamily: F.cursive, fontSize: '34px', color: C.primarySolid, lineHeight: 1.1 }}>LittleLove</h1>
+            <p style={{ fontFamily: F.brand, fontSize: '11px', letterSpacing: '0.25em', color: C.txtFad, textTransform: 'uppercase', fontWeight: 600, marginTop: '2px' }}>
               Unnull Music Space
             </p>
           </div>
@@ -1228,7 +1437,7 @@ export default function App() {
                 required
                 placeholder="Nhập email hoặc tên đăng nhập"
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none transition"
-                style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
+                style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
               />
             </div>
 
@@ -1241,7 +1450,7 @@ export default function App() {
                 required
                 placeholder="••••••••"
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none transition"
-                style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
+                style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
               />
             </div>
 
@@ -1251,7 +1460,7 @@ export default function App() {
               type="submit"
               disabled={loggingIn}
               className="w-full py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-[1.02] mt-2 cursor-pointer"
-              style={{ background: C.primary, boxShadow:`0 6px 20px ${C.primaryGlow}` }}
+              style={{ background: C.primary, boxShadow: `0 6px 20px ${C.primaryGlow}` }}
             >
               {loggingIn ? <i className="ri-loader-4-line animate-spin text-lg"></i> : <i className="ri-key-2-line text-lg"></i>}
               Đăng Nhập Nghe Nhạc
@@ -1286,316 +1495,319 @@ export default function App() {
       {/* ── TOP ROW: sidebar + main ─────────────────── */}
       <div className="flex flex-1 overflow-hidden relative">
 
-      {/* ── SIDEBAR ─────────────────────────────── */}
-      {/* Overlay for mobile drawer */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 z-40 md:hidden" 
-          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
-      
-      <aside 
-        className={`fixed md:relative z-50 w-64 h-full flex flex-col gap-5 p-6 shrink-0 transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`} 
-        style={{ ...glass, borderRight: `1.5px solid ${C.border}`, borderTop:'none', borderBottom:'none', borderLeft:'none', background: C.surface }}
-      >
-        {/* Brand */}
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: C.primary }}>
-            <i className={`ri-disc-fill text-[22px] text-white ${playing?'spin-slow':''}`}></i>
-          </div>
-          <div className="flex flex-col leading-none">
-            <span style={{ fontFamily: F.cursive, fontSize:'28px', color: C.primarySolid, lineHeight:1.1 }}>LittleLove</span>
-            <span style={{ fontFamily: F.brand, fontSize:'10px', letterSpacing:'0.25em', color: C.txtFad, textTransform:'uppercase', fontWeight:600 }}>Unnull Music Space</span>
-          </div>
-        </div>
+        {/* ── SIDEBAR ─────────────────────────────── */}
+        {/* Overlay for mobile drawer */}
+        {isMobileMenuOpen && (
+          <div
+            className="fixed inset-0 z-40 md:hidden"
+            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
 
-        {/* Nav */}
-        <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-          <p style={{ fontFamily: F.brand, fontSize:'11px', fontWeight:600, letterSpacing:'0.2em', textTransform:'uppercase', color: C.txtFad, padding:'0 12px', marginBottom:'4px' }}>Menu</p>
-          {[
-            { key:'home',      icon:'ri-home-heart-line', label:'Trang chủ' },
-            { key:'library',   icon:'ri-music-2-line',    label:'Thư viện'  },
-            { key:'favorites', icon:'ri-heart-3-line',    label:'Yêu thích', badge: favs.length },
-          ].map(t => {
-            const active = tab === t.key;
-            return (
-              <button key={t.key} onClick={() => { setTab(t.key); setIsMobileMenuOpen(false); }}
-                className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 text-left shrink-0"
-                style={active
-                  ? { background: C.tag, color: C.txt, border:`1.5px solid ${C.border}`, boxShadow:'0 2px 12px rgba(0,0,0,0.05)' }
-                  : { color: C.txtSub, border:'1.5px solid transparent' }
-                }
-              >
-                <i className={`${t.icon} text-base`}></i>
-                {t.label}
-                {t.badge !== undefined && (
-                  <span className="ml-auto text-[11px] font-bold text-white px-2 py-0.5 rounded-full" style={{ background: C.primarySolid }}>{t.badge}</span>
-                )}
-              </button>
-            );
-          })}
-
-          <div className="mt-4 mb-2 flex items-center justify-between px-3">
-            <p style={{ fontFamily: F.brand, fontSize:'11px', fontWeight:600, letterSpacing:'0.2em', textTransform:'uppercase', color: C.txtFad }}>Danh sách phát</p>
-            <button onClick={() => setPlaylistModal(true)} title="Tạo Playlist"
-              className="w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110"
-              style={{ background: C.tag, color: C.txt, border: `1px solid ${C.border}` }}>
-              <i className="ri-add-line text-xs"></i>
-            </button>
-          </div>
-
-          {playlists.map(p => {
-            const tabKey = `playlist_${p._id}`;
-            const active = tab === tabKey;
-            return (
-              <button key={p._id} onClick={() => { setTab(tabKey); setIsMobileMenuOpen(false); }}
-                className="flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 text-left shrink-0"
-                style={active
-                  ? { background: C.tag, color: C.txt, border:`1.5px solid ${C.border}`, boxShadow:'0 2px 12px rgba(0,0,0,0.05)' }
-                  : { color: C.txtSub, border:'1.5px solid transparent' }
-                }
-              >
-                <i className={active ? "ri-folder-music-fill text-base" : "ri-folder-music-line text-base"} style={{ color: active ? C.primarySolid : C.txtFad }}></i>
-                <span className="truncate flex-1">{p.name}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Sidebar footer card */}
-        <div className="rounded-2xl p-4 text-center" style={{ background: C.tag, border:`1px solid ${C.border}` }}>
-          <div className="text-2xl mb-1">🕊️</div>
-          <p style={{ fontFamily: F.cursive, fontSize:'17px', color: C.primarySolid }}>Music soothes the soul</p>
-        </div>
-      </aside>
-
-      {/* ── MAIN ──────────────────────────────────── */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-
-        {/* Header */}
-        <header className="min-h-[72px] md:min-h-[66px] px-3 md:px-8 flex items-center justify-between shrink-0 relative gap-2 md:gap-3" 
-          style={{ 
-            background: C.surface, 
-            backdropFilter: 'blur(18px)', 
-            borderBottom: `1.5px solid ${C.border}`, 
-            paddingTop: 'max(14px, env(safe-area-inset-top))',
-            paddingBottom: '10px'
-          }}>
-          
-          <div className="flex items-center gap-2 md:gap-3 flex-1 md:flex-none">
-            {/* Mobile Hamburger Menu */}
-            <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden p-1 -ml-1 text-lg rounded-lg" style={{ color: C.txt }}>
-              <i className="ri-menu-line"></i>
-            </button>
-
-            {/* Search */}
-            <div className="relative w-full max-w-[140px] sm:max-w-[180px] md:w-72 z-10">
-              <i className="ri-search-line absolute left-3 top-2 text-xs md:text-sm md:left-3.5 md:top-2.5" style={{ color: C.txtFad }}></i>
-              <input type="text" placeholder="Tìm kiếm..."
-                value={query} onChange={e=>setQuery(e.target.value)}
-                className="w-full py-1.5 md:py-2 pl-8 md:pl-10 pr-3 md:pr-4 text-xs md:text-sm rounded-full outline-none transition"
-                style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
-              />
+        <aside
+          className={`fixed md:relative z-50 w-64 h-full flex flex-col gap-5 p-6 shrink-0 transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+          style={{ ...glass, borderRight: `1.5px solid ${C.border}`, borderTop: 'none', borderBottom: 'none', borderLeft: 'none', background: C.surface }}
+        >
+          {/* Brand */}
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: C.primary }}>
+              <i className={`ri-disc-fill text-[22px] text-white ${playing ? 'spin-slow' : ''}`}></i>
+            </div>
+            <div className="flex flex-col leading-none">
+              <span style={{ fontFamily: F.cursive, fontSize: '28px', color: C.primarySolid, lineHeight: 1.1 }}>LittleLove</span>
+              <span style={{ fontFamily: F.brand, fontSize: '10px', letterSpacing: '0.25em', color: C.txtFad, textTransform: 'uppercase', fontWeight: 600 }}>Unnull Music Space</span>
             </div>
           </div>
 
-          {/* User Name slightly moved to the left from center - Hidden on mobile */}
-          {user && (
-            <div className="hidden md:flex absolute left-[45%] top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none items-center justify-center">
-              <span className="text-3xl lg:text-4xl font-extrabold" style={{ color: C.primarySolid, fontFamily: F.cursive, textShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
-                {user.name}
-              </span>
-            </div>
-          )}
-
-          <div className="flex items-center gap-1.5 md:gap-3 z-10 shrink-0">
-            {/* Add button */}
-            <button onClick={()=>setAddModal(true)}
-              className="flex items-center gap-1 md:gap-2 text-[11px] md:text-sm font-bold px-2 py-1.5 md:px-4 md:py-2 rounded-full text-white shadow-md transition-all hover:scale-105"
-              style={{ background: C.primary, boxShadow:`0 4px 14px ${C.primaryGlow}` }}
-            >
-              <i className="ri-youtube-line text-sm md:text-base"></i> <span className="hidden md:inline">Thêm Nhạc</span>
-            </button>
-
-            {/* Profile & Theme Customization Button */}
-            <button
-              onClick={() => setProfileModal(true)}
-              title="Tùy chỉnh Hồ Sơ & Màu Sắc Giao Diện"
-              className="flex items-center gap-1 md:gap-2 text-[11px] md:text-sm font-semibold px-2 py-1.5 md:px-4 md:py-2 rounded-full transition-all shadow-sm hover:scale-105"
-              style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
-            >
-              <i className="ri-palette-line text-sm md:text-base" style={{ color: C.primarySolid }}></i>
-              <span className="hidden lg:inline">Giao Diện &amp; Profile</span>
-            </button>
-
-            {/* User Avatar & Name (Original Right Side) */}
-            {user ? (
-              <div
-                onClick={() => setProfileModal(true)}
-                className="flex items-center gap-1 md:gap-2.5 pl-1.5 md:pl-3 cursor-pointer group ml-0 md:ml-1"
-                style={{ borderLeft:`1.5px solid ${C.border}` }}
-                title="Bấm để chỉnh sửa Profile"
-              >
-                <img src={user.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
-                  alt={user.name} className="w-7 h-7 md:w-9 md:h-9 rounded-full object-cover group-hover:scale-105 transition" style={{ border:`2px solid ${C.borderSel}` }}
-                />
-                <div className="hidden md:flex flex-col leading-tight">
-                  <span className="text-xs font-bold group-hover:underline" style={{ color: C.txt }}>{user.name}</span>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.primarySolid }}>{user.role === 'admin' ? 'Admin ✦' : (user.email === 'unnull@gmail.com' ? 'admin' : 'Member')}</span>
-                </div>
-                <button onClick={(e) => { e.stopPropagation(); logout(); }} title="Đăng xuất" className="p-1.5 md:p-2 rounded-full hover:scale-110 transition" style={{ color: C.txtFad }}>
-                  <i className="ri-logout-box-r-line text-base hover:text-red-500 transition"></i>
-                </button>
-              </div>
-            ) : (
-              <button onClick={()=>setLoginModal(true)}
-                className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full transition"
-                style={btn}
-              >
-                <i className="ri-lock-line"></i> <span className="hidden md:inline">Đăng Nhập</span>
-              </button>
-            )}
-          </div>
-        </header>
-
-        {/* Scrollable content */}
-        <div className="flex-1 p-4 pt-8 md:p-7 md:pt-7 overflow-y-auto">
-
-          {tab === 'home' ? (
-            /* ── Hero Banner ─────────────────────── */
-            <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden rounded-3xl p-6 md:p-8 mt-4 md:mt-0 shadow-sm min-h-[400px]"
-              style={{ background: C.surface, border:`1.5px solid ${C.border}`, boxShadow:'0 8px 40px rgba(0,0,0,0.06)' }}
-            >
-              {/* Blobs */}
-              <div className="absolute top-10 right-20 w-32 h-32 md:w-48 md:h-48 rounded-full pointer-events-none float-anim opacity-50"
-                style={{ background:`radial-gradient(circle,${C.borderSel},transparent)` }} />
-              <div className="absolute bottom-10 left-20 w-24 h-24 md:w-32 md:h-32 rounded-full pointer-events-none float-anim opacity-30"
-                style={{ background:`radial-gradient(circle,${C.primarySolid},transparent)`, animationDelay:'1.5s' }} />
-
-              <div className="relative z-10 max-w-2xl text-center flex flex-col items-center">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 md:px-4 md:py-1.5 rounded-full text-xs font-bold mb-4 md:mb-6"
-                  style={{ background: C.tag, color: C.txt, border:`1px solid ${C.border}` }}>
-                  <span style={{ fontFamily: F.cursive }} className="text-[16px] md:text-[18px]">✦ Không gian nhạc cá nhân ✦</span>
-                </span>
-                <h1 className="leading-tight mb-4 text-3xl md:text-[42px]" style={{ color: C.txt, fontFamily: F.heading, fontWeight:800 }}>
-                  Thư giãn &amp; thưởng thức<br/>
-                  <span className="text-4xl md:text-[48px]" style={{ fontFamily: F.cursive, color: C.primarySolid, lineHeight:1.4 }}>
-                    từng giai điệu ✨
-                  </span>
-                </h1>
-                <p className="text-sm md:text-base mb-6 md:mb-8 leading-relaxed max-w-md" style={{ color: C.txtSub }}>
-                  Trang nhạc được tạo riêng cho bạn — khám phá, tạo danh sách phát và đắm chìm vào không gian âm nhạc không giới hạn.
-                </p>
-                <button onClick={() => setTab('library')}
-                  className="flex items-center gap-2 px-8 py-4 rounded-full text-base font-bold text-white transition-all shadow-lg hover:scale-105 hover:-translate-y-1"
-                  style={{ background: C.primary, boxShadow:`0 6px 20px ${C.primaryGlow}` }}
-                >
-                  <i className="ri-music-2-line text-xl"></i> Khám Phá Thư Viện
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* ── Section heading ─────────────────── */}
-              <div className="flex items-center gap-3 mb-4">
-                <h2 style={{ color: C.txt, fontFamily: F.heading, fontSize:'22px', fontWeight:700 }}>
-                  {tab === 'favorites' ? '🤍 Yêu Thích' : activePlaylist ? `✨ ${activePlaylist.name}` : '✨ Thư Viện Nhạc'}
-                </h2>
-                <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: C.tag, color: C.tagTxt, border:`1px solid ${C.tagBd}` }}>
-                  {list.length} bài
-                </span>
-                {activePlaylist && (
-                  <button onClick={() => handleDeletePlaylist(activePlaylist._id)} className="ml-auto text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center"
-                    style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
-                    <i className="ri-delete-bin-line mr-1"></i> Xóa Playlist
-                  </button>
-                )}
-              </div>
-
-              {/* ── Song list ───────────────────────── */}
-          <div className="flex flex-col gap-2">
-            {list.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="text-4xl mb-3">🕊️</div>
-                <p className="text-sm font-semibold" style={{ color: C.txtFad }}>Chưa có bài hát nào~</p>
-              </div>
-            ) : list.map((song, i) => {
-              const sel = track?.id === song.id;
+          {/* Nav */}
+          <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            <p style={{ fontFamily: F.brand, fontSize: '11px', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.txtFad, padding: '0 12px', marginBottom: '4px' }}>Menu</p>
+            {[
+              { key: 'home', icon: 'ri-home-heart-line', label: 'Trang chủ' },
+              { key: 'library', icon: 'ri-music-2-line', label: 'Thư viện' },
+              { key: 'favorites', icon: 'ri-heart-3-line', label: 'Yêu thích', badge: favs.length },
+            ].map(t => {
+              const active = tab === t.key;
               return (
-                <div key={song.id} onClick={()=>play(song)}
-                  className="flex items-center p-2 md:p-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-200 group gap-2 md:gap-3"
-                  style={{
-                    background: sel ? C.tag : C.surface,
-                    border: `1.5px solid ${sel ? C.borderSel : 'transparent'}`,
-                    boxShadow: sel ? '0 4px 18px rgba(0,0,0,0.06)' : 'none',
-                  }}
+                <button key={t.key} onClick={() => { setTab(t.key); setIsMobileMenuOpen(false); }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 text-left shrink-0"
+                  style={active
+                    ? { background: C.tag, color: C.txt, border: `1.5px solid ${C.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }
+                    : { color: C.txtSub, border: '1.5px solid transparent' }
+                  }
                 >
-                  <span className="hidden md:flex justify-center items-center text-sm font-bold w-8 shrink-0" style={{ color: C.txtFad }}>
-                    {sel && playing
-                      ? <i className="ri-volume-up-fill animate-pulse" style={{ color: C.primarySolid }}></i>
-                      : i + 1
-                    }
-                  </span>
-                  <img src={song.thumbnail} alt={song.title}
-                    className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl object-cover shrink-0"
-                    style={{ border:`2px solid ${sel ? C.border : 'transparent'}` }}
-                  />
-                  <div className="flex flex-col flex-1 min-w-0 pr-1 md:pr-2">
-                    <span className="text-xs md:text-sm font-bold truncate" style={{ color: sel ? C.primarySolid : C.txt }}>{song.title}</span>
-                    <span className="text-[10px] md:text-xs truncate" style={{ color: C.txtSub }}>{song.artist}</span>
-                  </div>
-                  <span className="hidden sm:block text-xs text-right shrink-0 w-12" style={{ color: C.txtFad }}>{song.duration}</span>
-                  
-                  <div className="flex justify-end items-center gap-1 shrink-0" onClick={e=>e.stopPropagation()}>
-                    <button onClick={()=>setSongToAdd(song)} title="Thêm vào playlist" 
-                      className="p-1.5 md:p-2 rounded-full transition opacity-100 md:opacity-0 md:group-hover:opacity-100 active:scale-95"
-                      style={{ color: C.txtFad }}
-                      onMouseEnter={e => e.currentTarget.style.color=C.primarySolid}
-                      onMouseLeave={e => e.currentTarget.style.color=C.txtFad}>
-                      <i className="ri-play-list-add-line text-sm md:text-base"></i>
-                    </button>
-                    <button onClick={()=>toggleFav(song.id)} className="p-1.5 md:p-2 rounded-full transition active:scale-95"
-                      style={{ color: favs.includes(song.id) ? C.primarySolid : C.txtFad }}>
-                      <i className={favs.includes(song.id) ? 'ri-heart-fill text-sm md:text-base' : 'ri-heart-line text-sm md:text-base'}></i>
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (activePlaylist) {
-                          handleRemoveFromPlaylist(activePlaylist._id, song.id);
-                        } else {
-                          if (window.confirm(`Xóa "${song.title}" khỏi thư viện?`)) deleteSong(song.id);
-                        }
-                      }}
-                      title={activePlaylist ? "Xóa khỏi playlist" : "Xóa bài hát"}
-                      className="p-1.5 md:p-2 rounded-full transition opacity-100 md:opacity-0 md:group-hover:opacity-100 active:scale-95"
-                      style={{ color: C.txtFad }}
-                      onMouseEnter={e => e.currentTarget.style.color='#f43f5e'}
-                      onMouseLeave={e => e.currentTarget.style.color=C.txtFad}
-                    >
-                      <i className={activePlaylist ? "ri-close-line text-base md:text-lg" : "ri-delete-bin-6-line text-sm md:text-base"}></i>
-                    </button>
-                  </div>
-                </div>
+                  <i className={`${t.icon} text-base`}></i>
+                  {t.label}
+                  {t.badge !== undefined && (
+                    <span className="ml-auto text-[11px] font-bold text-white px-2 py-0.5 rounded-full" style={{ background: C.primarySolid }}>{t.badge}</span>
+                  )}
+                </button>
               );
             })}
+
+            <div className="mt-4 mb-2 flex items-center justify-between px-3">
+              <p style={{ fontFamily: F.brand, fontSize: '11px', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.txtFad }}>Danh sách phát</p>
+              <button onClick={() => setPlaylistModal(true)} title="Tạo Playlist"
+                className="w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+                style={{ background: C.tag, color: C.txt, border: `1px solid ${C.border}` }}>
+                <i className="ri-add-line text-xs"></i>
+              </button>
+            </div>
+
+            {playlists.map(p => {
+              const tabKey = `playlist_${p._id}`;
+              const active = tab === tabKey;
+              return (
+                <button key={p._id} onClick={() => { setTab(tabKey); setIsMobileMenuOpen(false); }}
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 text-left shrink-0"
+                  style={active
+                    ? { background: C.tag, color: C.txt, border: `1.5px solid ${C.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }
+                    : { color: C.txtSub, border: '1.5px solid transparent' }
+                  }
+                >
+                  <i className={active ? "ri-folder-music-fill text-base" : "ri-folder-music-line text-base"} style={{ color: active ? C.primarySolid : C.txtFad }}></i>
+                  <span className="truncate flex-1">{p.name}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Sidebar footer card */}
+          <div className="rounded-2xl p-4 text-center" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+            <div className="text-2xl mb-1">🕊️</div>
+            <p style={{ fontFamily: F.cursive, fontSize: '17px', color: C.primarySolid }}>Music soothes the soul</p>
           </div>
-          </>
-          )}
-        </div>
-      </main>
+        </aside>
+
+        {/* ── MAIN ──────────────────────────────────── */}
+        <main className="flex-1 flex flex-col overflow-hidden">
+
+          {/* Header */}
+          <header className="min-h-[72px] md:min-h-[66px] px-3 md:px-8 flex items-center justify-between shrink-0 relative gap-2 md:gap-3"
+            style={{
+              background: C.surface,
+              backdropFilter: 'blur(18px)',
+              borderBottom: `1.5px solid ${C.border}`,
+              paddingTop: 'max(14px, env(safe-area-inset-top))',
+              paddingBottom: '10px'
+            }}>
+
+            <div className="flex items-center gap-2 md:gap-3 flex-1 md:flex-none">
+              {/* Mobile Hamburger Menu */}
+              <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden p-1 -ml-1 text-lg rounded-lg" style={{ color: C.txt }}>
+                <i className="ri-menu-line"></i>
+              </button>
+
+              {/* Search */}
+              <div className="relative w-full max-w-[140px] sm:max-w-[180px] md:w-72 z-10">
+                <i className="ri-search-line absolute left-3 top-2 text-xs md:text-sm md:left-3.5 md:top-2.5" style={{ color: C.txtFad }}></i>
+                <input type="text" placeholder="Tìm kiếm..."
+                  value={query} onChange={e => setQuery(e.target.value)}
+                  className="w-full py-1.5 md:py-2 pl-8 md:pl-10 pr-3 md:pr-4 text-xs md:text-sm rounded-full outline-none transition"
+                  style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                />
+              </div>
+            </div>
+
+            {/* User Name slightly moved to the left from center - Hidden on mobile */}
+            {user && (
+              <div className="hidden md:flex absolute left-[45%] top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none items-center justify-center">
+                <span className="text-3xl lg:text-4xl font-extrabold" style={{ color: C.primarySolid, fontFamily: F.cursive, textShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
+                  {user.name}
+                </span>
+              </div>
+            )}
+
+            <div className="flex items-center gap-1.5 md:gap-3 z-10 shrink-0">
+              {/* Add button */}
+              <button onClick={() => setAddModal(true)}
+                className="flex items-center gap-1 md:gap-2 text-[11px] md:text-sm font-bold px-2 py-1.5 md:px-4 md:py-2 rounded-full text-white shadow-md transition-all hover:scale-105"
+                style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
+              >
+                <i className="ri-youtube-line text-sm md:text-base"></i> <span className="hidden md:inline">Thêm Nhạc</span>
+              </button>
+
+              {/* Profile & Theme Customization Button */}
+              <button
+                onClick={() => setProfileModal(true)}
+                title="Tùy chỉnh Hồ Sơ & Màu Sắc Giao Diện"
+                className="flex items-center gap-1 md:gap-2 text-[11px] md:text-sm font-semibold px-2 py-1.5 md:px-4 md:py-2 rounded-full transition-all shadow-sm hover:scale-105"
+                style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+              >
+                <i className="ri-palette-line text-sm md:text-base" style={{ color: C.primarySolid }}></i>
+                <span className="hidden lg:inline">Giao Diện &amp; Profile</span>
+              </button>
+
+              {/* User Avatar & Name (Original Right Side) */}
+              {user ? (
+                <div
+                  onClick={() => setProfileModal(true)}
+                  className="flex items-center gap-1 md:gap-2.5 pl-1.5 md:pl-3 cursor-pointer group ml-0 md:ml-1"
+                  style={{ borderLeft: `1.5px solid ${C.border}` }}
+                  title="Bấm để chỉnh sửa Profile"
+                >
+                  <img src={user.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                    alt={user.name} className="w-7 h-7 md:w-9 md:h-9 rounded-full object-cover group-hover:scale-105 transition" style={{ border: `2px solid ${C.borderSel}` }}
+                  />
+                  <div className="hidden md:flex flex-col leading-tight">
+                    <span className="text-xs font-bold group-hover:underline" style={{ color: C.txt }}>{user.name}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.primarySolid }}>{user.role === 'admin' ? 'Admin ✦' : (user.email === 'unnull@gmail.com' ? 'admin' : 'Member')}</span>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); logout(); }} title="Đăng xuất" className="p-1.5 md:p-2 rounded-full hover:scale-110 transition" style={{ color: C.txtFad }}>
+                    <i className="ri-logout-box-r-line text-base hover:text-red-500 transition"></i>
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setLoginModal(true)}
+                  className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full transition"
+                  style={btn}
+                >
+                  <i className="ri-lock-line"></i> <span className="hidden md:inline">Đăng Nhập</span>
+                </button>
+              )}
+            </div>
+          </header>
+
+          {/* Scrollable content */}
+          <div className="flex-1 p-4 pt-8 md:p-7 md:pt-7 overflow-y-auto">
+
+            {tab === 'home' ? (
+              /* ── Hero Banner ─────────────────────── */
+              <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden rounded-3xl p-6 md:p-8 mt-4 md:mt-0 shadow-sm min-h-[400px]"
+                style={{ background: C.surface, border: `1.5px solid ${C.border}`, boxShadow: '0 8px 40px rgba(0,0,0,0.06)' }}
+              >
+                {/* 3D Glowing Glass Bubbles Canvas (Hiệu ứng bọt nước bong bóng 3D lung linh) */}
+                <BubbleCanvas />
+
+                {/* Blobs */}
+                <div className="absolute top-10 right-20 w-32 h-32 md:w-48 md:h-48 rounded-full pointer-events-none float-anim opacity-50"
+                  style={{ background: `radial-gradient(circle,${C.borderSel},transparent)` }} />
+                <div className="absolute bottom-10 left-20 w-24 h-24 md:w-32 md:h-32 rounded-full pointer-events-none float-anim opacity-30"
+                  style={{ background: `radial-gradient(circle,${C.primarySolid},transparent)`, animationDelay: '1.5s' }} />
+
+                <div className="relative z-10 max-w-2xl text-center flex flex-col items-center">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 md:px-4 md:py-1.5 rounded-full text-xs font-bold mb-4 md:mb-6"
+                    style={{ background: C.tag, color: C.txt, border: `1px solid ${C.border}` }}>
+                    <span style={{ fontFamily: F.cursive }} className="text-[16px] md:text-[18px]">✦ Không gian nhạc cá nhân ✦</span>
+                  </span>
+                  <h1 className="leading-tight mb-4 text-3xl md:text-[42px]" style={{ color: C.txt, fontFamily: F.heading, fontWeight: 800 }}>
+                    Thư giãn &amp; thưởng thức<br />
+                    <span className="text-4xl md:text-[48px]" style={{ fontFamily: F.cursive, color: C.primarySolid, lineHeight: 1.4 }}>
+                      từng giai điệu ✨
+                    </span>
+                  </h1>
+                  <p className="text-sm md:text-base mb-6 md:mb-8 leading-relaxed max-w-md" style={{ color: C.txtSub }}>
+                    Trang nhạc được tạo riêng cho bạn — khám phá, tạo danh sách phát và đắm chìm vào không gian âm nhạc không giới hạn.
+                  </p>
+                  <button onClick={() => setTab('library')}
+                    className="flex items-center gap-2 px-8 py-4 rounded-full text-base font-bold text-white transition-all shadow-lg hover:scale-105 hover:-translate-y-1"
+                    style={{ background: C.primary, boxShadow: `0 6px 20px ${C.primaryGlow}` }}
+                  >
+                    <i className="ri-music-2-line text-xl"></i> Khám Phá Thư Viện
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* ── Section heading ─────────────────── */}
+                <div className="flex items-center gap-3 mb-4">
+                  <h2 style={{ color: C.txt, fontFamily: F.heading, fontSize: '22px', fontWeight: 700 }}>
+                    {tab === 'favorites' ? '🤍 Yêu Thích' : activePlaylist ? `✨ ${activePlaylist.name}` : '✨ Thư Viện Nhạc'}
+                  </h2>
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: C.tag, color: C.tagTxt, border: `1px solid ${C.tagBd}` }}>
+                    {list.length} bài
+                  </span>
+                  {activePlaylist && (
+                    <button onClick={() => handleDeletePlaylist(activePlaylist._id)} className="ml-auto text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center"
+                      style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+                      <i className="ri-delete-bin-line mr-1"></i> Xóa Playlist
+                    </button>
+                  )}
+                </div>
+
+                {/* ── Song list ───────────────────────── */}
+                <div className="flex flex-col gap-2">
+                  {list.length === 0 ? (
+                    <div className="text-center py-16">
+                      <div className="text-4xl mb-3">🕊️</div>
+                      <p className="text-sm font-semibold" style={{ color: C.txtFad }}>Chưa có bài hát nào~</p>
+                    </div>
+                  ) : list.map((song, i) => {
+                    const sel = track?.id === song.id;
+                    return (
+                      <div key={song.id} onClick={() => play(song)}
+                        className="flex items-center p-2 md:p-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-200 group gap-2 md:gap-3"
+                        style={{
+                          background: sel ? C.tag : C.surface,
+                          border: `1.5px solid ${sel ? C.borderSel : 'transparent'}`,
+                          boxShadow: sel ? '0 4px 18px rgba(0,0,0,0.06)' : 'none',
+                        }}
+                      >
+                        <span className="hidden md:flex justify-center items-center text-sm font-bold w-8 shrink-0" style={{ color: C.txtFad }}>
+                          {sel && playing
+                            ? <i className="ri-volume-up-fill animate-pulse" style={{ color: C.primarySolid }}></i>
+                            : i + 1
+                          }
+                        </span>
+                        <img src={song.thumbnail} alt={song.title}
+                          className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl object-cover shrink-0"
+                          style={{ border: `2px solid ${sel ? C.border : 'transparent'}` }}
+                        />
+                        <div className="flex flex-col flex-1 min-w-0 pr-1 md:pr-2">
+                          <span className="text-xs md:text-sm font-bold truncate" style={{ color: sel ? C.primarySolid : C.txt }}>{song.title}</span>
+                          <span className="text-[10px] md:text-xs truncate" style={{ color: C.txtSub }}>{song.artist}</span>
+                        </div>
+                        <span className="hidden sm:block text-xs text-right shrink-0 w-12" style={{ color: C.txtFad }}>{song.duration}</span>
+
+                        <div className="flex justify-end items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                          <button onClick={() => setSongToAdd(song)} title="Thêm vào playlist"
+                            className="p-1.5 md:p-2 rounded-full transition opacity-100 md:opacity-0 md:group-hover:opacity-100 active:scale-95"
+                            style={{ color: C.txtFad }}
+                            onMouseEnter={e => e.currentTarget.style.color = C.primarySolid}
+                            onMouseLeave={e => e.currentTarget.style.color = C.txtFad}>
+                            <i className="ri-play-list-add-line text-sm md:text-base"></i>
+                          </button>
+                          <button onClick={() => toggleFav(song.id)} className="p-1.5 md:p-2 rounded-full transition active:scale-95"
+                            style={{ color: favs.includes(song.id) ? C.primarySolid : C.txtFad }}>
+                            <i className={favs.includes(song.id) ? 'ri-heart-fill text-sm md:text-base' : 'ri-heart-line text-sm md:text-base'}></i>
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (activePlaylist) {
+                                handleRemoveFromPlaylist(activePlaylist._id, song.id);
+                              } else {
+                                if (window.confirm(`Xóa "${song.title}" khỏi thư viện?`)) deleteSong(song.id);
+                              }
+                            }}
+                            title={activePlaylist ? "Xóa khỏi playlist" : "Xóa bài hát"}
+                            className="p-1.5 md:p-2 rounded-full transition opacity-100 md:opacity-0 md:group-hover:opacity-100 active:scale-95"
+                            style={{ color: C.txtFad }}
+                            onMouseEnter={e => e.currentTarget.style.color = '#f43f5e'}
+                            onMouseLeave={e => e.currentTarget.style.color = C.txtFad}
+                          >
+                            <i className={activePlaylist ? "ri-close-line text-base md:text-lg" : "ri-delete-bin-6-line text-sm md:text-base"}></i>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </main>
 
       </div>{/* ── END TOP ROW (sidebar + main) ── */}
 
       {/* ── PROFILE & THEME CUSTOMIZATION MODAL ───────────── */}
       {profileModal && (
         <div className="fixed inset-0 flex items-end justify-center z-[60] px-4 pb-[96px] pt-4"
-          style={{ background:'rgba(0,0,0,0.4)', backdropFilter:'blur(14px)' }}
+          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(14px)' }}
           onClick={e => { if (e.target === e.currentTarget) setProfileModal(false); }}>
           <div className="w-full max-w-lg rounded-3xl p-7 shadow-2xl overflow-y-auto"
-            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border:`1.5px solid ${C.border}`, color: C.txt, maxHeight:'calc(100vh - 120px)' }}>
-            
+            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, color: C.txt, maxHeight: 'calc(100vh - 120px)' }}>
+
             {/* Modal Header */}
             <div className="flex items-center justify-between mb-6 pb-4" style={{ borderBottom: `1.5px solid ${C.border}` }}>
               <div className="flex items-center gap-3">
@@ -1603,19 +1815,19 @@ export default function App() {
                   <i className="ri-palette-fill text-xl text-white"></i>
                 </div>
                 <div>
-                  <h3 style={{ fontFamily: F.heading, fontSize:'22px', fontWeight:700, color: C.txt, lineHeight:1.2 }}>
+                  <h3 style={{ fontFamily: F.heading, fontSize: '22px', fontWeight: 700, color: C.txt, lineHeight: 1.2 }}>
                     Chỉnh Sửa Hồ Sơ &amp; Giao Diện
                   </h3>
                   <p className="text-xs" style={{ color: C.txtSub }}>Tùy biến tên, avatar và bảng màu theo ý thích</p>
                 </div>
               </div>
-              <button onClick={()=>setProfileModal(false)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: C.tag, color: C.txtFad }}>
+              <button onClick={() => setProfileModal(false)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: C.tag, color: C.txtFad }}>
                 <i className="ri-close-line"></i>
               </button>
             </div>
 
             <form onSubmit={handleSaveProfileAndTheme} className="flex flex-col gap-6">
-              
+
               {/* SECTION 1: PROFILE EDIT */}
               <div className="flex flex-col gap-4">
                 <h4 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: C.primarySolid }}>
@@ -1774,22 +1986,20 @@ export default function App() {
 
               {/* Submit / Cancel Actions */}
               <div className="flex gap-3 pt-3 mt-2" style={{ borderTop: `1.5px solid ${C.border}` }}>
-                <button
-                  type="button"
+                <LiquidMetalBtn
+                  variant="cancel"
                   onClick={() => setProfileModal(false)}
-                  className="flex-1 py-3 rounded-xl text-sm font-bold transition"
-                  style={btn}
+                  style={{ color: C.txt }}
                 >
                   Hủy
-                </button>
-                <button
+                </LiquidMetalBtn>
+                <LiquidMetalBtn
                   type="submit"
-                  className="flex-1 py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg transition"
-                  style={{ background: C.primary, boxShadow: `0 6px 18px ${C.primaryGlow}` }}
+                  style={{ background: C.primary, color: '#fff', boxShadow: `0 6px 18px ${C.primaryGlow}` }}
                 >
                   <i className="ri-check-line text-lg"></i>
                   Lưu Thay Đổi
-                </button>
+                </LiquidMetalBtn>
               </div>
             </form>
           </div>
@@ -1799,20 +2009,20 @@ export default function App() {
       {/* ── LOGIN MODAL ─────────────────────────── */}
       {loginModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4"
-          style={{ background:'rgba(0,0,0,0.4)', backdropFilter:'blur(14px)' }}>
+          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(14px)' }}>
           <div className="w-full max-w-sm rounded-3xl p-8 shadow-2xl"
-            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border:`1.5px solid ${C.border}`, boxShadow:'0 20px 60px rgba(0,0,0,0.18)' }}>
+            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
             <div className="text-center mb-6">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md"
                 style={{ background: C.primary }}>
                 <i className="ri-heart-lock-fill text-3xl text-white"></i>
               </div>
-              <h2 style={{ fontFamily: F.heading, fontSize:'26px', fontWeight:700, color: C.txt, marginBottom:'4px' }}>Chào mừng trở lại</h2>
-              <p style={{ fontFamily: F.cursive, fontSize:'18px', color: C.primarySolid }}>your personal music haven 🕊️</p>
+              <h2 style={{ fontFamily: F.heading, fontSize: '26px', fontWeight: 700, color: C.txt, marginBottom: '4px' }}>Chào mừng trở lại</h2>
+              <p style={{ fontFamily: F.cursive, fontSize: '18px', color: C.primarySolid }}>your personal music haven 🕊️</p>
             </div>
 
             <div className="rounded-2xl p-3.5 mb-5 flex items-start gap-2.5"
-              style={{ background: C.tag, border:`1px solid ${C.border}` }}>
+              style={{ background: C.tag, border: `1px solid ${C.border}` }}>
               <i className="ri-information-fill text-sm mt-0.5" style={{ color: C.primarySolid }}></i>
               <p className="text-xs leading-relaxed" style={{ color: C.txtSub }}>
                 Đây là trang cá nhân. <strong style={{ color: C.txt }}>Đăng ký công khai đã bị đóng</strong> — chỉ chủ sở hữu mới có thể đăng nhập.
@@ -1821,26 +2031,26 @@ export default function App() {
 
             <form onSubmit={handleLogin} className="flex flex-col gap-3.5">
               {[
-                { label:'Email', type:'email', val: email, set: setEmail },
-                { label:'Mật Khẩu', type:'password', val: pwd,   set: setPwd   },
+                { label: 'Email', type: 'email', val: email, set: setEmail },
+                { label: 'Mật Khẩu', type: 'password', val: pwd, set: setPwd },
               ].map(f => (
                 <div key={f.label}>
                   <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>{f.label}</label>
-                  <input type={f.type} value={f.val} onChange={e=>f.set(e.target.value)} required
+                  <input type={f.type} value={f.val} onChange={e => f.set(e.target.value)} required
                     className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
+                    style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
                   />
                 </div>
               ))}
               {loginErr && <p className="text-xs font-semibold text-red-500">{loginErr}</p>}
               <div className="flex gap-3 mt-1">
-                <button type="button" onClick={()=>setLoginModal(false)}
+                <button type="button" onClick={() => setLoginModal(false)}
                   className="flex-1 py-2.5 rounded-xl text-sm font-bold transition" style={btn}>
                   Hủy
                 </button>
                 <button type="submit" disabled={loggingIn}
                   className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg"
-                  style={{ background: C.primary, boxShadow:`0 6px 18px ${C.primaryGlow}` }}>
+                  style={{ background: C.primary, boxShadow: `0 6px 18px ${C.primaryGlow}` }}>
                   {loggingIn ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-login-box-line"></i>}
                   Đăng Nhập
                 </button>
@@ -1853,13 +2063,13 @@ export default function App() {
       {/* ── ADD SONG MODAL ─────────────────────── */}
       {addModal && (
         <div className="fixed inset-0 flex items-center justify-center z-[60] p-4"
-          style={{ background:'rgba(0,0,0,0.4)', backdropFilter:'blur(14px)' }}
-          onClick={e => { if (e.target === e.currentTarget) { setAddModal(false); setAddErr(''); }}}>
+          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(14px)' }}
+          onClick={e => { if (e.target === e.currentTarget) { setAddModal(false); setAddErr(''); } }}>
           <div className="w-full max-w-sm rounded-3xl p-8 shadow-2xl"
-            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border:`1.5px solid ${C.border}`, boxShadow:'0 20px 60px rgba(0,0,0,0.18)' }}>
+            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
-              <h3 className="flex items-center gap-2" style={{ fontFamily: F.heading, fontSize:'20px', fontWeight:700, color: C.txt }}>
+              <h3 className="flex items-center gap-2" style={{ fontFamily: F.heading, fontSize: '20px', fontWeight: 700, color: C.txt }}>
                 <i className="ri-music-fill" style={{ color: C.primarySolid }}></i> Thêm Nhạc
               </h3>
               <button onClick={() => { setAddModal(false); setAddErr(''); }} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: C.tag, color: C.txtFad }}>
@@ -1873,7 +2083,7 @@ export default function App() {
                 onClick={() => { setAddTab('youtube'); setAddErr(''); }}
                 className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
                 style={addTab === 'youtube'
-                  ? { background: C.primary, color:'#fff', boxShadow:`0 2px 12px ${C.primaryGlow}` }
+                  ? { background: C.primary, color: '#fff', boxShadow: `0 2px 12px ${C.primaryGlow}` }
                   : { color: C.txtSub }}
               >
                 <i className="ri-youtube-fill"></i> Bài Hát
@@ -1882,7 +2092,7 @@ export default function App() {
                 onClick={() => { setAddTab('spotify'); setAddErr(''); }}
                 className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
                 style={addTab === 'spotify'
-                  ? { background:'#1DB954', color:'#fff', boxShadow:'0 2px 12px rgba(29,185,84,0.4)' }
+                  ? { background: '#1DB954', color: '#fff', boxShadow: '0 2px 12px rgba(29,185,84,0.4)' }
                   : { color: C.txtSub }}
               >
                 <i className="ri-spotify-fill"></i> Spotify
@@ -1891,7 +2101,7 @@ export default function App() {
                 onClick={() => { setAddTab('playlist'); setAddErr(''); }}
                 className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
                 style={addTab === 'playlist'
-                  ? { background: '#f59e0b', color:'#fff', boxShadow:'0 2px 12px rgba(245, 158, 11, 0.4)' }
+                  ? { background: '#f59e0b', color: '#fff', boxShadow: '0 2px 12px rgba(245, 158, 11, 0.4)' }
                   : { color: C.txtSub }}
               >
                 <i className="ri-play-list-2-fill"></i> Playlist (YT)
@@ -1903,9 +2113,9 @@ export default function App() {
               <form onSubmit={addSong} className="flex flex-col gap-4">
                 <div>
                   <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Đường dẫn YouTube</label>
-                  <input type="text" placeholder="https://www.youtube.com/watch?v=..." value={ytUrl} onChange={e=>setYtUrl(e.target.value)}
+                  <input type="text" placeholder="https://www.youtube.com/watch?v=..." value={ytUrl} onChange={e => setYtUrl(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
+                    style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
                     autoFocus
                   />
                 </div>
@@ -1917,7 +2127,7 @@ export default function App() {
                   </button>
                   <button type="submit" disabled={adding}
                     className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg whitespace-nowrap"
-                    style={{ background: C.primary, boxShadow:`0 6px 18px ${C.primaryGlow}` }}>
+                    style={{ background: C.primary, boxShadow: `0 6px 18px ${C.primaryGlow}` }}>
                     {adding ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-add-line"></i>}
                     Thêm &amp; Phát
                   </button>
@@ -1930,9 +2140,9 @@ export default function App() {
               <form onSubmit={addSpotify} className="flex flex-col gap-4">
                 <div>
                   <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Đường dẫn Spotify (Bài hát / Playlist)</label>
-                  <input type="text" placeholder="https://open.spotify.com/..." value={spotifyUrl} onChange={e=>setSpotifyUrl(e.target.value)}
+                  <input type="text" placeholder="https://open.spotify.com/..." value={spotifyUrl} onChange={e => setSpotifyUrl(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
+                    style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
                     autoFocus
                   />
                   <p className="text-[11px] mt-1.5" style={{ color: C.txtFad }}>
@@ -1940,7 +2150,7 @@ export default function App() {
                   </p>
                 </div>
                 {addErr && <p className="text-xs font-semibold text-red-500">{addErr}</p>}
-                <div className="p-3 rounded-xl text-xs" style={{ background: C.tag, border:`1px solid ${C.border}`, color: C.txtSub }}>
+                <div className="p-3 rounded-xl text-xs" style={{ background: C.tag, border: `1px solid ${C.border}`, color: C.txtSub }}>
                   <i className="ri-information-line mr-1"></i>
                   Spotify player sẽ hiện trực tiếp — cần tài khoản Spotify để phát toàn bộ.
                 </div>
@@ -1951,7 +2161,7 @@ export default function App() {
                   </button>
                   <button type="submit" disabled={adding}
                     className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg whitespace-nowrap"
-                    style={{ background:'#1DB954', boxShadow:'0 6px 18px rgba(29,185,84,0.35)' }}>
+                    style={{ background: '#1DB954', boxShadow: '0 6px 18px rgba(29,185,84,0.35)' }}>
                     {adding ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-spotify-fill"></i>}
                     Thêm vào Thư Viện
                   </button>
@@ -1964,9 +2174,9 @@ export default function App() {
               <form onSubmit={addYouTubePlaylist} className="flex flex-col gap-4">
                 <div>
                   <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Đường dẫn Playlist YouTube</label>
-                  <input type="text" placeholder="https://www.youtube.com/playlist?list=..." value={playlistUrl} onChange={e=>setPlaylistUrl(e.target.value)}
+                  <input type="text" placeholder="https://www.youtube.com/playlist?list=..." value={playlistUrl} onChange={e => setPlaylistUrl(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
+                    style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
                     autoFocus
                   />
                   <p className="text-[11px] mt-1.5" style={{ color: C.txtFad }}>
@@ -1995,20 +2205,20 @@ export default function App() {
       {/* ── CREATE PLAYLIST MODAL ─────────────────────── */}
       {playlistModal && (
         <div className="fixed inset-0 flex items-center justify-center z-[60] p-4"
-          style={{ background:'rgba(0,0,0,0.4)', backdropFilter:'blur(14px)' }}
+          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(14px)' }}
           onClick={e => { if (e.target === e.currentTarget) setPlaylistModal(false); }}>
           <div className="w-full max-w-sm rounded-3xl p-8 shadow-2xl"
-            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border:`1.5px solid ${C.border}`, boxShadow:'0 20px 60px rgba(0,0,0,0.18)' }}>
-            <h3 className="flex items-center gap-2 mb-5" style={{ fontFamily: F.heading, fontSize:'20px', fontWeight:700, color: C.txt }}>
+            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+            <h3 className="flex items-center gap-2 mb-5" style={{ fontFamily: F.heading, fontSize: '20px', fontWeight: 700, color: C.txt }}>
               <i className="ri-play-list-add-fill" style={{ color: C.primarySolid }}></i> Tạo Playlist Mới
             </h3>
-            
+
             <form onSubmit={handleCreatePlaylist} className="flex flex-col gap-4">
               <div>
                 <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Tên danh sách phát</label>
-                <input type="text" placeholder="Nhạc chill cuối tuần..." value={newPlaylistName} onChange={e=>setNewPlaylistName(e.target.value)}
+                <input type="text" placeholder="Nhạc chill cuối tuần..." value={newPlaylistName} onChange={e => setNewPlaylistName(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
+                  style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
                   autoFocus required
                 />
               </div>
@@ -2019,7 +2229,7 @@ export default function App() {
                 </button>
                 <button type="submit"
                   className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg"
-                  style={{ background: C.primary, boxShadow:`0 6px 18px ${C.primaryGlow}` }}>
+                  style={{ background: C.primary, boxShadow: `0 6px 18px ${C.primaryGlow}` }}>
                   Tạo mới
                 </button>
               </div>
@@ -2031,30 +2241,30 @@ export default function App() {
       {/* ── ADD TO PLAYLIST MODAL ─────────────────────── */}
       {songToAdd && (
         <div className="fixed inset-0 flex items-center justify-center z-[60] p-4"
-          style={{ background:'rgba(0,0,0,0.4)', backdropFilter:'blur(14px)' }}
+          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(14px)' }}
           onClick={e => { if (e.target === e.currentTarget) setSongToAdd(null); }}>
           <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl"
-            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border:`1.5px solid ${C.border}`, boxShadow:'0 20px 60px rgba(0,0,0,0.18)' }}>
-            <h3 className="mb-4" style={{ fontFamily: F.heading, fontSize:'18px', fontWeight:700, color: C.txt }}>
+            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+            <h3 className="mb-4" style={{ fontFamily: F.heading, fontSize: '18px', fontWeight: 700, color: C.txt }}>
               Thêm vào danh sách phát
             </h3>
-            
+
             <div className="flex flex-col gap-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
               {playlists.length === 0 ? (
                 <p className="text-sm text-center py-4" style={{ color: C.txtSub }}>Bạn chưa có playlist nào.</p>
               ) : playlists.map(p => {
                 const inPlaylist = p.songs.includes(songToAdd.id);
                 return (
-                    <button key={p._id} onClick={() => inPlaylist ? handleRemoveFromPlaylist(p._id, songToAdd.id) : handleAddToPlaylist(p._id, songToAdd.id)}
-                      className="flex items-center justify-between px-4 py-3 rounded-xl transition-all hover:opacity-80 active:scale-[0.98] active:opacity-60"
-                    style={{ background: C.tag, border:`1px solid ${inPlaylist ? C.primarySolid : C.border}` }}>
+                  <button key={p._id} onClick={() => inPlaylist ? handleRemoveFromPlaylist(p._id, songToAdd.id) : handleAddToPlaylist(p._id, songToAdd.id)}
+                    className="flex items-center justify-between px-4 py-3 rounded-xl transition-all hover:opacity-80 active:scale-[0.98] active:opacity-60"
+                    style={{ background: C.tag, border: `1px solid ${inPlaylist ? C.primarySolid : C.border}` }}>
                     <span className="text-sm font-semibold truncate" style={{ color: inPlaylist ? C.primarySolid : C.txt }}>{p.name}</span>
                     <i className={inPlaylist ? "ri-check-line text-lg" : "ri-add-line text-lg"} style={{ color: inPlaylist ? C.primarySolid : C.txtSub }}></i>
                   </button>
                 );
               })}
             </div>
-            
+
             <button onClick={() => setSongToAdd(null)}
               className="mt-4 w-full py-2.5 rounded-xl text-sm font-bold" style={btn}>
               Đóng
@@ -2082,14 +2292,14 @@ export default function App() {
               <div className="relative shrink-0">
                 <img src={track.thumbnail} alt={track.title}
                   className="w-8 h-8 md:w-14 md:h-14 rounded-lg md:rounded-2xl object-cover"
-                  style={{ border:`2px solid ${C.border}`, boxShadow:'0 4px 14px rgba(0,0,0,0.1)' }}
+                  style={{ border: `2px solid ${C.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.1)' }}
                 />
                 {playing && (
-                  <div className="absolute inset-0 rounded-lg md:rounded-2xl flex items-center justify-center" style={{ background:'rgba(0,0,0,0.25)' }}>
+                  <div className="absolute inset-0 rounded-lg md:rounded-2xl flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.25)' }}>
                     <span className="flex gap-[1px] md:gap-0.5 items-end h-3 md:h-4">
-                      {['100%','50%','75%'].map((h,i) => (
+                      {['100%', '50%', '75%'].map((h, i) => (
                         <span key={i} className="w-[1.5px] md:w-1 rounded-full animate-pulse text-white"
-                          style={{ background: '#fff', height:h, animationDelay:`${i*0.2}s` }} />
+                          style={{ background: '#fff', height: h, animationDelay: `${i * 0.2}s` }} />
                       ))}
                     </span>
                   </div>
@@ -2117,77 +2327,77 @@ export default function App() {
               <i className="ri-shuffle-line text-sm md:text-lg"></i>
             </button>
 
-                {/* Repeat Mode Button */}
-                <button
-                  onClick={toggleRepeat}
-                  title={
-                    repeatMode === 'one'
-                      ? 'Đang lặp 1 bài hát'
-                      : repeatMode === 'all'
-                      ? 'Đang lặp toàn bộ danh sách'
-                      : 'Lặp lại: Tắt'
-                  }
-                  className="relative p-1 transition cursor-pointer"
-                  style={{ color: repeatMode !== 'off' ? C.primarySolid : C.txtFad }}
-                >
-                  <i className={repeatMode === 'one' ? 'ri-repeat-2-line text-sm md:text-lg font-bold' : 'ri-repeat-line text-sm md:text-lg'}></i>
-                  {repeatMode === 'one' && (
-                    <span className="absolute -top-1 -right-1 text-[7px] md:text-[9px] font-black rounded-full w-2.5 h-2.5 md:w-3.5 md:h-3.5 flex items-center justify-center text-white shadow-xs"
-                      style={{ background: C.primarySolid }}>
-                      1
-                    </span>
-                  )}
-                  {repeatMode === 'all' && (
-                    <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1.5 md:h-1.5 rounded-full"
-                      style={{ background: C.primarySolid }}>
-                    </span>
-                  )}
-                </button>
+            {/* Repeat Mode Button */}
+            <button
+              onClick={toggleRepeat}
+              title={
+                repeatMode === 'one'
+                  ? 'Đang lặp 1 bài hát'
+                  : repeatMode === 'all'
+                    ? 'Đang lặp toàn bộ danh sách'
+                    : 'Lặp lại: Tắt'
+              }
+              className="relative p-1 transition cursor-pointer"
+              style={{ color: repeatMode !== 'off' ? C.primarySolid : C.txtFad }}
+            >
+              <i className={repeatMode === 'one' ? 'ri-repeat-2-line text-sm md:text-lg font-bold' : 'ri-repeat-line text-sm md:text-lg'}></i>
+              {repeatMode === 'one' && (
+                <span className="absolute -top-1 -right-1 text-[7px] md:text-[9px] font-black rounded-full w-2.5 h-2.5 md:w-3.5 md:h-3.5 flex items-center justify-center text-white shadow-xs"
+                  style={{ background: C.primarySolid }}>
+                  1
+                </span>
+              )}
+              {repeatMode === 'all' && (
+                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1.5 md:h-1.5 rounded-full"
+                  style={{ background: C.primarySolid }}>
+                </span>
+              )}
+            </button>
 
-                <button onClick={prevTrack} title="Bài trước" style={{ color: C.txtSub }}>
-                  <i className="ri-skip-back-fill text-lg md:text-2xl"></i>
-                </button>
-                <button onClick={togglePlay}
-                  title={playing ? 'Tạm dừng' : 'Phát'}
-                  className="w-9 h-9 md:w-12 md:h-12 rounded-full text-white text-sm md:text-xl flex items-center justify-center shadow-lg transition-transform hover:scale-105"
-                  style={{ background: C.primary, boxShadow:`0 4px 18px ${C.primaryGlow}` }}>
-                  <i className={playing ? 'ri-pause-fill' : 'ri-play-fill'}></i>
-                </button>
-                <button onClick={nextTrack} title="Bài tiếp" style={{ color: C.txtSub }}>
-                  <i className="ri-skip-forward-fill text-lg md:text-2xl"></i>
-                </button>
-                <button onClick={()=>track&&toggleFav(track.id)} title="Yêu thích"
-                  style={{ color: track&&favs.includes(track.id) ? C.primarySolid : C.txtFad }}>
-                  <i className={track&&favs.includes(track.id) ? 'ri-heart-fill text-lg' : 'ri-heart-line'}></i>
-                </button>
-                <button onClick={cycleSleepTimer} title={sleepTimer ? `Hẹn giờ tắt: ${sleepTimer} phút (còn ${Math.ceil(sleepTimeLeft/60)} phút)` : 'Hẹn giờ tắt nhạc'}
-                  className="relative p-1 transition cursor-pointer"
-                  style={{ color: sleepTimer > 0 ? C.primarySolid : C.txtFad }}>
-                  <i className={sleepTimer > 0 ? 'ri-timer-fill text-lg' : 'ri-timer-line text-lg'}></i>
-                  {sleepTimer > 0 && (
-                    <span className="absolute -top-1 -right-2 text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center text-white shadow-xs"
-                      style={{ background: C.primarySolid }}>
-                      {sleepTimer}
-                    </span>
-                  )}
-                </button>
-              </div>
+            <button onClick={prevTrack} title="Bài trước" style={{ color: C.txtSub }}>
+              <i className="ri-skip-back-fill text-lg md:text-2xl"></i>
+            </button>
+            <button onClick={togglePlay}
+              title={playing ? 'Tạm dừng' : 'Phát'}
+              className="w-9 h-9 md:w-12 md:h-12 rounded-full text-white text-sm md:text-xl flex items-center justify-center shadow-lg transition-transform hover:scale-105"
+              style={{ background: C.primary, boxShadow: `0 4px 18px ${C.primaryGlow}` }}>
+              <i className={playing ? 'ri-pause-fill' : 'ri-play-fill'}></i>
+            </button>
+            <button onClick={nextTrack} title="Bài tiếp" style={{ color: C.txtSub }}>
+              <i className="ri-skip-forward-fill text-lg md:text-2xl"></i>
+            </button>
+            <button onClick={() => track && toggleFav(track.id)} title="Yêu thích"
+              style={{ color: track && favs.includes(track.id) ? C.primarySolid : C.txtFad }}>
+              <i className={track && favs.includes(track.id) ? 'ri-heart-fill text-lg' : 'ri-heart-line'}></i>
+            </button>
+            <button onClick={cycleSleepTimer} title={sleepTimer ? `Hẹn giờ tắt: ${sleepTimer} phút (còn ${Math.ceil(sleepTimeLeft / 60)} phút)` : 'Hẹn giờ tắt nhạc'}
+              className="relative p-1 transition cursor-pointer"
+              style={{ color: sleepTimer > 0 ? C.primarySolid : C.txtFad }}>
+              <i className={sleepTimer > 0 ? 'ri-timer-fill text-lg' : 'ri-timer-line text-lg'}></i>
+              {sleepTimer > 0 && (
+                <span className="absolute -top-1 -right-2 text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center text-white shadow-xs"
+                  style={{ background: C.primarySolid }}>
+                  {sleepTimer}
+                </span>
+              )}
+            </button>
+          </div>
 
-              {/* Timeline */}
-              <div className="flex items-center gap-2 md:gap-3 w-full order-1 md:order-2 px-2 md:px-0">
-                <span className="text-[10px] md:text-[11px] font-mono w-7 md:w-9 text-right shrink-0" style={{ color: C.txtFad }}>{fmt(curTime)}</span>
-                <input type="range" min="0" max={dur||100} value={curTime} onChange={seek}
-                  className="flex-1" style={{ accentColor: C.primarySolid }} />
-                <span className="text-[11px] font-mono w-9 shrink-0" style={{ color: C.txtFad }}>{fmt(dur)}</span>
+          {/* Timeline */}
+          <div className="flex items-center gap-2 md:gap-3 w-full order-1 md:order-2 px-2 md:px-0">
+            <span className="text-[10px] md:text-[11px] font-mono w-7 md:w-9 text-right shrink-0" style={{ color: C.txtFad }}>{fmt(curTime)}</span>
+            <input type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
+              className="flex-1" style={{ accentColor: C.primarySolid }} />
+            <span className="text-[11px] font-mono w-9 shrink-0" style={{ color: C.txtFad }}>{fmt(dur)}</span>
           </div>
         </div>
 
         {/* Volume */}
         <div className="hidden md:flex items-center justify-end gap-3 w-64 shrink-0">
-          <button onClick={toggleMute} style={{ color: muted||vol===0 ? '#f43f5e' : C.txtFad }}>
-            <i className={`text-lg ${muted||vol===0 ? 'ri-volume-mute-fill' : vol<50 ? 'ri-volume-down-fill' : 'ri-volume-up-fill'}`}></i>
+          <button onClick={toggleMute} style={{ color: muted || vol === 0 ? '#f43f5e' : C.txtFad }}>
+            <i className={`text-lg ${muted || vol === 0 ? 'ri-volume-mute-fill' : vol < 50 ? 'ri-volume-down-fill' : 'ri-volume-up-fill'}`}></i>
           </button>
-          <input type="range" min="0" max="100" value={muted?0:vol} onChange={changeVol}
+          <input type="range" min="0" max="100" value={muted ? 0 : vol} onChange={changeVol}
             className="w-24" style={{ accentColor: C.primarySolid }} />
         </div>
       </footer>
