@@ -98,3 +98,101 @@ input[type='range']::-webkit-slider-thumb:hover {
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 99px; }
 
+/* ── Swimming Fish Animations ───────────────────────────────── */
+@keyframes fishSwimHorizontal {
+  0% {
+    left: -80px;
+    top: 65%;
+    transform: scaleX(1) translateY(0px) rotate(-3deg);
+  }
+  25% {
+    top: 25%;
+    transform: scaleX(1) translateY(-15px) rotate(4deg);
+  }
+  48% {
+    left: calc(100% - 90px);
+    top: 68%;
+    transform: scaleX(1) translateY(10px) rotate(-2deg);
+  }
+  50% {
+    left: calc(100% - 80px);
+    top: 68%;
+    transform: scaleX(-1) translateY(10px) rotate(2deg);
+  }
+  75% {
+    top: 22%;
+    transform: scaleX(-1) translateY(-20px) rotate(-4deg);
+  }
+  98% {
+    left: -70px;
+    top: 60%;
+    transform: scaleX(-1) translateY(5px) rotate(3deg);
+  }
+  100% {
+    left: -80px;
+    top: 65%;
+    transform: scaleX(1) translateY(0px) rotate(-3deg);
+  }
+}
+
+@keyframes tailWag {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(18deg); }
+}
+
+@keyframes finFlapLeft {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-22deg); }
+}
+
+@keyframes finFlapRight {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(22deg); }
+}
+
+@keyframes bubbleUp {
+  0% { opacity: 0; transform: translateY(0) scale(0.4); }
+  30% { opacity: 0.85; }
+  100% { opacity: 0; transform: translateY(-70px) scale(1.3); }
+}
+
+.fish-container {
+  position: absolute;
+  z-index: 5;
+  width: 95px;
+  height: 55px;
+  animation: fishSwimHorizontal 18s ease-in-out infinite;
+  cursor: pointer;
+  filter: drop-shadow(0 8px 16px rgba(233, 115, 80, 0.4));
+  transition: filter 0.3s, transform 0.3s;
+}
+
+.fish-container:hover {
+  filter: drop-shadow(0 12px 24px rgba(255, 140, 100, 0.75)) scale(1.1);
+}
+
+.fish-tail {
+  transform-origin: 22px 30px;
+  animation: tailWag 0.5s ease-in-out infinite;
+}
+
+.fish-fin-l {
+  transform-origin: 45px 32px;
+  animation: finFlapLeft 1s ease-in-out infinite;
+}
+
+.fish-fin-r {
+  transform-origin: 45px 28px;
+  animation: finFlapRight 1s ease-in-out infinite;
+}
+
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+  animation: bubbleUp 3.2s ease-out infinite;
+}
+
+

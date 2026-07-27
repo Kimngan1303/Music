@@ -367,6 +367,115 @@ const THEMES = {
 
 
 // Preset Avatars for quick selection
+// ─── Swimming Fish Decorative Component ───────────────────
+function SwimmingFish() {
+  const [bubbles, setBubbles] = useState([
+    { id: 1, left: '20px', delay: '0s', size: '8px' },
+    { id: 2, left: '45px', delay: '1.2s', size: '6px' },
+    { id: 3, left: '70px', delay: '2.1s', size: '10px' },
+  ]);
+  const [wiggle, setWiggle] = useState(false);
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    setWiggle(true);
+    setTimeout(() => setWiggle(false), 900);
+    setBubbles(prev => [
+      ...prev.slice(-6),
+      { id: Date.now(), left: `${Math.random() * 60 + 10}px`, delay: '0s', size: `${Math.random() * 8 + 6}px` }
+    ]);
+  };
+
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl">
+      {/* Main Swimming Fish */}
+      <div 
+        onClick={handleClick}
+        className={`fish-container pointer-events-auto transition-transform ${wiggle ? 'scale-125 rotate-12' : ''}`}
+        title="Nhấp để tương tác với chú cá bơi! 🐟"
+      >
+        {/* Bubbles */}
+        {bubbles.map(b => (
+          <span 
+            key={b.id} 
+            className="bubble" 
+            style={{ 
+              left: b.left, 
+              top: '8px',
+              width: b.size, 
+              height: b.size, 
+              animationDelay: b.delay 
+            }} 
+          />
+        ))}
+
+        {/* SVG Koi / Goldfish */}
+        <svg viewBox="0 0 100 60" className="w-full h-full">
+          <defs>
+            <linearGradient id="fishBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#ff7b54" />
+              <stop offset="50%" stopColor="#ffb26b" />
+              <stop offset="100%" stopColor="#ffd56b" />
+            </linearGradient>
+            <linearGradient id="fishFinGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="rgba(255, 123, 84, 0.95)" />
+              <stop offset="100%" stopColor="rgba(255, 213, 107, 0.45)" />
+            </linearGradient>
+          </defs>
+
+          {/* Tail Fin */}
+          <g className="fish-tail">
+            <path d="M 22 30 C 5 15, 2 5, 0 20 C -2 30, 2 40, 0 45 C 5 55, 22 45, 22 30 Z" fill="url(#fishFinGrad)" />
+            <path d="M 20 30 C 8 22, 5 12, 3 24 C 5 36, 8 42, 20 30 Z" fill="rgba(255, 255, 255, 0.35)" />
+          </g>
+
+          {/* Left Fin */}
+          <path className="fish-fin-l" d="M 45 32 C 40 45, 30 48, 38 34 Z" fill="url(#fishFinGrad)" />
+
+          {/* Right Fin */}
+          <path className="fish-fin-r" d="M 45 28 C 40 15, 30 12, 38 26 Z" fill="url(#fishFinGrad)" />
+
+          {/* Top Fin */}
+          <path d="M 35 20 C 45 10, 60 14, 55 22 Z" fill="url(#fishFinGrad)" />
+
+          {/* Body */}
+          <path d="M 18 30 C 25 15, 60 14, 82 28 C 88 30, 88 32, 82 34 C 60 48, 25 45, 18 30 Z" fill="url(#fishBodyGrad)" />
+
+          {/* Belly Highlight */}
+          <path d="M 28 32 C 40 40, 65 38, 78 32 C 65 42, 40 42, 28 32 Z" fill="rgba(255, 255, 255, 0.3)" />
+
+          {/* Scales Pattern */}
+          <path d="M 40 24 Q 44 30 40 36" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2" fill="none" />
+          <path d="M 50 22 Q 54 30 50 38" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2" fill="none" />
+          <path d="M 60 23 Q 64 30 60 37" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2" fill="none" />
+
+          {/* Eye */}
+          <circle cx="75" cy="27" r="4" fill="#1a1a1a" />
+          <circle cx="76.5" cy="25.5" r="1.5" fill="#ffffff" />
+
+          {/* Cute Blush */}
+          <ellipse cx="78" cy="33" rx="3" ry="1.8" fill="rgba(255, 100, 100, 0.45)" />
+        </svg>
+      </div>
+
+      {/* Small Companion Fish */}
+      <div 
+        className="fish-container pointer-events-none opacity-80"
+        style={{ animationDelay: '-6s', animationDuration: '22s', transform: 'scale(0.65)' }}
+      >
+        <svg viewBox="0 0 100 60" className="w-full h-full">
+          <g className="fish-tail">
+            <path d="M 22 30 C 5 15, 2 5, 0 20 C -2 30, 2 40, 0 45 C 5 55, 22 45, 22 30 Z" fill="rgba(255, 180, 140, 0.85)" />
+          </g>
+          <path d="M 18 30 C 25 15, 60 14, 82 28 C 88 30, 88 32, 82 34 C 60 48, 25 45, 18 30 Z" fill="rgba(255, 150, 120, 0.9)" />
+          <circle cx="75" cy="27" r="3.5" fill="#222" />
+          <circle cx="76.5" cy="25.5" r="1.2" fill="#fff" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
   'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
@@ -1468,6 +1577,9 @@ export default function App() {
             <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden rounded-3xl p-6 md:p-8 mt-4 md:mt-0 shadow-sm min-h-[400px]"
               style={{ background: C.surface, border:`1.5px solid ${C.border}`, boxShadow:'0 8px 40px rgba(0,0,0,0.06)' }}
             >
+              {/* Swimming Fish Decorative Component */}
+              <SwimmingFish />
+
               {/* Blobs */}
               <div className="absolute top-10 right-20 w-32 h-32 md:w-48 md:h-48 rounded-full pointer-events-none float-anim opacity-50"
                 style={{ background:`radial-gradient(circle,${C.borderSel},transparent)` }} />
