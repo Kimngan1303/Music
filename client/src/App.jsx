@@ -9,202 +9,361 @@ const F = {
   body:       "'DM Sans', sans-serif",
 };
 
-// ─── Pre-curated Pastel Theme Palettes ───────────────────
+// ─── Pre-curated Theme Palettes (Mix-Color Animated + Pastel + Dark) ───────────────────
 const THEMES = {
+  // ── MIX MÀU ĐỘNG (Animated Gradients with Smooth Color Flow) ──
+  aurora: {
+    key: 'aurora',
+    name: 'Cực Quang Aurora Flow',
+    icon: '🌌',
+    category: 'mix',
+    isAnimated: true,
+    bg: 'linear-gradient(-45deg, #0d9488, #7c3aed, #db2777, #1e3a8a)',
+    surface: 'rgba(15, 23, 42, 0.88)',
+    border: 'rgba(168, 85, 247, 0.35)',
+    borderSel: '#2dd4bf',
+    txt: '#f0fdf4',
+    txtSub: '#a7f3d0',
+    txtFad: '#5eead4',
+    primary: 'linear-gradient(135deg, #2dd4bf, #a855f7, #ec4899)',
+    primarySolid: '#2dd4bf',
+    primaryGlow: 'rgba(45, 212, 191, 0.45)',
+    tag: 'rgba(15, 23, 42, 0.65)',
+    tagBd: 'rgba(45, 212, 191, 0.35)',
+    tagTxt: '#a7f3d0',
+    btn: 'rgba(30, 41, 59, 0.85)',
+    btnBd: 'rgba(168, 85, 247, 0.45)',
+    btnTxt: '#2dd4bf',
+    isDark: true
+  },
+  nebula: {
+    key: 'nebula',
+    name: 'Tinh Vân Cosmic Wave',
+    icon: '🔮',
+    category: 'mix',
+    isAnimated: true,
+    bg: 'linear-gradient(-45deg, #3b0764, #701a75, #1e1b4b, #0284c7)',
+    surface: 'rgba(24, 15, 46, 0.88)',
+    border: 'rgba(217, 70, 239, 0.35)',
+    borderSel: '#f472b6',
+    txt: '#fdf4ff',
+    txtSub: '#e879f9',
+    txtFad: '#c084fc',
+    primary: 'linear-gradient(135deg, #f472b6, #c084fc, #38bdf8)',
+    primarySolid: '#f472b6',
+    primaryGlow: 'rgba(244, 114, 182, 0.45)',
+    tag: 'rgba(39, 21, 72, 0.65)',
+    tagBd: 'rgba(244, 114, 182, 0.35)',
+    tagTxt: '#f472b6',
+    btn: 'rgba(48, 25, 87, 0.85)',
+    btnBd: 'rgba(217, 70, 239, 0.45)',
+    btnTxt: '#f472b6',
+    isDark: true
+  },
+  sunset_mix: {
+    key: 'sunset_mix',
+    name: 'Hoàng Hôn Cyber Flow',
+    icon: '🌆',
+    category: 'mix',
+    isAnimated: true,
+    bg: 'linear-gradient(-45deg, #7f1d1d, #9a3412, #581c87, #831843)',
+    surface: 'rgba(44, 16, 25, 0.88)',
+    border: 'rgba(249, 115, 22, 0.35)',
+    borderSel: '#ff6b6b',
+    txt: '#fff5f5',
+    txtSub: '#ffc9c9',
+    txtFad: '#ff8787',
+    primary: 'linear-gradient(135deg, #ff6b6b, #f97316, #ec4899)',
+    primarySolid: '#ff6b6b',
+    primaryGlow: 'rgba(255, 107, 107, 0.45)',
+    tag: 'rgba(60, 20, 30, 0.65)',
+    tagBd: 'rgba(255, 107, 107, 0.35)',
+    tagTxt: '#ff8787',
+    btn: 'rgba(70, 25, 38, 0.85)',
+    btnBd: 'rgba(249, 115, 22, 0.45)',
+    btnTxt: '#ff6b6b',
+    isDark: true
+  },
+  ocean_mix: {
+    key: 'ocean_mix',
+    name: 'Biển Sâu Dạ Quang',
+    icon: '💧',
+    category: 'mix',
+    isAnimated: true,
+    bg: 'linear-gradient(-45deg, #0c4a6e, #0f766e, #1e3a8a, #0369a1)',
+    surface: 'rgba(10, 30, 50, 0.88)',
+    border: 'rgba(56, 189, 248, 0.35)',
+    borderSel: '#38bdf8',
+    txt: '#f0f9ff',
+    txtSub: '#7dd3fc',
+    txtFad: '#38bdf8',
+    primary: 'linear-gradient(135deg, #38bdf8, #2dd4bf, #818cf8)',
+    primarySolid: '#38bdf8',
+    primaryGlow: 'rgba(56, 189, 248, 0.45)',
+    tag: 'rgba(15, 42, 70, 0.65)',
+    tagBd: 'rgba(56, 189, 248, 0.35)',
+    tagTxt: '#7dd3fc',
+    btn: 'rgba(20, 50, 80, 0.85)',
+    btnBd: 'rgba(56, 189, 248, 0.45)',
+    btnTxt: '#38bdf8',
+    isDark: true
+  },
+  fire_mix: {
+    key: 'fire_mix',
+    name: 'Lửa Phượng Hoàng Blaze',
+    icon: '🔥',
+    category: 'mix',
+    isAnimated: true,
+    bg: 'linear-gradient(-45deg, #7c2d12, #991b1b, #831843, #713f12)',
+    surface: 'rgba(45, 18, 15, 0.88)',
+    border: 'rgba(245, 158, 11, 0.35)',
+    borderSel: '#fb923c',
+    txt: '#fff7ed',
+    txtSub: '#fed7aa',
+    txtFad: '#fb923c',
+    primary: 'linear-gradient(135deg, #f97316, #e11d48, #eab308)',
+    primarySolid: '#fb923c',
+    primaryGlow: 'rgba(251, 146, 60, 0.45)',
+    tag: 'rgba(60, 24, 18, 0.65)',
+    tagBd: 'rgba(251, 146, 60, 0.35)',
+    tagTxt: '#fed7aa',
+    btn: 'rgba(70, 30, 20, 0.85)',
+    btnBd: 'rgba(245, 158, 11, 0.45)',
+    btnTxt: '#fb923c',
+    isDark: true
+  },
+  prisma_mix: {
+    key: 'prisma_mix',
+    name: 'Cầu Vồng Prisma Dynamic',
+    icon: '🌈',
+    category: 'mix',
+    isAnimated: true,
+    bg: 'linear-gradient(-45deg, #4338ca, #6d28d9, #be185d, #b45309, #047857)',
+    surface: 'rgba(20, 20, 35, 0.88)',
+    border: 'rgba(244, 63, 94, 0.35)',
+    borderSel: '#a855f7',
+    txt: '#ffffff',
+    txtSub: '#e2e8f0',
+    txtFad: '#c084fc',
+    primary: 'linear-gradient(135deg, #ff2a9d, #a855f7, #00f2fe, #f59e0b)',
+    primarySolid: '#c084fc',
+    primaryGlow: 'rgba(192, 132, 252, 0.45)',
+    tag: 'rgba(30, 30, 50, 0.65)',
+    tagBd: 'rgba(192, 132, 252, 0.35)',
+    tagTxt: '#e2e8f0',
+    btn: 'rgba(40, 40, 65, 0.85)',
+    btnBd: 'rgba(168, 85, 247, 0.45)',
+    btnTxt: '#c084fc',
+    isDark: true
+  },
+
+  // ── TONE PASTEL NHẸ NHÀNG ──
   nude: {
     key: 'nude',
     name: 'Pastel Nude (Beige Kem)',
     icon: '🌾',
-    bg:          'linear-gradient(145deg,#f5e8dc 0%,#ead7c5 50%,#f0e0d0 100%)',
-    surface:     'rgba(252,245,238,0.92)',
-    border:      '#e2cbb8',
-    borderSel:   '#b8876a',
-    txt:         '#523223',
-    txtSub:      '#7a4d38',
-    txtFad:      '#a87d69',
-    primary:     'linear-gradient(135deg,#d98a6c,#c47150)',
-    primarySolid:'#d98a6c',
+    category: 'pastel',
+    bg: 'linear-gradient(145deg,#f5e8dc 0%,#ead7c5 50%,#f0e0d0 100%)',
+    surface: 'rgba(252,245,238,0.92)',
+    border: '#e2cbb8',
+    borderSel: '#b8876a',
+    txt: '#523223',
+    txtSub: '#7a4d38',
+    txtFad: '#a87d69',
+    primary: 'linear-gradient(135deg,#d98a6c,#c47150)',
+    primarySolid: '#d98a6c',
     primaryGlow: 'rgba(217,138,108,0.45)',
-    tag:         '#ebdacb',
-    tagBd:       '#d8bea9',
-    tagTxt:      '#6e3c23',
-    btn:         '#ebdccf',
-    btnBd:       '#d8bea9',
-    btnTxt:      '#a25c38',
+    tag: '#ebdacb',
+    tagBd: '#d8bea9',
+    tagTxt: '#6e3c23',
+    btn: '#ebdccf',
+    btnBd: '#d8bea9',
+    btnTxt: '#a25c38',
   },
   pink: {
     key: 'pink',
     name: 'Pastel Rose (Hồng Nhạt)',
     icon: '🌸',
-    bg:          'linear-gradient(145deg,#f9d0e2 0%,#f1bada 50%,#f6cadf 100%)',
-    surface:     'rgba(255,242,248,0.92)',
-    border:      '#e89bbd',
-    borderSel:   '#cd588e',
-    txt:         '#4a122a',
-    txtSub:      '#7c2a4f',
-    txtFad:      '#aa5a81',
-    primary:     'linear-gradient(135deg,#d95d90,#c74378)',
-    primarySolid:'#d95d90',
+    category: 'pastel',
+    bg: 'linear-gradient(145deg,#f9d0e2 0%,#f1bada 50%,#f6cadf 100%)',
+    surface: 'rgba(255,242,248,0.92)',
+    border: '#e89bbd',
+    borderSel: '#cd588e',
+    txt: '#4a122a',
+    txtSub: '#7c2a4f',
+    txtFad: '#aa5a81',
+    primary: 'linear-gradient(135deg,#d95d90,#c74378)',
+    primarySolid: '#d95d90',
     primaryGlow: 'rgba(217,93,144,0.45)',
-    tag:         '#f3c4d9',
-    tagBd:       '#e497b9',
-    tagTxt:      '#681c3c',
-    btn:         '#f4c7dc',
-    btnBd:       '#e497b9',
-    btnTxt:      '#a83d6a',
+    tag: '#f3c4d9',
+    tagBd: '#e497b9',
+    tagTxt: '#681c3c',
+    btn: '#f4c7dc',
+    btnBd: '#e497b9',
+    btnTxt: '#a83d6a',
   },
   matcha: {
     key: 'matcha',
-    name: 'Pastel Matcha (Xanh Trà Nhạt)',
+    name: 'Pastel Matcha (Trà Nhạt)',
     icon: '🌿',
-    bg:          'linear-gradient(145deg,#cbe8cb 0%,#b9dfb9 50%,#c3e4c3 100%)',
-    surface:     'rgba(240,250,240,0.92)',
-    border:      '#91c491',
-    borderSel:   '#509450',
-    txt:         '#143317',
-    txtSub:      '#2e5732',
-    txtFad:      '#588c5c',
-    primary:     'linear-gradient(135deg,#58a658,#438a43)',
-    primarySolid:'#58a658',
+    category: 'pastel',
+    bg: 'linear-gradient(145deg,#cbe8cb 0%,#b9dfb9 50%,#c3e4c3 100%)',
+    surface: 'rgba(240,250,240,0.92)',
+    border: '#91c491',
+    borderSel: '#509450',
+    txt: '#143317',
+    txtSub: '#2e5732',
+    txtFad: '#588c5c',
+    primary: 'linear-gradient(135deg,#58a658,#438a43)',
+    primarySolid: '#58a658',
     primaryGlow: 'rgba(88,166,88,0.45)',
-    tag:         '#bee2be',
-    tagBd:       '#94c894',
-    tagTxt:      '#1f4823',
-    btn:         '#bee2be',
-    btnBd:       '#94c894',
-    btnTxt:      '#38733d',
+    tag: '#bee2be',
+    tagBd: '#94c894',
+    tagTxt: '#1f4823',
+    btn: '#bee2be',
+    btnBd: '#94c894',
+    btnTxt: '#38733d',
   },
   lavender: {
     key: 'lavender',
     name: 'Pastel Lavender (Tím Nhạt)',
     icon: '💜',
-    bg:          'linear-gradient(145deg,#d8c7ff 0%,#c7b2ff 50%,#d0bcff 100%)',
-    surface:     'rgba(245,240,255,0.92)',
-    border:      '#b397ee',
-    borderSel:   '#7e52d6',
-    txt:         '#2a124a',
-    txtSub:      '#4f2b7d',
-    txtFad:      '#7d57ab',
-    primary:     'linear-gradient(135deg,#8c57e6,#773fd3)',
-    primarySolid:'#8c57e6',
+    category: 'pastel',
+    bg: 'linear-gradient(145deg,#d8c7ff 0%,#c7b2ff 50%,#d0bcff 100%)',
+    surface: 'rgba(245,240,255,0.92)',
+    border: '#b397ee',
+    borderSel: '#7e52d6',
+    txt: '#2a124a',
+    txtSub: '#4f2b7d',
+    txtFad: '#7d57ab',
+    primary: 'linear-gradient(135deg,#8c57e6,#773fd3)',
+    primarySolid: '#8c57e6',
     primaryGlow: 'rgba(140,87,230,0.45)',
-    tag:         '#cdbbf8',
-    tagBd:       '#b397ee',
-    tagTxt:      '#3d1a6d',
-    btn:         '#cfbefa',
-    btnBd:       '#b397ee',
-    btnTxt:      '#6d3ab8',
+    tag: '#cdbbf8',
+    tagBd: '#b397ee',
+    tagTxt: '#3d1a6d',
+    btn: '#cfbefa',
+    btnBd: '#b397ee',
+    btnTxt: '#6d3ab8',
   },
   peach: {
     key: 'peach',
     name: 'Pastel Peach (Đào Nhạt)',
     icon: '🍑',
-    bg:          'linear-gradient(145deg,#ffd2b3 0%,#fbc097 50%,#fecaa5 100%)',
-    surface:     'rgba(255,246,238,0.92)',
-    border:      '#f5a36c',
-    borderSel:   '#db5e1d',
-    txt:         '#471905',
-    txtSub:      '#7a320e',
-    txtFad:      '#ab5d33',
-    primary:     'linear-gradient(135deg,#e87333,#d45a17)',
-    primarySolid:'#e87333',
+    category: 'pastel',
+    bg: 'linear-gradient(145deg,#ffd2b3 0%,#fbc097 50%,#fecaa5 100%)',
+    surface: 'rgba(255,246,238,0.92)',
+    border: '#f5a36c',
+    borderSel: '#db5e1d',
+    txt: '#471905',
+    txtSub: '#7a320e',
+    txtFad: '#ab5d33',
+    primary: 'linear-gradient(135deg,#e87333,#d45a17)',
+    primarySolid: '#e87333',
     primaryGlow: 'rgba(232,115,51,0.45)',
-    tag:         '#fbc7a3',
-    tagBd:       '#f3a470',
-    tagTxt:      '#642407',
-    btn:         '#fbc7a3',
-    btnBd:       '#f3a470',
-    btnTxt:      '#9c4114',
+    tag: '#fbc7a3',
+    tagBd: '#f3a470',
+    tagTxt: '#642407',
+    btn: '#fbc7a3',
+    btnBd: '#f3a470',
+    btnTxt: '#9c4114',
   },
+
+  // ── TONE TỐI & DARK ──
   dark: {
     key: 'dark',
     name: 'Pastel Dusk (Hoàng Hôn)',
     icon: '🌙',
-    bg:          'linear-gradient(145deg,#191328 0%,#100b1d 50%,#1d162f 100%)',
-    surface:     'rgba(27,21,42,0.92)',
-    border:      '#4e4e70',
-    borderSel:   '#9377ed',
-    txt:         '#ffffff',
-    txtSub:      '#cfc6ed',
-    txtFad:      '#9184b9',
-    primary:     'linear-gradient(135deg,#9b7fed,#8160e6)',
-    primarySolid:'#9b7fed',
+    category: 'dark',
+    bg: 'linear-gradient(145deg,#191328 0%,#100b1d 50%,#1d162f 100%)',
+    surface: 'rgba(27,21,42,0.92)',
+    border: '#4e4e70',
+    borderSel: '#9377ed',
+    txt: '#ffffff',
+    txtSub: '#cfc6ed',
+    txtFad: '#9184b9',
+    primary: 'linear-gradient(135deg,#9b7fed,#8160e6)',
+    primarySolid: '#9b7fed',
     primaryGlow: 'rgba(155,127,237,0.45)',
-    tag:         '#251c3b',
-    tagBd:       '#4e4070',
-    tagTxt:      '#bba7f5',
-    btn:         '#251c3b',
-    btnBd:       '#4e4070',
-    btnTxt:      '#9b7fed',
-    isDark:      true
+    tag: '#251c3b',
+    tagBd: '#4e4070',
+    tagTxt: '#bba7f5',
+    btn: '#251c3b',
+    btnBd: '#4e4070',
+    btnTxt: '#9b7fed',
+    isDark: true
   },
   midnight: {
     key: 'midnight',
     name: 'Midnight (Đen Huyền Bí)',
     icon: '🌑',
-    bg:          'linear-gradient(145deg,#0a0a0a 0%,#151515 50%,#000000 100%)',
-    surface:     'rgba(20,20,20,0.90)',
-    border:      '#333333',
-    borderSel:   '#777777',
-    txt:         '#f5f5f5',
-    txtSub:      '#aaaaaa',
-    txtFad:      '#555555',
-    primary:     'linear-gradient(135deg,#e0e0e0,#888888)',
-    primarySolid:'#cccccc',
+    category: 'dark',
+    bg: 'linear-gradient(145deg,#0a0a0a 0%,#151515 50%,#000000 100%)',
+    surface: 'rgba(20,20,20,0.90)',
+    border: '#333333',
+    borderSel: '#777777',
+    txt: '#f5f5f5',
+    txtSub: '#aaaaaa',
+    txtFad: '#555555',
+    primary: 'linear-gradient(135deg,#e0e0e0,#888888)',
+    primarySolid: '#cccccc',
     primaryGlow: 'rgba(255,255,255,0.25)',
-    tag:         '#1a1a1a',
-    tagBd:       '#333333',
-    tagTxt:      '#cccccc',
-    btn:         '#1a1a1a',
-    btnBd:       '#333333',
-    btnTxt:      '#ffffff',
-    isDark:      true
+    tag: '#1a1a1a',
+    tagBd: '#333333',
+    tagTxt: '#cccccc',
+    btn: '#1a1a1a',
+    btnBd: '#333333',
+    btnTxt: '#ffffff',
+    isDark: true
   },
   ocean: {
     key: 'ocean',
     name: 'Deep Ocean (Đại Dương Xanh)',
     icon: '🌊',
-    bg:          'linear-gradient(145deg,#071a2b 0%,#0c253d 50%,#051524 100%)',
-    surface:     'rgba(14,35,56,0.90)',
-    border:      '#1f4b75',
-    borderSel:   '#3d84c6',
-    txt:         '#e6f2ff',
-    txtSub:      '#99c2eb',
-    txtFad:      '#4d88c2',
-    primary:     'linear-gradient(135deg,#5dade2,#2874a6)',
-    primarySolid:'#5dade2',
+    category: 'dark',
+    bg: 'linear-gradient(145deg,#071a2b 0%,#0c253d 50%,#051524 100%)',
+    surface: 'rgba(14,35,56,0.90)',
+    border: '#1f4b75',
+    borderSel: '#3d84c6',
+    txt: '#e6f2ff',
+    txtSub: '#99c2eb',
+    txtFad: '#4d88c2',
+    primary: 'linear-gradient(135deg,#5dade2,#2874a6)',
+    primarySolid: '#5dade2',
     primaryGlow: 'rgba(93,173,226,0.40)',
-    tag:         '#102c47',
-    tagBd:       '#1f4b75',
-    tagTxt:      '#85b9e6',
-    btn:         '#102c47',
-    btnBd:       '#1f4b75',
-    btnTxt:      '#5dade2',
-    isDark:      true
+    tag: '#102c47',
+    tagBd: '#1f4b75',
+    tagTxt: '#85b9e6',
+    btn: '#102c47',
+    btnBd: '#1f4b75',
+    btnTxt: '#5dade2',
+    isDark: true
   },
   cyberpunk: {
     key: 'cyberpunk',
     name: 'Cyberpunk (Neon Mix)',
     icon: '👾',
-    bg:          'linear-gradient(145deg,#12041c 0%,#1a0628 50%,#0d0214 100%)',
-    surface:     'rgba(30,10,48,0.90)',
-    border:      '#4a1572',
-    borderSel:   '#e024b4',
-    txt:         '#faebff',
-    txtSub:      '#c88de0',
-    txtFad:      '#6a3b82',
-    primary:     'linear-gradient(135deg,#ff2a9d,#00e5ff)',
-    primarySolid:'#ff2a9d',
+    category: 'dark',
+    bg: 'linear-gradient(145deg,#12041c 0%,#1a0628 50%,#0d0214 100%)',
+    surface: 'rgba(30,10,48,0.90)',
+    border: '#4a1572',
+    borderSel: '#e024b4',
+    txt: '#faebff',
+    txtSub: '#c88de0',
+    txtFad: '#6a3b82',
+    primary: 'linear-gradient(135deg,#ff2a9d,#00e5ff)',
+    primarySolid: '#ff2a9d',
     primaryGlow: 'rgba(255,42,157,0.50)',
-    tag:         '#250c38',
-    tagBd:       '#4a1572',
-    tagTxt:      '#e024b4',
-    btn:         '#250c38',
-    btnBd:       '#4a1572',
-    btnTxt:      '#00e5ff',
-    isDark:      true
+    tag: '#250c38',
+    tagBd: '#4a1572',
+    tagTxt: '#e024b4',
+    btn: '#250c38',
+    btnBd: '#4a1572',
+    btnTxt: '#00e5ff',
+    isDark: true
   }
 };
+
 
 
 // Preset Avatars for quick selection
@@ -379,10 +538,17 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?._id]);
 
-  // Theme State
-  const [themeKey, setThemeKey] = useState(() => {
-    return localStorage.getItem('aura_theme_key') || 'nude';
+  // Theme State & Persistent Selection
+  const [themeKey, setThemeKeyRaw] = useState(() => {
+    return localStorage.getItem('aura_theme_key') || 'aurora';
   });
+
+  const setThemeKey = (key) => {
+    setThemeKeyRaw(key);
+    localStorage.setItem('aura_theme_key', key);
+  };
+
+  const [themeCategory, setThemeCategory] = useState('mix');
 
   // Repeat Mode State: 'off' | 'all' | 'one'
   const [repeatMode, setRepeatMode] = useState('off');
@@ -1105,7 +1271,7 @@ export default function App() {
 
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden" style={{ background: C.bg, fontFamily: F.body }}>
+    <div className={`flex flex-col h-screen w-screen overflow-hidden ${C.isAnimated ? 'animated-gradient-bg' : ''}`} style={{ background: C.bg, fontFamily: F.body }}>
       <audio id="silent-audio" src="/silent.mp3" loop preload="auto" style={{ display: 'none' }}></audio>
       <div id="yt-player" className="fixed top-0 left-0 pointer-events-none z-[-50]" style={{ width: '300px', height: '300px', opacity: 1 }} />
 
@@ -1512,40 +1678,82 @@ export default function App() {
               </div>
 
               {/* SECTION 2: THEME COLOR SELECTION */}
-              <div className="flex flex-col gap-4 pt-4" style={{ borderTop: `1.5px solid ${C.border}` }}>
-                <h4 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: C.primarySolid }}>
-                  <i className="ri-palette-line text-sm"></i> Tùy Chỉnh Màu Web (Theme)
-                </h4>
+              <div className="flex flex-col gap-3 pt-4" style={{ borderTop: `1.5px solid ${C.border}` }}>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: C.primarySolid }}>
+                    <i className="ri-palette-line text-sm"></i> Tùy Chỉnh Giao Diện &amp; Phối Màu
+                  </h4>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: C.tag, border: `1px solid ${C.border}`, color: C.txtSub }}>
+                    {Object.keys(THEMES).length} Giao diện
+                  </span>
+                </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  {Object.values(THEMES).map(t => {
-                    const isSelected = themeKey === t.key;
+                {/* Category Filter Tabs */}
+                <div className="flex gap-1 p-1 rounded-2xl" style={{ background: C.isDark ? 'rgba(15, 23, 42, 0.7)' : C.tag, border: `1px solid ${C.border}` }}>
+                  {[
+                    { key: 'mix', label: '✨ Mix Màu Dynamic', icon: 'ri-sparkles-line' },
+                    { key: 'pastel', label: '🌸 Pastel', icon: 'ri-contrast-drop-line' },
+                    { key: 'dark', label: '🌙 Tone Tối', icon: 'ri-moon-line' },
+                  ].map(cat => {
+                    const active = themeCategory === cat.key;
                     return (
-                      <div
-                        key={t.key}
-                        onClick={() => setThemeKey(t.key)}
-                        className="flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all border"
-                        style={{
-                          background: isSelected ? t.tag : (C.isDark ? '#0f172a' : '#fff'),
-                          borderColor: isSelected ? t.primarySolid : C.border,
-                          boxShadow: isSelected ? `0 4px 14px ${t.primaryGlow}` : 'none'
-                        }}
+                      <button
+                        key={cat.key}
+                        type="button"
+                        onClick={() => setThemeCategory(cat.key)}
+                        className="flex-1 py-1.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                        style={active
+                          ? { background: C.primary, color: '#fff', boxShadow: `0 2px 10px ${C.primaryGlow}` }
+                          : { color: C.txtSub }}
                       >
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-sm shrink-0"
-                          style={{ background: t.primary, color: '#fff' }}
-                        >
-                          {t.icon}
-                        </div>
-                        <div className="flex flex-col overflow-hidden">
-                          <span className="text-xs font-bold truncate" style={{ color: isSelected ? t.primarySolid : C.txt }}>
-                            {t.name}
-                          </span>
-                          <span className="text-[10px]" style={{ color: C.txtFad }}>{isSelected ? '✓ Đang chọn' : 'Bấm để đổi'}</span>
-                        </div>
-                      </div>
+                        <i className={cat.icon}></i>
+                        {cat.label}
+                      </button>
                     );
                   })}
+                </div>
+
+                {/* Theme Cards Grid */}
+                <div className="grid grid-cols-2 gap-2.5 max-h-64 overflow-y-auto custom-scrollbar pr-1">
+                  {Object.values(THEMES)
+                    .filter(t => t.category === themeCategory)
+                    .map(t => {
+                      const isSelected = themeKey === t.key;
+                      return (
+                        <div
+                          key={t.key}
+                          onClick={() => setThemeKey(t.key)}
+                          className="flex items-center gap-2.5 p-2.5 rounded-2xl cursor-pointer transition-all border relative overflow-hidden group"
+                          style={{
+                            background: isSelected ? (t.tag || C.tag) : (C.isDark ? '#0f172a' : '#fff'),
+                            borderColor: isSelected ? (t.primarySolid || C.primarySolid) : C.border,
+                            boxShadow: isSelected ? `0 4px 16px ${t.primaryGlow || C.primaryGlow}` : 'none'
+                          }}
+                        >
+                          <div
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center text-base shadow-sm shrink-0 ${t.isAnimated ? 'theme-preview-swatch' : ''}`}
+                            style={{ background: t.isAnimated ? t.bg : t.primary, color: '#fff' }}
+                          >
+                            {t.icon}
+                          </div>
+                          <div className="flex flex-col overflow-hidden flex-1 min-w-0">
+                            <span className="text-xs font-bold truncate" style={{ color: isSelected ? (t.primarySolid || C.primarySolid) : C.txt }}>
+                              {t.name}
+                            </span>
+                            {t.isAnimated ? (
+                              <span className="text-[9px] font-bold text-emerald-500 dark:text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                                <i className="ri-pulse-fill text-[10px] animate-pulse"></i> Chuyển màu động
+                              </span>
+                            ) : (
+                              <span className="text-[10px]" style={{ color: C.txtFad }}>{isSelected ? '✓ Đang chọn' : 'Bấm để chọn'}</span>
+                            )}
+                          </div>
+                          {isSelected && (
+                            <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: t.primarySolid || C.primarySolid }}></div>
+                          )}
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
 
