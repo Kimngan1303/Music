@@ -138,6 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
     previewArtist: document.getElementById('preview-artist'),
     previewDurationVal: document.getElementById('preview-duration-val'),
     addOptionsGroup: document.getElementById('add-options-group'),
+    chkAddLibrary: document.getElementById('chk-add-library'),
     chkAddFavorites: document.getElementById('chk-add-favorites'),
     selectTargetPlaylist: document.getElementById('select-target-playlist'),
     btnConfirmAddMusic: document.getElementById('btn-confirm-add-music'),
@@ -471,13 +472,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!state.pendingAddMetadata) return;
 
     const newSong = state.pendingAddMetadata;
+    const selectedPlId = DOM.selectTargetPlaylist.value;
+    const addToLibrary = DOM.chkAddLibrary ? DOM.chkAddLibrary.checked : !selectedPlId;
+
+    newSong.inLibrary = addToLibrary;
     state.songs.unshift(newSong);
 
     if (DOM.chkAddFavorites.checked) {
       state.favorites.add(newSong.id);
     }
 
-    const selectedPlId = DOM.selectTargetPlaylist.value;
     if (selectedPlId) {
       const pl = state.playlists.find(p => p.id === selectedPlId);
       if (pl && !pl.songs.includes(newSong.id)) {
@@ -488,7 +492,13 @@ document.addEventListener('DOMContentLoaded', () => {
     saveState();
     closeAddMusicModal();
     renderAllViews();
-    showToast(`Đã thêm bài hát "${newSong.title}" vào Thư viện!`, 'success');
+
+    if (selectedPlId && !addToLibrary) {
+      const pl = state.playlists.find(p => p.id === selectedPlId);
+      showToast(`Đã thêm bài hát "${newSong.title}" vào playlist "${pl ? pl.name : ''}"!`, 'success');
+    } else {
+      showToast(`Đã thêm bài hát "${newSong.title}" vào Thư viện!`, 'success');
+    }
   }
 
   function populateTargetPlaylistSelect() {
@@ -631,7 +641,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Recently Added Songs List
     const songsList = document.getElementById('recent-songs-list');
     songsList.innerHTML = '';
-    state.songs.slice(0, 5).forEach((song, idx) => {
+    const librarySongs = state.songs.filter(s => s.inLibrary !== false);
+    librarySongs.slice(0, 5).forEach((song, idx) => {
       songsList.appendChild(createSongRow(song, idx + 1));
     });
   }
@@ -641,7 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
     listContainer.innerHTML = '';
 
     const sortType = document.getElementById('library-sort').value;
-    let sorted = [...state.songs];
+    let sorted = state.songs.filter(s => s.inLibrary !== false);
 
     if (sortType === 'recent') {
       sorted.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
@@ -874,6 +885,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     DOM.btnConfirmAddMusic.onclick = confirmAddMusic;
+
+    DOM.selectTargetPlaylist.onchange = () => {
+      if (DOM.selectTargetPlaylist.value) {
+        if (DOM.chkAddLibrary) DOM.chkAddLibrary.checked = false;
+      } else {
+        if (DOM.chkAddLibrary) DOM.chkAddLibrary.checked = true;
+      }
+    };
 
     // Quick Create Playlist Modal
     DOM.btnQuickCreatePlaylist.onclick = () => DOM.createPlaylistModal.classList.add('active');

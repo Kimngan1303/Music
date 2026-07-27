@@ -910,12 +910,13 @@ export default function App() {
       const m = ytUrl.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
       const vid = m?.[2]?.length===11 ? m[2] : null;
       if (!vid) throw new Error('Đường dẫn YouTube không hợp lệ!');
+      const isPlaylistTab = tab.startsWith('playlist_');
       const existingSong = songs.find(song => song.youtubeId === vid);
       let s;
       if (existingSong) {
         s = existingSong;
       } else {
-        s = { id:'s'+Date.now(), sourceType:'youtube', youtubeId:vid, title:'YouTube Song', artist:'YouTube Creator', thumbnail:`https://img.youtube.com/vi/${vid}/hqdefault.jpg`, duration:'3:30' };
+        s = { id:'s'+Date.now(), sourceType:'youtube', youtubeId:vid, title:'YouTube Song', artist:'YouTube Creator', thumbnail:`https://img.youtube.com/vi/${vid}/hqdefault.jpg`, duration:'3:30', inLibrary: !isPlaylistTab };
         try { const o = await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${vid}&format=json`); s.title = o.data?.title||s.title; s.artist = o.data?.author_name||s.artist; } catch {}
         setSongs(p => {
           const updated = [s, ...p];
@@ -928,7 +929,7 @@ export default function App() {
       }
       setAddModal(false); setYtUrl(''); play(s);
       
-      if (tab.startsWith('playlist_')) {
+      if (isPlaylistTab) {
         handleAddToPlaylist(tab.split('_')[1], s.id);
       }
     } catch(err) { setAddErr(err.message||'Lỗi không xác định.'); }
@@ -939,7 +940,7 @@ export default function App() {
     e.preventDefault(); if (!spotifyUrl.trim()) return;
     setAdding(true); setAddErr('');
     try {
-      // The backend /api/music/spotify-playlist handles playlists, albums, and single tracks
+      const isPlaylistTab = tab.startsWith('playlist_');
       const res = await axios.post('/api/music/spotify-playlist', {
         playlistUrl: spotifyUrl,
         addedBy: user?._id || null
@@ -950,7 +951,8 @@ export default function App() {
 
       const finalSongs = newSongs.map(ns => {
         const existing = songs.find(s => s.youtubeId === ns.youtubeId && ns.youtubeId && !ns.youtubeId.startsWith('unknown_'));
-        return existing || ns;
+        if (existing) return existing;
+        return { ...ns, inLibrary: !isPlaylistTab };
       });
 
       setSongs(p => {
@@ -1079,7 +1081,7 @@ export default function App() {
     .filter(s => {
       if (tab === 'favorites') return favs.includes(s.id);
       if (activePlaylist) return activePlaylist.songs.includes(s.id);
-      return true;
+      return s.inLibrary !== false;
     });
 
   const glass = { background: C.surface, backdropFilter: 'blur(20px)', border: `1.5px solid ${C.border}` };

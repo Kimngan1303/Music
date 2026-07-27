@@ -44,7 +44,7 @@ const parseYouTubeUrl = async (req, res) => {
 
 const addSong = async (req, res) => {
   try {
-    const { id, youtubeId, youtubeUrl, title, artist, thumbnail, duration, addedBy } = req.body;
+    const { id, youtubeId, youtubeUrl, title, artist, thumbnail, duration, addedBy, inLibrary } = req.body;
     
     // Upsert the song so we don't get duplicates if they re-add or sync
     const song = await Music.findOneAndUpdate(
@@ -57,7 +57,8 @@ const addSong = async (req, res) => {
         artist,
         thumbnail,
         duration,
-        addedBy
+        addedBy,
+        inLibrary: inLibrary !== undefined ? inLibrary : true
       },
       { new: true, upsert: true }
     );
