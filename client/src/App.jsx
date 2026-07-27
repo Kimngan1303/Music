@@ -726,6 +726,8 @@ export default function App() {
         await axios.put('/api/auth/profile', {
           name: updated.name,
           avatar: updated.avatar
+        }, {
+          headers: { Authorization: `Bearer ${user.token}` }
         });
       } catch (err) {
         console.error("Failed to save profile to server", err);
