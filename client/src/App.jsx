@@ -610,13 +610,15 @@ export default function App() {
           onReady: () => yt.current.setVolume(80),
           onStateChange: e => {
             if (!window.YT) return;
-            if (e.data === window.YT.PlayerState.PLAYING) setPlaying(true);
+            if (e.data === window.YT.PlayerState.PLAYING) {
+              setPlaying(true);
+              try {
+                yt.current?.unMute?.();
+                yt.current?.setVolume?.(vol || 80);
+              } catch(err) {}
+            }
             else if (e.data === window.YT.PlayerState.PAUSED) {
-              if (document.hidden) {
-                try { yt.current?.playVideo?.(); } catch(err){}
-              } else {
-                setPlaying(false);
-              }
+              setPlaying(false);
             }
             else if (e.data === window.YT.PlayerState.ENDED) {
               if (repeatRef.current === 'one') {
@@ -650,23 +652,10 @@ export default function App() {
   useEffect(() => {
     let silentAudio = document.getElementById('silent-audio');
     if (!silentAudio) return;
-    const handleEnded = () => { silentAudio.currentTime = 0; silentAudio.play().catch(()=>{}); };
+    const handleEnded = () => { silentAudio.currentTime = 0; };
     silentAudio.addEventListener('ended', handleEnded);
     return () => { silentAudio.removeEventListener('ended', handleEnded); };
   }, []);
-
-  // Auto-resume background audio on visibility change when screen turns off
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && playing) {
-        const audio = document.getElementById('silent-audio');
-        if (audio) audio.play().catch(()=>{});
-        try { yt.current?.playVideo?.(); } catch(err){}
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [playing]);
 
   // Sleep Timer logic
   useEffect(() => {
@@ -727,12 +716,13 @@ export default function App() {
     }
 
     if (yid) {
-      // Call playVideo synchronously FIRST to unlock mobile browser audio constraints, then load the new video.
-      const audio = document.getElementById('silent-audio');
-      if (audio) audio.play().catch(()=>{});
+      try {
+        yt.current?.unMute?.();
+        yt.current?.setVolume?.(vol || 80);
+      } catch(err) {}
       
-      yt.current?.playVideo?.();
       yt.current?.loadVideoById?.(yid);
+      yt.current?.playVideo?.();
     } else {
       // If still no yid, just stop
       setPlaying(false);
@@ -741,13 +731,14 @@ export default function App() {
 
   const togglePlay = () => {
     if (!track) { if (songs[0]) play(songs[0]); return; }
-    const audio = document.getElementById('silent-audio');
     if (playing) { 
-      if (audio) audio.pause();
       yt.current?.pauseVideo?.(); 
       setPlaying(false); 
     } else { 
-      if (audio) audio.play().catch(()=>{});
+      try {
+        yt.current?.unMute?.();
+        yt.current?.setVolume?.(vol || 80);
+      } catch(err) {}
       yt.current?.playVideo?.();  
       setPlaying(true);  
     }
