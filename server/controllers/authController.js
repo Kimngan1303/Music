@@ -26,17 +26,31 @@ const loginUser = async (req, res) => {
       },
       {
         email:    process.env.USER3_EMAIL    || 'unnull@gmail.com',
+        username: 'unnull',
         password: process.env.USER3_PASSWORD || 'unnull',
         id:       'user-unnull',
         name:     'Unnull',
         avatar:   'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=150&auto=format&fit=crop&q=80',
         role:     'user',
       },
+      {
+        email:    process.env.USER4_EMAIL    || 'Sweefee@gmail.com',
+        username: 'Sweefee',
+        password: process.env.USER4_PASSWORD || '12345678',
+        id:       'user-sweefee',
+        name:     'Sweefee',
+        avatar:   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        role:     'user',
+      },
     ];
 
-    // Check against hardcoded accounts (case-insensitive email)
+    // Check against hardcoded accounts (case-insensitive email/username)
     const matched = hardcodedAccounts.find(
-      acc => acc.email.toLowerCase() === email.toLowerCase() && acc.password === password
+      acc => (
+        acc.email.toLowerCase() === email.toLowerCase() ||
+        (acc.username && acc.username.toLowerCase() === email.toLowerCase()) ||
+        acc.email.split('@')[0].toLowerCase() === email.toLowerCase()
+      ) && acc.password === password
     );
 
     if (matched) {
@@ -81,7 +95,14 @@ const loginUser = async (req, res) => {
 
     // Try MongoDB user lookup if database is connected
     try {
-      const user = await User.findOne({ email });
+      const cleanEmail = email.trim().toLowerCase();
+      const user = await User.findOne({
+        $or: [
+          { email: cleanEmail },
+          { email: `${cleanEmail}@gmail.com` },
+          { _id: `user-${cleanEmail}` }
+        ]
+      });
       if (user) {
         const isMatch = await bcrypt.compare(password, user.password);
         if (isMatch) {

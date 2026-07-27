@@ -1220,13 +1220,13 @@ export default function App() {
 
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <div>
-              <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Email</label>
+              <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Email / Tên đăng nhập</label>
               <input
-                type="email"
+                type="text"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                placeholder="Nhập email của bạn"
+                placeholder="Nhập email hoặc tên đăng nhập"
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none transition"
                 style={{ background: C.tag, border:`1.5px solid ${C.border}`, color: C.txt }}
               />
