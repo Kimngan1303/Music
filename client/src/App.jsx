@@ -1214,7 +1214,7 @@ export default function App() {
             </div>
             <h1 style={{ fontFamily: F.cursive, fontSize:'34px', color: C.primarySolid, lineHeight:1.1 }}>LittleLove</h1>
             <p style={{ fontFamily: F.brand, fontSize:'11px', letterSpacing:'0.25em', color: C.txtFad, textTransform:'uppercase', fontWeight:600, marginTop:'2px' }}>
-              Personal Music Space
+              Unnull Music Space
             </p>
           </div>
 
@@ -1307,7 +1307,7 @@ export default function App() {
           </div>
           <div className="flex flex-col leading-none">
             <span style={{ fontFamily: F.cursive, fontSize:'28px', color: C.primarySolid, lineHeight:1.1 }}>LittleLove</span>
-            <span style={{ fontFamily: F.brand, fontSize:'10px', letterSpacing:'0.25em', color: C.txtFad, textTransform:'uppercase', fontWeight:600 }}>Personal Music Space</span>
+            <span style={{ fontFamily: F.brand, fontSize:'10px', letterSpacing:'0.25em', color: C.txtFad, textTransform:'uppercase', fontWeight:600 }}>Unnull Music Space</span>
           </div>
         </div>
 
