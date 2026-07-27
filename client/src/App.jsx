@@ -489,8 +489,7 @@ export default function App() {
     // If logged in, fetch from backend to sync across devices
     if (user) {
       axios.get(`/api/music?userId=${user._id}`).then(res => {
-        if (res.data && res.data.length > 0) {
-          // Merge backend songs with local songs, preferring backend if duplicate
+        if (Array.isArray(res.data)) {
           const backendSongs = res.data.map(dbSong => ({
             id: dbSong.id,
             sourceType: 'youtube',
@@ -498,21 +497,12 @@ export default function App() {
             title: dbSong.title,
             artist: dbSong.artist,
             thumbnail: dbSong.thumbnail,
-            duration: dbSong.duration
+            duration: dbSong.duration,
+            inLibrary: dbSong.inLibrary !== undefined ? dbSong.inLibrary : true
           }));
           
-          const merged = [...backendSongs];
-          // Add any local songs that aren't in backend yet
-          localSongs.forEach(ls => {
-            if (!merged.find(ms => ms.id === ls.id)) {
-              merged.push(ls);
-              // Push this local song to backend too
-              axios.post('/api/music', { ...ls, addedBy: user._id }).catch(()=>{});
-            }
-          });
-          
-          setSongs(merged);
-          localStorage.setItem(songsKey(uid), JSON.stringify(merged));
+          setSongs(backendSongs);
+          localStorage.setItem(songsKey(user._id), JSON.stringify(backendSongs));
         }
       }).catch(console.error);
 
