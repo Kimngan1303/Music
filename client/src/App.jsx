@@ -1375,7 +1375,14 @@ export default function App() {
       <main className="flex-1 flex flex-col overflow-hidden">
 
         {/* Header */}
-        <header className="min-h-[70px] pt-3 md:min-h-[66px] md:pt-0 px-2 md:px-8 flex items-center justify-between shrink-0 relative gap-2 md:gap-3" style={{ background: C.surface, backdropFilter:'blur(18px)', borderBottom:`1.5px solid ${C.border}`, paddingSafeArea: 'env(safe-area-inset-top)' }}>
+        <header className="min-h-[72px] md:min-h-[66px] px-3 md:px-8 flex items-center justify-between shrink-0 relative gap-2 md:gap-3" 
+          style={{ 
+            background: C.surface, 
+            backdropFilter: 'blur(18px)', 
+            borderBottom: `1.5px solid ${C.border}`, 
+            paddingTop: 'max(14px, env(safe-area-inset-top))',
+            paddingBottom: '10px'
+          }}>
           
           <div className="flex items-center gap-2 md:gap-3 flex-1 md:flex-none">
             {/* Mobile Hamburger Menu */}
