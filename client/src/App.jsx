@@ -611,7 +611,13 @@ export default function App() {
           onStateChange: e => {
             if (!window.YT) return;
             if (e.data === window.YT.PlayerState.PLAYING) setPlaying(true);
-            else if (e.data === window.YT.PlayerState.PAUSED) setPlaying(false);
+            else if (e.data === window.YT.PlayerState.PAUSED) {
+              if (document.hidden) {
+                try { yt.current?.playVideo?.(); } catch(err){}
+              } else {
+                setPlaying(false);
+              }
+            }
             else if (e.data === window.YT.PlayerState.ENDED) {
               if (repeatRef.current === 'one') {
                 yt.current?.seekTo?.(0, true);
@@ -648,6 +654,19 @@ export default function App() {
     silentAudio.addEventListener('ended', handleEnded);
     return () => { silentAudio.removeEventListener('ended', handleEnded); };
   }, []);
+
+  // Auto-resume background audio on visibility change when screen turns off
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && playing) {
+        const audio = document.getElementById('silent-audio');
+        if (audio) audio.play().catch(()=>{});
+        try { yt.current?.playVideo?.(); } catch(err){}
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [playing]);
 
   // Sleep Timer logic
   useEffect(() => {
@@ -763,6 +782,9 @@ export default function App() {
         artist: track.artist,
         artwork: [ { src: track.thumbnail, sizes: '512x512', type: 'image/jpeg' } ]
       });
+      try {
+        navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
+      } catch(err){}
       navigator.mediaSession.setActionHandler('play', () => { 
         const audio = document.getElementById('silent-audio');
         if (audio) audio.play().catch(()=>{});
