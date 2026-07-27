@@ -755,6 +755,10 @@ export default function App() {
         return updated;
       });
       setAddModal(false); setYtUrl(''); play(s);
+      
+      if (tab.startsWith('playlist_')) {
+        handleAddToPlaylist(tab.split('_')[1], s.id);
+      }
     } catch(err) { setAddErr(err.message||'Lỗi không xác định.'); }
     finally { setAdding(false); }
   };
@@ -784,6 +788,10 @@ export default function App() {
       play(newSongs[0]);
       setAddModal(false); 
       setSpotifyUrl('');
+      
+      if (tab.startsWith('playlist_')) {
+        handleAddToPlaylist(tab.split('_')[1], null, newSongs.map(ns => ns.id));
+      }
     } catch(err) { setAddErr(err.response?.data?.message || err.message || 'Lỗi không xác định.'); }
     finally { setAdding(false); }
   };
@@ -810,6 +818,10 @@ export default function App() {
       play(newSongs[0]);
       setAddModal(false); 
       setPlaylistUrl('');
+      
+      if (tab.startsWith('playlist_')) {
+        handleAddToPlaylist(tab.split('_')[1], null, newSongs.map(ns => ns.id));
+      }
     } catch(err) { 
       setAddErr(err.response?.data?.message || err.message || 'Lỗi không xác định.'); 
     }
@@ -848,9 +860,10 @@ export default function App() {
     } catch(err) { console.error(err); }
   };
 
-  const handleAddToPlaylist = async (playlistId, songId) => {
+  const handleAddToPlaylist = async (playlistId, songId, songIds = null) => {
     try {
-      const res = await axios.put(`/api/playlists/${playlistId}/add`, { songId });
+      const payload = songIds ? { songIds } : { songId };
+      const res = await axios.put(`/api/playlists/${playlistId}/add`, payload);
       setPlaylists(p => {
         const up = p.map(x => x._id === playlistId ? res.data : x);
         localStorage.setItem(playlistsKey(user._id), JSON.stringify(up));

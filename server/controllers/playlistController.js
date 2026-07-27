@@ -27,13 +27,26 @@ const createPlaylist = async (req, res) => {
 const addSongToPlaylist = async (req, res) => {
   try {
     const { id } = req.params;
-    const { songId } = req.body;
+    const { songId, songIds } = req.body;
     
     const playlist = await Playlist.findById(id);
     if (!playlist) return res.status(404).json({ message: 'Playlist not found' });
     
-    if (!playlist.songs.includes(songId)) {
-      playlist.songs.push(songId);
+    let modified = false;
+    const addId = (sid) => {
+      if (sid && !playlist.songs.includes(sid)) {
+        playlist.songs.push(sid);
+        modified = true;
+      }
+    };
+
+    if (songIds && Array.isArray(songIds)) {
+      songIds.forEach(addId);
+    } else if (songId) {
+      addId(songId);
+    }
+    
+    if (modified) {
       await playlist.save();
     }
     res.json(playlist);
