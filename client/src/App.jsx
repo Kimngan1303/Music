@@ -744,16 +744,22 @@ export default function App() {
       const m = ytUrl.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
       const vid = m?.[2]?.length===11 ? m[2] : null;
       if (!vid) throw new Error('Đường dẫn YouTube không hợp lệ!');
-      let s = { id:'s'+Date.now(), sourceType:'youtube', youtubeId:vid, title:'YouTube Song', artist:'YouTube Creator', thumbnail:`https://img.youtube.com/vi/${vid}/hqdefault.jpg`, duration:'3:30' };
-      try { const o = await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${vid}&format=json`); s.title = o.data?.title||s.title; s.artist = o.data?.author_name||s.artist; } catch {}
-      setSongs(p => {
-        const updated = [s, ...p];
-        if (user) {
-          localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
-          axios.post('/api/music', { ...s, addedBy: user._id }).catch(()=>{});
-        }
-        return updated;
-      });
+      const existingSong = songs.find(song => song.youtubeId === vid);
+      let s;
+      if (existingSong) {
+        s = existingSong;
+      } else {
+        s = { id:'s'+Date.now(), sourceType:'youtube', youtubeId:vid, title:'YouTube Song', artist:'YouTube Creator', thumbnail:`https://img.youtube.com/vi/${vid}/hqdefault.jpg`, duration:'3:30' };
+        try { const o = await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${vid}&format=json`); s.title = o.data?.title||s.title; s.artist = o.data?.author_name||s.artist; } catch {}
+        setSongs(p => {
+          const updated = [s, ...p];
+          if (user) {
+            localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
+            axios.post('/api/music', { ...s, addedBy: user._id }).catch(()=>{});
+          }
+          return updated;
+        });
+      }
       setAddModal(false); setYtUrl(''); play(s);
       
       if (tab.startsWith('playlist_')) {
@@ -776,21 +782,28 @@ export default function App() {
       const newSongs = res.data;
       if (!newSongs || newSongs.length === 0) throw new Error("Không lấy được bài hát nào từ Spotify.");
 
+      const finalSongs = newSongs.map(ns => {
+        const existing = songs.find(s => s.youtubeId === ns.youtubeId && ns.youtubeId && !ns.youtubeId.startsWith('unknown_'));
+        return existing || ns;
+      });
+
       setSongs(p => {
-        const updated = [...newSongs, ...p];
+        const toAdd = finalSongs.filter(fs => !p.some(existing => existing.id === fs.id));
+        if (toAdd.length === 0) return p;
+        const updated = [...toAdd, ...p];
         if (user) {
           localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
         }
         return updated;
       });
       
-      setTrack(newSongs[0]); 
-      play(newSongs[0]);
+      setTrack(finalSongs[0]); 
+      play(finalSongs[0]);
       setAddModal(false); 
       setSpotifyUrl('');
       
       if (tab.startsWith('playlist_')) {
-        handleAddToPlaylist(tab.split('_')[1], null, newSongs.map(ns => ns.id));
+        handleAddToPlaylist(tab.split('_')[1], null, finalSongs.map(ns => ns.id));
       }
     } catch(err) { setAddErr(err.response?.data?.message || err.message || 'Lỗi không xác định.'); }
     finally { setAdding(false); }
@@ -808,19 +821,26 @@ export default function App() {
       const newSongs = res.data;
       if (!newSongs || newSongs.length === 0) throw new Error("Không lấy được bài hát nào từ Playlist.");
 
+      const finalSongs = newSongs.map(ns => {
+        const existing = songs.find(s => s.youtubeId === ns.youtubeId && ns.youtubeId && !ns.youtubeId.startsWith('unknown_'));
+        return existing || ns;
+      });
+
       setSongs(p => {
-        const updated = [...newSongs, ...p];
+        const toAdd = finalSongs.filter(fs => !p.some(existing => existing.id === fs.id));
+        if (toAdd.length === 0) return p;
+        const updated = [...toAdd, ...p];
         localStorage.setItem(songsKey(user?._id), JSON.stringify(updated));
         return updated;
       });
       
-      setTrack(newSongs[0]); 
-      play(newSongs[0]);
+      setTrack(finalSongs[0]); 
+      play(finalSongs[0]);
       setAddModal(false); 
       setPlaylistUrl('');
       
       if (tab.startsWith('playlist_')) {
-        handleAddToPlaylist(tab.split('_')[1], null, newSongs.map(ns => ns.id));
+        handleAddToPlaylist(tab.split('_')[1], null, finalSongs.map(ns => ns.id));
       }
     } catch(err) { 
       setAddErr(err.response?.data?.message || err.message || 'Lỗi không xác định.'); 
