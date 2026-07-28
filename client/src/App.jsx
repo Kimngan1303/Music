@@ -2454,7 +2454,7 @@ export default function App() {
                       className="w-9 h-9 md:w-10 md:h-10 rounded-full text-white shadow-md flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0"
                       style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
                     >
-                      <i className="ri-play-fill text-lg md:text-xl"></i>
+                      <i className="ri-play-fill text-lg md:text-xl ml-0.5 translate-y-[1px]"></i>
                     </button>
                   )}
                   <span className="text-xs md:text-sm font-extrabold truncate max-w-[120px] lg:max-w-[180px]" style={{ color: C.txt, fontFamily: F.heading }}>
@@ -3252,7 +3252,7 @@ export default function App() {
                           className="w-12 h-12 rounded-full text-white shadow-xl flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer"
                           style={{ background: C.primary, boxShadow: `0 6px 20px ${C.primaryGlow}` }}
                         >
-                          <i className="ri-play-fill text-2xl"></i>
+                          <i className="ri-play-fill text-2xl ml-0.5 translate-y-[1px]"></i>
                         </button>
                       )}
 
@@ -3935,7 +3935,7 @@ export default function App() {
               <button onClick={togglePlay}
                 className="w-8 h-8 md:w-10 md:h-10 rounded-full text-white flex items-center justify-center shadow-md transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
                 style={{ background: C.primary, boxShadow: `0 3px 12px ${C.primaryGlow}` }}>
-                <i className={playing ? 'ri-pause-fill text-base md:text-lg' : 'ri-play-fill text-base md:text-lg'}></i>
+                <i className={playing ? 'ri-pause-fill text-base md:text-lg' : 'ri-play-fill text-base md:text-lg pl-0.5 translate-y-[1px]'}></i>
               </button>
             </Tooltip>
 
@@ -4509,7 +4509,7 @@ export default function App() {
                       style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
                       title={playing ? "Tạm dừng" : "Phát nhạc"}
                     >
-                      <i className={playing ? "ri-pause-fill text-lg" : "ri-play-fill text-lg"}></i>
+                      <i className={playing ? "ri-pause-fill text-lg" : "ri-play-fill text-lg pl-0.5 translate-y-[1px]"}></i>
                     </button>
 
                     {/* Next Track */}
@@ -4609,7 +4609,7 @@ export default function App() {
                       style={{ background: C.primary, boxShadow: `0 4px 18px ${C.primaryGlow}` }}
                       title={playing ? "Tạm dừng" : "Phát nhạc"}
                     >
-                      <i className={playing ? "ri-pause-fill text-xl" : "ri-play-fill text-xl"}></i>
+                      <i className={playing ? "ri-pause-fill text-xl" : "ri-play-fill text-xl pl-0.5 translate-y-[1px]"}></i>
                     </button>
 
                     <button onClick={nextTrack} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer pointer-events-auto" title="Bài tiếp">
