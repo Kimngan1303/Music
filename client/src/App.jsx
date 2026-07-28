@@ -2771,18 +2771,6 @@ export default function App() {
                           <span>{isSelectMode ? "Thoát Chọn" : "Chọn Bài Hát"}</span>
                         </button>
                       )}
-
-                      {activePlaylist && (
-                        <button
-                          onClick={() => confirmDeletePlaylist(activePlaylist._id, activePlaylist.name)}
-                          title="Xóa vĩnh viễn danh sách phát này"
-                          className="px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95 md:ml-auto text-red-500"
-                          style={{ background: 'rgba(239,68,68,0.1)', border: '1.5px solid rgba(239,68,68,0.2)' }}
-                        >
-                          <i className="ri-delete-bin-line text-sm"></i>
-                          <span>Xóa Playlist</span>
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>
