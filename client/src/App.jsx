@@ -672,8 +672,11 @@ export default function App() {
   // Scroll Position State for Sticky Header Navigation
   const [mainScrollTop, setMainScrollTop] = useState(0);
 
-  // Mini Player Floating Popup State (Tự động mở khi chuyển tab)
+  // Mini Player Floating Popup State & Drag Position
   const [isMiniPlayerOpen, setIsMiniPlayerOpen] = useState(false);
+  const [miniPos, setMiniPos] = useState({ x: null, y: null });
+  const [isDraggingMini, setIsDraggingMini] = useState(false);
+  const miniDragRef = useRef({ startX: 0, startY: 0, initialX: 0, initialY: 0 });
 
   // Reload songs and favs when user logs in or out
   useEffect(() => {
@@ -974,6 +977,44 @@ export default function App() {
     }
     return `${mins} phút`;
   };
+
+  // Handle dragging floating mini player window across screen
+  const handleMiniMouseDown = (e) => {
+    if (e.button !== 0) return;
+    setIsDraggingMini(true);
+    const win = e.currentTarget.parentElement;
+    const rect = win.getBoundingClientRect();
+    miniDragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialX: rect.left,
+      initialY: rect.top
+    };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDraggingMini) return;
+      const dx = e.clientX - miniDragRef.current.startX;
+      const dy = e.clientY - miniDragRef.current.startY;
+      const newX = Math.max(10, Math.min(window.innerWidth - 320, miniDragRef.current.initialX + dx));
+      const newY = Math.max(10, Math.min(window.innerHeight - 320, miniDragRef.current.initialY + dy));
+      setMiniPos({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      setIsDraggingMini(false);
+    };
+
+    if (isDraggingMini) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDraggingMini]);
 
   // Automatically open Floating Mini Player widget when user switches browser tab while playing
   useEffect(() => {
@@ -3905,15 +3946,29 @@ export default function App() {
           </div>
         </div>
       )}
-      {/* ── FLOATING MINI PLAYER WIDGET (Tự động hiện khi chuyển tab hoặc bấm nút Cửa sổ thu nhỏ) ─────────────────── */}
+      {/* ── FLOATING MINI PLAYER WIDGET (Có thể kéo thả, khớp Theme & Ẩn hiện controls khi hover) ─────────────────── */}
       {isMiniPlayerOpen && track && (
-        <div className="fixed bottom-6 right-6 z-[200] w-80 md:w-96 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 duration-300 border border-white/20"
-          style={{ background: '#121214', color: '#ffffff', boxShadow: '0 20px 50px rgba(0,0,0,0.8)' }}>
-          
-          {/* Top Bar: URL & Window Controls */}
-          <div className="flex items-center justify-between px-3.5 py-2.5 bg-black/40 border-b border-white/10 text-xs text-white/70">
+        <div
+          className={`fixed z-[200] w-80 md:w-96 rounded-2xl shadow-2xl overflow-hidden transition-shadow duration-300 border ${isDraggingMini ? 'select-none opacity-90 scale-[1.02]' : ''}`}
+          style={{
+            left: miniPos.x !== null ? `${miniPos.x}px` : 'auto',
+            top: miniPos.y !== null ? `${miniPos.y}px` : 'auto',
+            bottom: miniPos.x === null ? '24px' : 'auto',
+            right: miniPos.x === null ? '24px' : 'auto',
+            background: C.isDark ? '#121214' : '#1e1e24',
+            color: '#ffffff',
+            boxShadow: `0 20px 50px rgba(0,0,0,0.8), 0 0 15px ${C.primaryGlow}`,
+            borderColor: C.border
+          }}
+        >
+          {/* Top Bar: URL & Window Drag Handle Controls */}
+          <div
+            onMouseDown={handleMiniMouseDown}
+            className="flex items-center justify-between px-3.5 py-2.5 bg-black/60 border-b border-white/10 text-xs text-white/70 cursor-grab active:cursor-grabbing select-none"
+            title="Giữ chuột và kéo để di chuyển cửa sổ con"
+          >
             <div className="flex items-center gap-1.5 font-mono text-[11px] truncate">
-              <i className="ri-equalizer-fill text-xs text-rose-400"></i>
+              <i className="ri-equalizer-fill text-xs" style={{ color: C.primarySolid }}></i>
               <span className="truncate">open.aura-music.com</span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -3934,37 +3989,40 @@ export default function App() {
             </div>
           </div>
 
-          {/* Middle: Album Cover Art with Controls Overlay (Giống ảnh 1 & 2) */}
+          {/* Middle: Album Cover Art (Khi chỉ chuột vào mới hiện controls + màu Theme) */}
           <div className="relative w-full h-56 md:h-64 bg-black group overflow-hidden select-none">
             <img
               src={track.thumbnail}
               alt={track.title}
-              className="w-full h-full object-cover opacity-60 transition duration-500 scale-105"
+              className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex flex-col justify-between p-4">
+
+            {/* Hover Overlay Controls matching Theme Colors */}
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-[3px] flex flex-col justify-between p-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
 
               {/* Controls Bar Centered Over Cover Art */}
               <div className="flex-1 flex items-center justify-center gap-2 md:gap-3 text-white">
                 
                 {/* Volume / Mute */}
                 <button onClick={toggleMute} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer" title="Âm thanh">
-                  <i className={muted || vol === 0 ? "ri-volume-mute-line text-sm md:text-base" : "ri-volume-up-line text-sm md:text-base"}></i>
+                  <i className={muted || vol === 0 ? "ri-volume-mute-line text-base" : "ri-volume-up-line text-base"}></i>
                 </button>
 
                 {/* Shuffle */}
-                <button onClick={toggleShuffle} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: isShuffle ? C.primarySolid : 'rgba(255,255,255,0.7)' }} title="Phát ngẫu nhiên">
-                  <i className="ri-shuffle-line text-sm md:text-base"></i>
+                <button onClick={toggleShuffle} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: isShuffle ? C.primarySolid : 'rgba(255,255,255,0.8)' }} title="Phát ngẫu nhiên">
+                  <i className="ri-shuffle-line text-base"></i>
                 </button>
 
                 {/* Prev */}
                 <button onClick={prevTrack} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer" title="Bài trước">
-                  <i className="ri-skip-back-fill text-lg md:text-xl"></i>
+                  <i className="ri-skip-back-fill text-xl"></i>
                 </button>
 
-                {/* Large Center Play / Pause Button (Tròn màu trắng chuẩn như Ảnh 1) */}
+                {/* Large Center Play / Pause Button with Theme Color */}
                 <button
                   onClick={togglePlay}
-                  className="w-12 h-12 rounded-full bg-white text-black shadow-2xl flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0"
+                  className="w-12 h-12 rounded-full text-white flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0 shadow-xl"
+                  style={{ background: C.primary, boxShadow: `0 4px 18px ${C.primaryGlow}` }}
                   title={playing ? "Tạm dừng" : "Phát nhạc"}
                 >
                   <i className={playing ? "ri-pause-fill text-2xl" : "ri-play-fill text-2xl pl-0.5"}></i>
@@ -3972,30 +4030,31 @@ export default function App() {
 
                 {/* Next Track */}
                 <button onClick={nextTrack} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer" title="Bài tiếp">
-                  <i className="ri-skip-forward-fill text-lg md:text-xl"></i>
+                  <i className="ri-skip-forward-fill text-xl"></i>
                 </button>
 
                 {/* Repeat */}
-                <button onClick={toggleRepeat} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: repeatMode !== 'off' ? C.primarySolid : 'rgba(255,255,255,0.7)' }} title="Lặp lại">
-                  <i className="ri-repeat-line text-sm md:text-base"></i>
+                <button onClick={toggleRepeat} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: repeatMode !== 'off' ? C.primarySolid : 'rgba(255,255,255,0.8)' }} title="Lặp lại">
+                  <i className="ri-repeat-line text-base"></i>
                 </button>
 
                 {/* Favorite */}
-                <button onClick={() => toggleFav(track.id)} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.7)' }} title="Yêu thích">
-                  <i className={favs.includes(track.id) ? "ri-heart-fill text-sm md:text-base" : "ri-heart-line text-sm md:text-base"}></i>
+                <button onClick={() => toggleFav(track.id)} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.8)' }} title="Yêu thích">
+                  <i className={favs.includes(track.id) ? "ri-heart-fill text-base" : "ri-heart-line text-base"}></i>
                 </button>
 
               </div>
 
-              {/* Bottom Progress Bar inside Image */}
+              {/* Bottom Progress Bar inside Image with Theme Accent */}
               <div className="w-full flex flex-col gap-1">
-                <div className="flex items-center justify-between text-[10px] font-mono text-white/80 px-0.5">
+                <div className="flex items-center justify-between text-[10px] font-mono text-white/90 px-0.5">
                   <span>{fmt(curTime)}</span>
                   <span>{fmt(dur)}</span>
                 </div>
                 <input
                   type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
-                  className="w-full h-1 cursor-pointer accent-white bg-white/30 rounded-lg"
+                  className="w-full h-1 cursor-pointer bg-white/30 rounded-lg"
+                  style={{ accentColor: C.primarySolid }}
                 />
               </div>
 
@@ -4003,17 +4062,18 @@ export default function App() {
           </div>
 
           {/* Bottom Track Title & Artist */}
-          <div className="p-3.5 bg-[#18181c] flex items-center justify-between gap-3">
+          <div className="p-3.5 bg-[#18181c] flex items-center justify-between gap-3 border-t border-white/5">
             <div className="min-w-0 flex-1 text-left">
               <h4 className="text-sm font-extrabold truncate text-white leading-tight">{track.title}</h4>
               <p className="text-xs text-white/60 truncate mt-0.5">{track.artist}</p>
             </div>
             <button
               onClick={() => toggleFav(track.id)}
-              className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:border-white transition cursor-pointer shrink-0"
+              className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center transition cursor-pointer shrink-0 hover:scale-105"
+              style={{ color: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.8)', borderColor: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.2)' }}
               title={favs.includes(track.id) ? "Đã thích" : "Thêm vào thư viện"}
             >
-              <i className={favs.includes(track.id) ? "ri-heart-fill text-rose-500" : "ri-add-line text-base"}></i>
+              <i className={favs.includes(track.id) ? "ri-heart-fill text-sm" : "ri-add-line text-base"}></i>
             </button>
           </div>
 
