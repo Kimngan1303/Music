@@ -673,12 +673,8 @@ export default function App() {
   // Scroll Position State for Sticky Header Navigation
   const [mainScrollTop, setMainScrollTop] = useState(0);
 
-  // Mini Player Floating Popup State & System PiP Window Reference
-  const [isMiniPlayerOpen, setIsMiniPlayerOpen] = useState(false);
+  // System OS Picture-in-Picture Window State
   const [pipWindow, setPipWindow] = useState(null);
-  const [miniPos, setMiniPos] = useState({ x: null, y: null });
-  const [isDraggingMini, setIsDraggingMini] = useState(false);
-  const miniDragRef = useRef({ startX: 0, startY: 0, initialX: 0, initialY: 0 });
 
   // Reload songs and favs when user logs in or out
   useEffect(() => {
@@ -980,43 +976,17 @@ export default function App() {
     return `${mins} phút`;
   };
 
-  // Handle dragging floating mini player window across screen
-  const handleMiniMouseDown = (e) => {
-    if (e.button !== 0) return;
-    setIsDraggingMini(true);
-    const win = e.currentTarget.parentElement;
-    const rect = win.getBoundingClientRect();
-    miniDragRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      initialX: rect.left,
-      initialY: rect.top
-    };
+  // Get saved PiP window size from localStorage (default compact size: 320x340)
+  const getSavedPipSize = () => {
+    try {
+      const saved = localStorage.getItem('aura_pip_size');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.width >= 240 && parsed.height >= 260) return parsed;
+      }
+    } catch (e) {}
+    return { width: 320, height: 340 };
   };
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (!isDraggingMini) return;
-      const dx = e.clientX - miniDragRef.current.startX;
-      const dy = e.clientY - miniDragRef.current.startY;
-      const newX = Math.max(10, Math.min(window.innerWidth - 320, miniDragRef.current.initialX + dx));
-      const newY = Math.max(10, Math.min(window.innerHeight - 320, miniDragRef.current.initialY + dy));
-      setMiniPos({ x: newX, y: newY });
-    };
-
-    const handleMouseUp = () => {
-      setIsDraggingMini(false);
-    };
-
-    if (isDraggingMini) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDraggingMini]);
 
   // Open Native OS System Level Picture-in-Picture window (Floats ALWAYS ON TOP across Windows Desktop & All Browser Tabs)
   const togglePipWindow = async () => {
@@ -1025,13 +995,22 @@ export default function App() {
         if (pipWindow) {
           pipWindow.close();
           setPipWindow(null);
-          setIsMiniPlayerOpen(false);
           return;
         }
 
+        const initialSize = getSavedPipSize();
+
         const pipWin = await window.documentPictureInPicture.requestWindow({
-          width: 360,
-          height: 380,
+          width: initialSize.width,
+          height: initialSize.height,
+        });
+
+        // Listen for resize event to save user's custom window size into localStorage
+        pipWin.addEventListener('resize', () => {
+          try {
+            const newSize = { width: pipWin.innerWidth, height: pipWin.innerHeight };
+            localStorage.setItem('aura_pip_size', JSON.stringify(newSize));
+          } catch (e) {}
         });
 
         // Copy active document stylesheets into PiP window
@@ -1057,32 +1036,35 @@ export default function App() {
         iconLink.href = 'https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css';
         pipWin.document.head.appendChild(iconLink);
 
+        // Apply rounded corner styling and body overflow hidden to PiP window
+        pipWin.document.documentElement.style.borderRadius = '20px';
+        pipWin.document.documentElement.style.overflow = 'hidden';
         pipWin.document.body.style.margin = '0';
         pipWin.document.body.style.padding = '0';
+        pipWin.document.body.style.width = '100%';
+        pipWin.document.body.style.height = '100%';
         pipWin.document.body.style.overflow = 'hidden';
+        pipWin.document.body.style.borderRadius = '20px';
         pipWin.document.body.style.background = C.isDark ? '#121214' : '#1e1e24';
 
         pipWin.addEventListener('pagehide', () => {
           setPipWindow(null);
-          setIsMiniPlayerOpen(false);
         });
 
         setPipWindow(pipWin);
-        setIsMiniPlayerOpen(true);
       } catch (err) {
         console.error('Lỗi mở System PiP Window:', err);
-        setIsMiniPlayerOpen(!isMiniPlayerOpen);
       }
-    } else {
-      setIsMiniPlayerOpen(!isMiniPlayerOpen);
     }
   };
 
-  // Automatically open Floating Mini Player widget when user switches browser tab while playing
+  // Automatically launch OS Picture-in-Picture window when user switches browser tab or minimizes window while playing
   useEffect(() => {
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (document.hidden && playing && track && !pipWindow) {
-        setIsMiniPlayerOpen(true);
+        try {
+          await togglePipWindow();
+        } catch (e) {}
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -3589,14 +3571,14 @@ export default function App() {
             </Tooltip>
 
             {/* Mini Player Window Button */}
-            <Tooltip text={isMiniPlayerOpen || pipWindow ? "Đóng cửa sổ thu nhỏ" : "Mở cửa sổ con nổi toàn hệ thống (Mini Player)"}>
+            <Tooltip text={pipWindow ? "Đóng cửa sổ thu nhỏ" : "Mở cửa sổ con nổi toàn hệ thống (Mini Player)"}>
               <button
                 onClick={togglePipWindow}
                 className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
-                style={{ color: isMiniPlayerOpen || pipWindow ? C.primarySolid : C.txtFad }}
+                style={{ color: pipWindow ? C.primarySolid : C.txtFad }}
               >
-                <i className={isMiniPlayerOpen || pipWindow ? "ri-picture-in-picture-2-fill text-lg" : "ri-picture-in-picture-2-line text-lg"}></i>
-                {(isMiniPlayerOpen || pipWindow) && (
+                <i className={pipWindow ? "ri-picture-in-picture-2-fill text-lg" : "ri-picture-in-picture-2-line text-lg"}></i>
+                {pipWindow && (
                   <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
                     style={{ background: C.primarySolid }}>
                   </span>
@@ -4010,164 +3992,121 @@ export default function App() {
         </div>
       )}
 
-      {/* ── FLOATING MINI PLAYER WIDGET (SYSTEM LEVEL OS PICTURE-IN-PICTURE & IN-TAB FALLBACK) ─────────────────── */}
-      {(() => {
-        if (!track || (!isMiniPlayerOpen && !pipWindow)) return null;
-
-        const miniPlayerContent = (
-          <div
-            className={`w-full h-full flex flex-col justify-between overflow-hidden text-white select-none ${isDraggingMini ? 'opacity-90' : ''}`}
-            style={{
-              background: C.isDark ? '#121214' : '#1e1e24',
-              color: '#ffffff',
-              fontFamily: F.body
-            }}
-          >
-            {/* Top Bar: Brand Logo & Title (Giống Ảnh 2 - Không bị xuống dòng) */}
-            <div
-              onMouseDown={pipWindow ? undefined : handleMiniMouseDown}
-              className={`flex items-center justify-between px-3.5 py-2.5 bg-black/60 border-b border-white/10 text-xs ${pipWindow ? '' : 'cursor-grab active:cursor-grabbing'}`}
-              title={pipWindow ? "Cửa sổ hệ thống nổi trên toàn màn hình" : "Giữ chuột và kéo để di chuyển cửa sổ con"}
-            >
-              <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden shrink min-w-0">
-                <div className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0" style={{ background: C.primary }}>
-                  <i className={`ri-disc-fill text-xs text-white ${playing ? 'spin-slow' : ''}`}></i>
-                </div>
-                <span className="text-base font-extrabold tracking-wide shrink-0" style={{ color: C.primarySolid, fontFamily: F.cursive, lineHeight: 1 }}>
-                  LittleLove
-                </span>
-                <span className="text-[9px] font-bold uppercase tracking-wider truncate" style={{ color: C.txtFad, fontFamily: F.brand }}>
-                  Unnull Music Space
-                </span>
+      {/* ── FLOATING MINI PLAYER WIDGET (ONLY OS SYSTEM LEVEL DOCUMENT PICTURE-IN-PICTURE) ─────────────────── */}
+      {pipWindow && track && createPortal(
+        <div
+          className="w-full h-full flex flex-col justify-between overflow-hidden text-white select-none rounded-2xl"
+          style={{
+            background: C.isDark ? '#121214' : '#1e1e24',
+            color: '#ffffff',
+            fontFamily: F.body
+          }}
+        >
+          {/* Top Bar: Brand Logo & Title (Single Line, Clean Branding) */}
+          <div className="flex items-center justify-between px-3.5 py-2.5 bg-black/60 border-b border-white/10 text-xs shrink-0">
+            <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden min-w-0">
+              <div className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0" style={{ background: C.primary }}>
+                <i className={`ri-disc-fill text-xs text-white ${playing ? 'spin-slow' : ''}`}></i>
               </div>
+              <span className="text-base font-extrabold tracking-wide shrink-0" style={{ color: C.primarySolid, fontFamily: F.cursive, lineHeight: 1 }}>
+                LittleLove
+              </span>
+              <span className="text-[9px] font-bold uppercase tracking-wider truncate" style={{ color: C.txtFad, fontFamily: F.brand }}>
+                Unnull Music Space
+              </span>
+            </div>
+          </div>
 
-              <div className="flex items-center gap-2 shrink-0 ml-2">
-                <button
-                  onClick={() => {
-                    if (pipWindow) {
-                      pipWindow.close();
-                      setPipWindow(null);
-                    }
-                    setIsMiniPlayerOpen(false);
-                  }}
-                  className="w-5 h-5 rounded hover:bg-red-500 flex items-center justify-center transition cursor-pointer text-white/70 hover:text-white"
-                  title="Đóng cửa sổ con"
-                >
-                  <i className="ri-close-line text-xs"></i>
+          {/* Middle: Album Cover Art (Hover to view controls matching Theme Colors) */}
+          <div className="relative w-full flex-1 bg-black group overflow-hidden select-none min-h-[180px]">
+            <img
+              src={track.thumbnail}
+              alt={track.title}
+              className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+            />
+
+            {/* Hover Overlay Controls matching Theme Colors */}
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-[3px] flex flex-col justify-between p-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+
+              {/* Controls Bar Centered Over Cover Art */}
+              <div className="flex-1 flex items-center justify-center gap-2 md:gap-3 text-white">
+                
+                {/* Volume / Mute */}
+                <button onClick={toggleMute} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer" title="Âm thanh">
+                  <i className={muted || vol === 0 ? "ri-volume-mute-line text-base" : "ri-volume-up-line text-base"}></i>
                 </button>
+
+                {/* Shuffle */}
+                <button onClick={toggleShuffle} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: isShuffle ? C.primarySolid : 'rgba(255,255,255,0.8)' }} title="Phát ngẫu nhiên">
+                  <i className="ri-shuffle-line text-base"></i>
+                </button>
+
+                {/* Prev */}
+                <button onClick={prevTrack} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer" title="Bài trước">
+                  <i className="ri-skip-back-fill text-xl"></i>
+                </button>
+
+                {/* Large Center Play / Pause Button with Theme Color */}
+                <button
+                  onClick={togglePlay}
+                  className="w-12 h-12 rounded-full text-white flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0 shadow-xl"
+                  style={{ background: C.primary, boxShadow: `0 4px 18px ${C.primaryGlow}` }}
+                  title={playing ? "Tạm dừng" : "Phát nhạc"}
+                >
+                  <i className={playing ? "ri-pause-fill text-2xl" : "ri-play-fill text-2xl pl-0.5"}></i>
+                </button>
+
+                {/* Next Track */}
+                <button onClick={nextTrack} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer" title="Bài tiếp">
+                  <i className="ri-skip-forward-fill text-xl"></i>
+                </button>
+
+                {/* Repeat */}
+                <button onClick={toggleRepeat} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: repeatMode !== 'off' ? C.primarySolid : 'rgba(255,255,255,0.8)' }} title="Lặp lại">
+                  <i className="ri-repeat-line text-base"></i>
+                </button>
+
+                {/* Favorite */}
+                <button onClick={() => toggleFav(track.id)} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.8)' }} title="Yêu thích">
+                  <i className={favs.includes(track.id) ? "ri-heart-fill text-base" : "ri-heart-line text-base"}></i>
+                </button>
+
               </div>
-            </div>
 
-            {/* Middle: Album Cover Art (Khi chỉ chuột vào mới hiện controls + màu Theme) */}
-            <div className="relative w-full flex-1 bg-black group overflow-hidden select-none min-h-[200px]">
-              <img
-                src={track.thumbnail}
-                alt={track.title}
-                className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
-              />
-
-              {/* Hover Overlay Controls matching Theme Colors */}
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-[3px] flex flex-col justify-between p-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
-
-                {/* Controls Bar Centered Over Cover Art */}
-                <div className="flex-1 flex items-center justify-center gap-2 md:gap-3 text-white">
-                  
-                  {/* Volume / Mute */}
-                  <button onClick={toggleMute} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer" title="Âm thanh">
-                    <i className={muted || vol === 0 ? "ri-volume-mute-line text-base" : "ri-volume-up-line text-base"}></i>
-                  </button>
-
-                  {/* Shuffle */}
-                  <button onClick={toggleShuffle} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: isShuffle ? C.primarySolid : 'rgba(255,255,255,0.8)' }} title="Phát ngẫu nhiên">
-                    <i className="ri-shuffle-line text-base"></i>
-                  </button>
-
-                  {/* Prev */}
-                  <button onClick={prevTrack} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer" title="Bài trước">
-                    <i className="ri-skip-back-fill text-xl"></i>
-                  </button>
-
-                  {/* Large Center Play / Pause Button with Theme Color */}
-                  <button
-                    onClick={togglePlay}
-                    className="w-12 h-12 rounded-full text-white flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0 shadow-xl"
-                    style={{ background: C.primary, boxShadow: `0 4px 18px ${C.primaryGlow}` }}
-                    title={playing ? "Tạm dừng" : "Phát nhạc"}
-                  >
-                    <i className={playing ? "ri-pause-fill text-2xl" : "ri-play-fill text-2xl pl-0.5"}></i>
-                  </button>
-
-                  {/* Next Track */}
-                  <button onClick={nextTrack} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer" title="Bài tiếp">
-                    <i className="ri-skip-forward-fill text-xl"></i>
-                  </button>
-
-                  {/* Repeat */}
-                  <button onClick={toggleRepeat} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: repeatMode !== 'off' ? C.primarySolid : 'rgba(255,255,255,0.8)' }} title="Lặp lại">
-                    <i className="ri-repeat-line text-base"></i>
-                  </button>
-
-                  {/* Favorite */}
-                  <button onClick={() => toggleFav(track.id)} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.8)' }} title="Yêu thích">
-                    <i className={favs.includes(track.id) ? "ri-heart-fill text-base" : "ri-heart-line text-base"}></i>
-                  </button>
-
+              {/* Bottom Progress Bar inside Image with Theme Accent */}
+              <div className="w-full flex flex-col gap-1">
+                <div className="flex items-center justify-between text-[10px] font-mono text-white/90 px-0.5">
+                  <span>{fmt(curTime)}</span>
+                  <span>{fmt(dur)}</span>
                 </div>
-
-                {/* Bottom Progress Bar inside Image with Theme Accent */}
-                <div className="w-full flex flex-col gap-1">
-                  <div className="flex items-center justify-between text-[10px] font-mono text-white/90 px-0.5">
-                    <span>{fmt(curTime)}</span>
-                    <span>{fmt(dur)}</span>
-                  </div>
-                  <input
-                    type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
-                    className="w-full h-1 cursor-pointer bg-white/30 rounded-lg"
-                    style={{ accentColor: C.primarySolid }}
-                  />
-                </div>
-
+                <input
+                  type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
+                  className="w-full h-1 cursor-pointer bg-white/30 rounded-lg"
+                  style={{ accentColor: C.primarySolid }}
+                />
               </div>
-            </div>
 
-            {/* Bottom Track Title & Artist */}
-            <div className="p-3.5 bg-[#18181c] flex items-center justify-between gap-3 border-t border-white/5 shrink-0">
-              <div className="min-w-0 flex-1 text-left">
-                <h4 className="text-sm font-extrabold truncate text-white leading-tight">{track.title}</h4>
-                <p className="text-xs text-white/60 truncate mt-0.5">{track.artist}</p>
-              </div>
-              <button
-                onClick={() => toggleFav(track.id)}
-                className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center transition cursor-pointer shrink-0 hover:scale-105"
-                style={{ color: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.8)', borderColor: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.2)' }}
-                title={favs.includes(track.id) ? "Đã thích" : "Thêm vào thư viện"}
-              >
-                <i className={favs.includes(track.id) ? "ri-heart-fill text-sm" : "ri-add-line text-base"}></i>
-              </button>
             </div>
           </div>
-        );
 
-        if (pipWindow) {
-          return createPortal(miniPlayerContent, pipWindow.document.body);
-        }
-
-        return (
-          <div
-            className={`fixed z-[200] w-80 md:w-96 h-[380px] rounded-2xl shadow-2xl overflow-hidden transition-shadow duration-300 border ${isDraggingMini ? 'select-none opacity-90 scale-[1.02]' : ''}`}
-            style={{
-              left: miniPos.x !== null ? `${miniPos.x}px` : 'auto',
-              top: miniPos.y !== null ? `${miniPos.y}px` : 'auto',
-              bottom: miniPos.x === null ? '24px' : 'auto',
-              right: miniPos.x === null ? '24px' : 'auto',
-              boxShadow: `0 20px 50px rgba(0,0,0,0.8), 0 0 15px ${C.primaryGlow}`,
-              borderColor: C.border
-            }}
-          >
-            {miniPlayerContent}
+          {/* Bottom Track Title & Artist */}
+          <div className="p-3.5 bg-[#18181c] flex items-center justify-between gap-3 border-t border-white/5 shrink-0">
+            <div className="min-w-0 flex-1 text-left">
+              <h4 className="text-sm font-extrabold truncate text-white leading-tight">{track.title}</h4>
+              <p className="text-xs text-white/60 truncate mt-0.5">{track.artist}</p>
+            </div>
+            <button
+              onClick={() => toggleFav(track.id)}
+              className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center transition cursor-pointer shrink-0 hover:scale-105"
+              style={{ color: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.8)', borderColor: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.2)' }}
+              title={favs.includes(track.id) ? "Đã thích" : "Thêm vào thư viện"}
+            >
+              <i className={favs.includes(track.id) ? "ri-heart-fill text-sm" : "ri-add-line text-base"}></i>
+            </button>
           </div>
-        );
-      })()}
+        </div>,
+        pipWindow.document.body
+      )}
     </div>
   );
 }
