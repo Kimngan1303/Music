@@ -2021,7 +2021,7 @@ export default function App() {
   // ── LANDING PAGE ──────────────────────────────────────────
   if (!user && page === 'landing') {
     return (
-      <div className="relative min-h-screen w-screen overflow-y-auto overflow-x-hidden flex flex-col" style={{ background: C.bg, fontFamily: F.body }}>
+      <div className="relative h-screen w-screen overflow-hidden flex flex-col" style={{ background: C.bg, fontFamily: F.body }}>
         <audio id="silent-audio" src="/silent.mp3" loop preload="auto" style={{ display: 'none' }}></audio>
         <div id="yt-player" className="fixed top-0 left-0 pointer-events-none z-[-50]" style={{ width: '300px', height: '300px', opacity: 1 }} />
 
@@ -2034,17 +2034,17 @@ export default function App() {
           style={{ background: `radial-gradient(circle,${C.primarySolid},transparent)`, transform: 'translate(-50%,-50%)' }} />
 
         {/* Nav bar */}
-        <header className="relative z-10 flex items-center justify-between px-10 py-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md" style={{ background: C.primary }}>
-              <i className="ri-disc-fill text-xl text-white spin-slow"></i>
+        <header className="relative z-10 flex items-center justify-between px-6 py-4 md:px-10 md:py-5">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shadow-md" style={{ background: C.primary }}>
+              <i className="ri-disc-fill text-lg sm:text-xl text-white spin-slow"></i>
             </div>
             <span style={{ fontFamily: F.cursive, fontSize: '26px', color: C.primarySolid, lineHeight: 1 }}>LittleLove</span>
           </div>
           <button
             onClick={() => setPage('login')}
             title="Bấm để đăng nhập tài khoản nghe nhạc"
-            className="px-6 py-2.5 rounded-full text-sm font-semibold shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            className="px-4 py-2 sm:px-6 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
             style={{ background: C.primary, color: '#fff', boxShadow: `0 4px 16px ${C.primaryGlow}` }}
           >
             Đăng nhập
@@ -2052,65 +2052,66 @@ export default function App() {
         </header>
 
         {/* Hero section */}
-        <main className="relative z-10 flex flex-col items-center justify-center flex-1 text-center px-6 py-16 gap-8">
+        <main className="relative z-10 flex flex-col items-center justify-center flex-1 text-center px-4 py-4 md:py-8 gap-4 sm:gap-6 md:gap-8 overflow-hidden min-h-0">
           {/* Spinning disc icon */}
-          <div className="w-28 h-28 rounded-full flex items-center justify-center shadow-2xl mb-2"
+          <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-28 md:h-28 rounded-full flex items-center justify-center shadow-2xl mb-1 sm:mb-2 shrink-0"
             style={{ background: C.primary, boxShadow: `0 20px 60px ${C.primaryGlow}` }}>
-            <i className="ri-disc-fill text-6xl text-white spin-slow"></i>
+            <i className="ri-disc-fill text-4xl sm:text-5xl md:text-6xl text-white spin-slow"></i>
           </div>
 
           {/* Headline */}
-          <div className="flex flex-col gap-2">
-            <h1 style={{ fontFamily: F.cursive, fontSize: 'clamp(48px,8vw,88px)', color: C.primarySolid, lineHeight: 1.05 }}>
+          <div className="flex flex-col gap-1 sm:gap-2 shrink-0">
+            <h1 style={{ fontFamily: F.cursive, fontSize: 'clamp(36px,7vw,88px)', color: C.primarySolid, lineHeight: 1.05 }}>
               LittleLove
             </h1>
-            <p style={{ fontFamily: F.brand, fontSize: 'clamp(13px,2vw,18px)', color: C.txtSub, letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 600 }}>
+            <p style={{ fontFamily: F.brand, fontSize: 'clamp(11px,1.5vw,18px)', color: C.txtSub, letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 600 }}>
               Không gian âm nhạc cá nhân của bạn
             </p>
           </div>
 
           {/* Description */}
-          <p style={{ fontFamily: F.body, fontSize: 'clamp(14px,1.8vw,17px)', color: C.txtSub, maxWidth: '520px', lineHeight: 1.8 }}>
+          <p className="shrink-0" style={{ fontFamily: F.body, fontSize: 'clamp(12px,1.5vw,17px)', color: C.txtSub, maxWidth: '520px', lineHeight: 1.8 }}>
             Tạo thư viện nhạc riêng từ YouTube, lưu bài yêu thích,
             tùy chỉnh giao diện theo phong cách của bạn.
           </p>
 
           {/* Feature pills */}
-          <div className="flex flex-wrap gap-3 justify-center">
+          <div className="flex flex-wrap gap-2 sm:gap-3 justify-center shrink-0">
             {[
               { icon: 'ri-youtube-fill', label: 'Stream từ YouTube' },
               { icon: 'ri-heart-fill', label: 'Bài hát yêu thích' },
               { icon: 'ri-palette-fill', label: 'Giao diện Pastel' },
               { icon: 'ri-repeat-line', label: 'Phát & Lặp lại' },
             ].map(f => (
-              <span key={f.label} className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold"
+              <span key={f.label} className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold"
                 style={{ background: C.tag, border: `1.5px solid ${C.tagBd}`, color: C.tagTxt }}>
-                <i className={`${f.icon} text-base`}></i>
+                <i className={`${f.icon} text-sm sm:text-base`}></i>
                 {f.label}
               </span>
             ))}
           </div>
 
           {/* CTA button */}
-          <button
-            onClick={() => setPage('login')}
-            title="Đăng nhập ngay để khám phá không gian nhạc cá nhân"
-            className="mt-4 px-10 py-4 rounded-2xl text-lg font-bold text-white flex items-center gap-3 shadow-2xl transition-all hover:scale-105 active:scale-95 hover:shadow-3xl cursor-pointer"
-            style={{ background: C.primary, boxShadow: `0 8px 32px ${C.primaryGlow}` }}
-          >
-            <i className="ri-headphone-fill text-xl"></i>
-            Bắt đầu nghe nhạc
-            <i className="ri-arrow-right-line text-xl"></i>
-          </button>
-
-          <p style={{ color: C.txtFad, fontSize: '12px', marginTop: '4px' }}>
-            ✦ Dành riêng cho bạn • Private Music Space ✦
-          </p>
+          <div className="shrink-0">
+            <button
+              onClick={() => setPage('login')}
+              title="Đăng nhập ngay để khám phá không gian nhạc cá nhân"
+              className="mt-2 sm:mt-4 px-6 py-3 sm:px-10 sm:py-4 rounded-2xl text-base sm:text-lg font-bold text-white flex items-center gap-2 sm:gap-3 shadow-2xl transition-all hover:scale-105 active:scale-95 hover:shadow-3xl cursor-pointer"
+              style={{ background: C.primary, boxShadow: `0 8px 32px ${C.primaryGlow}` }}
+            >
+              <i className="ri-headphone-fill text-lg sm:text-xl"></i>
+              Bắt đầu nghe nhạc
+              <i className="ri-arrow-right-line text-lg sm:text-xl"></i>
+            </button>
+            <p style={{ color: C.txtFad, fontSize: '11px', marginTop: '6px' }}>
+              ✦ Dành riêng cho bạn • Private Music Space ✦
+            </p>
+          </div>
         </main>
 
         {/* Footer */}
-        <footer className="relative z-10 text-center pb-6 pt-2">
-          <p style={{ color: C.txtFad, fontSize: '11px', fontFamily: F.brand, letterSpacing: '0.15em' }}>
+        <footer className="relative z-10 text-center pb-4 pt-1 sm:pb-6 sm:pt-2 shrink-0">
+          <p style={{ color: C.txtFad, fontSize: 'clamp(10px, 1.2vw, 11px)', fontFamily: F.brand, letterSpacing: '0.15em' }}>
             © 2026 LittleLove · Personal Edition
           </p>
         </footer>
@@ -2121,7 +2122,7 @@ export default function App() {
   // ── FULLSCREEN LOGIN SCREEN ────────────────────────────────
   if (!user && page === 'login') {
     return (
-      <div className="flex min-h-screen w-screen items-center justify-center p-4 py-10 relative overflow-y-auto overflow-x-hidden" style={{ background: C.bg, fontFamily: F.body }}>
+      <div className="flex h-screen w-screen items-center justify-center p-4 relative overflow-hidden" style={{ background: C.bg, fontFamily: F.body }}>
         <audio id="silent-audio" src="/silent.mp3" loop preload="auto" style={{ display: 'none' }}></audio>
         <div id="yt-player" className="fixed top-0 left-0 pointer-events-none z-[-50]" style={{ width: '300px', height: '300px', opacity: 1 }} />
 
@@ -2132,42 +2133,42 @@ export default function App() {
           style={{ background: `radial-gradient(circle,${C.primarySolid},transparent)`, animationDelay: '1.5s' }} />
 
         {/* Login Card */}
-        <div className="w-full max-w-md rounded-3xl p-8 shadow-2xl relative z-10"
+        <div className="w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10 flex flex-col max-h-[90vh]"
           style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 25px 70px rgba(0,0,0,0.12)' }}>
 
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md" style={{ background: C.primary }}>
-              <i className="ri-disc-fill text-3xl text-white spin-slow"></i>
+          <div className="text-center mb-4 sm:mb-6 shrink-0">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mx-auto mb-2 sm:mb-3 shadow-md" style={{ background: C.primary }}>
+              <i className="ri-disc-fill text-2xl sm:text-3xl text-white spin-slow"></i>
             </div>
-            <h1 style={{ fontFamily: F.cursive, fontSize: '34px', color: C.primarySolid, lineHeight: 1.1 }}>LittleLove</h1>
-            <p style={{ fontFamily: F.brand, fontSize: '11px', letterSpacing: '0.25em', color: C.txtFad, textTransform: 'uppercase', fontWeight: 600, marginTop: '2px' }}>
+            <h1 style={{ fontFamily: F.cursive, fontSize: 'clamp(28px, 6vw, 34px)', color: C.primarySolid, lineHeight: 1.1 }}>LittleLove</h1>
+            <p style={{ fontFamily: F.brand, fontSize: '10px', letterSpacing: '0.25em', color: C.txtFad, textTransform: 'uppercase', fontWeight: 600, marginTop: '2px' }}>
               Unnull Music Space
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="flex flex-col gap-4">
+          <form onSubmit={handleLogin} className="flex flex-col gap-3 sm:gap-4 overflow-y-auto pr-2 pb-2" style={{ scrollbarWidth: 'thin' }}>
             <div>
-              <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Email / Tên đăng nhập</label>
+              <label className="block text-xs font-bold mb-1 sm:mb-1.5" style={{ color: C.txtSub }}>Email / Tên đăng nhập</label>
               <input
                 type="text"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
                 placeholder="Nhập email hoặc tên đăng nhập"
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none transition"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl text-sm outline-none transition"
                 style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Mật Khẩu</label>
+              <label className="block text-xs font-bold mb-1 sm:mb-1.5" style={{ color: C.txtSub }}>Mật Khẩu</label>
               <input
                 type="password"
                 value={pwd}
                 onChange={e => setPwd(e.target.value)}
                 required
                 placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none transition"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl text-sm outline-none transition"
                 style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
               />
             </div>
@@ -2177,7 +2178,7 @@ export default function App() {
             <button
               type="submit"
               disabled={loggingIn}
-              className="w-full py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-[1.02] mt-2 cursor-pointer"
+              className="w-full py-3 sm:py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-[1.02] mt-1 sm:mt-2 cursor-pointer"
               style={{ background: C.primary, boxShadow: `0 6px 20px ${C.primaryGlow}` }}
             >
               {loggingIn ? <i className="ri-loader-4-line animate-spin text-lg"></i> : <i className="ri-key-2-line text-lg"></i>}
