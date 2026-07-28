@@ -1901,7 +1901,7 @@ export default function App() {
         <main className="flex-1 flex flex-col overflow-hidden">
 
           {/* Header */}
-          <header className="min-h-[72px] md:min-h-[66px] px-3 md:px-8 flex items-center justify-between shrink-0 relative gap-2 md:gap-3"
+          <header className="min-h-[72px] md:min-h-[66px] px-3 md:px-8 flex items-center justify-between shrink-0 relative z-40 gap-2 md:gap-3"
             style={{
               background: C.surface,
               backdropFilter: 'blur(18px)',
@@ -1959,7 +1959,7 @@ export default function App() {
 
               {/* User Avatar Dropdown (Xổ xuống 1 bảng ngay dưới ảnh đại diện) */}
               {user ? (
-                <div className="relative">
+                <div className="relative z-50">
                   <div
                     onClick={() => setProfileDropdown(!profileDropdown)}
                     className="flex items-center gap-1.5 md:gap-2.5 pl-1.5 md:pl-3 cursor-pointer group ml-0 md:ml-1 select-none"
