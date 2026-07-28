@@ -60,12 +60,12 @@ const SEASONAL_CONFIG = {
   summer_season: {
     items: ['☀️', '🌞', '🌤️', '☀️', '🔥', '✨', '🌞'],
     direction: 'up',
-    count: 48,
-    speedMin: 0.5,
-    speedMax: 1.6,
-    sizeMin: 16,
-    sizeMax: 32,
-    wobble: 1.8,
+    count: 55,
+    speedMin: 0.6,
+    speedMax: 1.8,
+    sizeMin: 22,
+    sizeMax: 42,
+    wobble: 2.2,
     rotate: true
   }
 };

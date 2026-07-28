@@ -3455,8 +3455,8 @@ export default function App() {
               <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden rounded-3xl p-6 md:p-8 mt-4 md:mt-0 shadow-sm min-h-[400px]"
                 style={{ background: C.surface, border: `1.5px solid ${C.border}`, boxShadow: '0 8px 40px rgba(0,0,0,0.06)' }}
               >
-                {/* 3D Glowing Glass Bubbles Canvas (Hiệu ứng bọt nước bong bóng 3D lung linh) */}
-                <BubbleCanvas />
+                {/* 3D Glowing Glass Bubbles Canvas or Seasonal Items */}
+                <BubbleCanvas themeKey={themeKey} />
 
                 {/* Blobs */}
                 <div className="absolute top-10 right-20 w-32 h-32 md:w-48 md:h-48 rounded-full pointer-events-none float-anim opacity-50"
