@@ -3961,15 +3961,22 @@ export default function App() {
             borderColor: C.border
           }}
         >
-          {/* Top Bar: URL & Window Drag Handle Controls */}
+          {/* Top Bar: Brand Logo & Title (Giống Ảnh 2 - Không bị xuống dòng) */}
           <div
             onMouseDown={handleMiniMouseDown}
-            className="flex items-center justify-between px-3.5 py-2.5 bg-black/60 border-b border-white/10 text-xs text-white/70 cursor-grab active:cursor-grabbing select-none"
+            className="flex items-center justify-between px-3.5 py-2.5 bg-black/60 border-b border-white/10 text-xs cursor-grab active:cursor-grabbing select-none"
             title="Giữ chuột và kéo để di chuyển cửa sổ con"
           >
-            <div className="flex items-center gap-1.5 font-mono text-[11px] truncate">
-              <i className="ri-equalizer-fill text-xs" style={{ color: C.primarySolid }}></i>
-              <span className="truncate">open.aura-music.com</span>
+            <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden shrink min-w-0">
+              <div className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0" style={{ background: C.primary }}>
+                <i className={`ri-disc-fill text-xs text-white ${playing ? 'spin-slow' : ''}`}></i>
+              </div>
+              <span className="text-base font-extrabold tracking-wide shrink-0" style={{ color: C.primarySolid, fontFamily: F.cursive, lineHeight: 1 }}>
+                LittleLove
+              </span>
+              <span className="text-[9px] font-bold uppercase tracking-wider truncate" style={{ color: C.txtFad, fontFamily: F.brand }}>
+                Unnull Music Space
+              </span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
