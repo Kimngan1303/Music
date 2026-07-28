@@ -151,9 +151,13 @@ router.put('/admin/users/:id', async (req, res) => {
       });
     }
 
+    const isSuperAdmin = (user.email === 'admin@gmail.com' || user.email === 'unnull@gmail.com' || req.params.id === 'admin-owner' || req.params.id === 'user-unnull');
+
     if (name) user.name = name.trim();
     if (email) user.email = email.trim().toLowerCase();
-    if (role !== undefined) user.role = role;
+    if (role !== undefined) {
+      user.role = isSuperAdmin ? 'admin' : role;
+    }
     if (isLocked !== undefined) user.isLocked = isLocked;
     if (avatar !== undefined) user.avatar = avatar;
 

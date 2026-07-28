@@ -3122,14 +3122,22 @@ export default function App() {
 
               <div>
                 <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Quyền Hạn (Role)</label>
-                <select value={adminRole} onChange={e => setAdminRole(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition cursor-pointer"
-                  style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
-                  disabled={adminSaving}
-                >
-                  <option value="user">Member (Người dùng nghe nhạc)</option>
-                  <option value="admin">Admin (Quản trị viên hệ thống)</option>
-                </select>
+                {(adminUserModal?.email === 'admin@gmail.com' || adminUserModal?.email === 'unnull@gmail.com' || adminUserModal?._id === 'admin-owner' || adminUserModal?._id === 'user-unnull') ? (
+                  <div className="w-full px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between"
+                    style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#f59e0b' }}>
+                    <span>✦ Super Admin Tối Cao</span>
+                    <span className="text-[10px] font-normal opacity-80">(Bảo vệ cố định)</span>
+                  </div>
+                ) : (
+                  <select value={adminRole} onChange={e => setAdminRole(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition cursor-pointer"
+                    style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                    disabled={adminSaving}
+                  >
+                    <option value="user">Member (Người dùng nghe nhạc)</option>
+                    <option value="admin">Admin (Quản trị viên hệ thống)</option>
+                  </select>
+                )}
               </div>
 
               {adminErr && <p className="text-xs font-semibold text-red-500 mt-1">{adminErr}</p>}
