@@ -64,6 +64,25 @@ router.put('/auth/profile', auth, async (req, res) => {
   }
 });
 
+router.put('/auth/change-password', auth, async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.trim().length < 4) {
+      return res.status(400).json({ message: 'Mật khẩu mới phải từ 4 ký tự trở lên!' });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'Không tìm thấy tài khoản người dùng.' });
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword.trim(), salt);
+    await user.save();
+
+    res.json({ message: 'Đổi mật khẩu thành công!' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.get('/auth/me', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);

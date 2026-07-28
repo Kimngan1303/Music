@@ -655,6 +655,14 @@ export default function App() {
   const [editName, setEditName] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
   const avatarFileInputRef = useRef(null);
+  const profileDropdownRef = useRef(null);
+
+  // Change Password States
+  const [showChangePwd, setShowChangePwd] = useState(false);
+  const [newPwdInput, setNewPwdInput] = useState('');
+  const [confirmPwdInput, setConfirmPwdInput] = useState('');
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const [pwdMsg, setPwdMsg] = useState({ text: '', type: '' });
 
   // Reload songs and favs when user logs in or out
   useEffect(() => {
@@ -802,6 +810,61 @@ export default function App() {
       setEditAvatar(user.avatar || '');
     }
   }, [user, profileDropdown]);
+
+  // Click outside to auto-close profile dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setProfileDropdown(false);
+      }
+    };
+    if (profileDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [profileDropdown]);
+
+  // Handle change password form submission
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPwdMsg({ text: '', type: '' });
+    if (!newPwdInput.trim() || newPwdInput.trim().length < 4) {
+      setPwdMsg({ text: 'Mật khẩu mới phải từ 4 ký tự trở lên!', type: 'error' });
+      return;
+    }
+    if (newPwdInput !== confirmPwdInput) {
+      setPwdMsg({ text: 'Mật khẩu xác nhận không khớp!', type: 'error' });
+      return;
+    }
+
+    setPwdSaving(true);
+    try {
+      if (user?.token) {
+        await axios.put('/api/auth/change-password', {
+          newPassword: newPwdInput.trim()
+        }, {
+          headers: { Authorization: `Bearer ${user.token}` }
+        });
+      }
+      setPwdMsg({ text: 'Đã đổi mật khẩu thành công!', type: 'success' });
+      setNewPwdInput('');
+      setConfirmPwdInput('');
+      setTimeout(() => {
+        setShowChangePwd(false);
+        setPwdMsg({ text: '', type: '' });
+      }, 2000);
+    } catch (err) {
+      console.error("Change password error:", err);
+      const msg = err.response?.data?.message || err.message || 'Lỗi khi cập nhật mật khẩu!';
+      setPwdMsg({ text: msg, type: 'error' });
+    } finally {
+      setPwdSaving(false);
+    }
+  };
 
   // Handle local avatar image upload from computer
   const handleAvatarFileUpload = (e) => {
@@ -1959,7 +2022,7 @@ export default function App() {
 
               {/* User Avatar Dropdown (Xổ xuống 1 bảng ngay dưới ảnh đại diện) */}
               {user ? (
-                <div className="relative z-50">
+                <div className="relative z-50" ref={profileDropdownRef}>
                   <div
                     onClick={() => setProfileDropdown(!profileDropdown)}
                     className="flex items-center gap-1.5 md:gap-2.5 pl-1.5 md:pl-3 cursor-pointer group ml-0 md:ml-1 select-none"
@@ -2088,6 +2151,80 @@ export default function App() {
                               <i className="ri-shield-user-line text-amber-500 text-sm"></i>
                               <span>Quản Lý Admin</span>
                             </button>
+                          )}
+
+                          {/* Change Password Toggle Button */}
+                          <button
+                            type="button"
+                            onClick={() => { setShowChangePwd(!showChangePwd); setPwdMsg({ text: '', type: '' }); }}
+                            className="w-full py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-between transition hover:opacity-90 cursor-pointer"
+                            style={{ background: C.tag, color: C.txt }}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <i className="ri-lock-password-line text-sm text-amber-500"></i>
+                              <span>Đổi Mật Khẩu</span>
+                            </div>
+                            <i className={`ri-chevron-${showChangePwd ? 'up' : 'down'}-s-line text-xs`} style={{ color: C.txtFad }}></i>
+                          </button>
+
+                          {/* Change Password Form */}
+                          {showChangePwd && (
+                            <form onSubmit={handleChangePassword} className="p-3 rounded-2xl flex flex-col gap-2.5 border my-1 animate-in fade-in duration-150" style={{ background: C.isDark ? '#0f172a' : C.surface, borderColor: C.border }}>
+                              <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: C.txtSub }}>
+                                  Mật khẩu mới
+                                </label>
+                                <input
+                                  type="password"
+                                  placeholder="Nhập mật khẩu mới..."
+                                  value={newPwdInput}
+                                  onChange={e => setNewPwdInput(e.target.value)}
+                                  className="w-full px-3 py-1.5 rounded-xl text-xs font-semibold outline-none transition"
+                                  style={{ background: C.isDark ? '#1e293b' : C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                                  required
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: C.txtSub }}>
+                                  Xác nhận mật khẩu
+                                </label>
+                                <input
+                                  type="password"
+                                  placeholder="Nhập lại mật khẩu..."
+                                  value={confirmPwdInput}
+                                  onChange={e => setConfirmPwdInput(e.target.value)}
+                                  className="w-full px-3 py-1.5 rounded-xl text-xs font-semibold outline-none transition"
+                                  style={{ background: C.isDark ? '#1e293b' : C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                                  required
+                                />
+                              </div>
+
+                              {pwdMsg.text && (
+                                <p className={`text-[11px] font-bold text-center ${pwdMsg.type === 'error' ? 'text-red-500' : 'text-emerald-500'}`}>
+                                  {pwdMsg.text}
+                                </p>
+                              )}
+
+                              <div className="flex items-center gap-2 mt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => { setShowChangePwd(false); setPwdMsg({ text: '', type: '' }); }}
+                                  className="flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition cursor-pointer"
+                                  style={{ background: C.tag, border: `1px solid ${C.border}`, color: C.txt }}
+                                >
+                                  Hủy
+                                </button>
+                                <button
+                                  type="submit"
+                                  disabled={pwdSaving}
+                                  className="flex-1 py-1.5 px-3 rounded-xl text-xs font-bold text-white transition flex items-center justify-center gap-1 cursor-pointer shadow-sm hover:scale-105 active:scale-95 disabled:opacity-50"
+                                  style={{ background: C.primary }}
+                                >
+                                  <span>{pwdSaving ? 'Đang lưu...' : 'Xác Nhận'}</span>
+                                </button>
+                              </div>
+                            </form>
                           )}
 
                           <button
