@@ -106,13 +106,33 @@ const addPlaylist = async (req, res) => {
 
     const { Innertube, UniversalCache } = await import('youtubei.js');
     const yt = await Innertube.create({ cache: new UniversalCache(false) });
-    const playlist = await yt.getPlaylist(listId);
+    let playlist = await yt.getPlaylist(listId);
     
     if (!playlist || !playlist.items || playlist.items.length === 0) {
       return res.status(404).json({ message: 'Playlist trống hoặc không có quyền truy cập.' });
     }
 
-    const songsToUpsert = playlist.items.map((item, idx) => {
+    let allItems = [...playlist.items];
+
+    // Tự động tải tiếp tất cả các trang đằng sau (Continuation) để lấy trọn vẹn toàn bộ Playlist (>100 bài)
+    let pageCount = 0;
+    const maxPages = 50; // Cho phép tải tới 5,000 bài hát trong 1 playlist
+    while (playlist.has_continuation && pageCount < maxPages) {
+      try {
+        playlist = await playlist.getContinuation();
+        if (playlist.items && playlist.items.length > 0) {
+          allItems.push(...playlist.items);
+        } else {
+          break;
+        }
+      } catch (contErr) {
+        console.warn('Lỗi khi tải trang tiếp theo của Playlist:', contErr);
+        break;
+      }
+      pageCount++;
+    }
+
+    const songsToUpsert = allItems.map((item, idx) => {
       let title = 'Unknown Title';
       let artist = 'Unknown Artist';
       let duration = '3:30'; // default
