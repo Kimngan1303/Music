@@ -103,15 +103,23 @@ router.get('/auth/me', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    // Update lastSeen timestamp on each heartbeat
-    user.lastSeen = new Date();
-    await user.save();
     const userRole = user.role || (user.email === 'tyn@gmail.com' ? 'admin' : 'user');
     res.json({ _id: user._id, name: user.name, email: user.email, avatar: user.avatar, role: userRole, isLocked: user.isLocked || false, favorites: user.favorites || [], lastSeen: user.lastSeen });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
+
+// Dedicated heartbeat endpoint - called every 30s by active clients only
+router.post('/auth/heartbeat', auth, async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.user.id, { lastSeen: new Date() });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 
 // --- ADMIN USER MANAGEMENT ROUTES ---
 router.get('/admin/users', async (req, res) => {

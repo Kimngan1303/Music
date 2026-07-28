@@ -754,6 +754,19 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?._id]);
 
+  // ── HEARTBEAT: Ping server every 30s to update lastSeen (online status) ──
+  useEffect(() => {
+    if (!user?.token) return;
+    const sendHeartbeat = () => {
+      axios.post('/api/auth/heartbeat', {}, {
+        headers: { Authorization: `Bearer ${user.token}` }
+      }).catch(() => {});
+    };
+    sendHeartbeat(); // ping immediately on login/mount
+    const hbInterval = setInterval(sendHeartbeat, 30000);
+    return () => clearInterval(hbInterval);
+  }, [user?.token]);
+
   // Theme State & Persistent Selection
   const [themeKey, setThemeKeyRaw] = useState(() => {
     return localStorage.getItem('aura_theme_key') || 'aurora';
@@ -2734,7 +2747,7 @@ export default function App() {
                     .filter(u => !adminSearch || u.name?.toLowerCase().includes(adminSearch.toLowerCase()) || u.email?.toLowerCase().includes(adminSearch.toLowerCase()))
                     .map(u => {
                       const isUserAdmin = u.role === 'admin' || u.email === 'admin@gmail.com' || u.email === 'unnull@gmail.com';
-                      const isOnline = u.lastSeen && (Date.now() - new Date(u.lastSeen).getTime()) < 5 * 60 * 1000;
+                      const isOnline = u.lastSeen && (Date.now() - new Date(u.lastSeen).getTime()) < 90 * 1000;
                       return (
                         <div
                           key={u._id}
