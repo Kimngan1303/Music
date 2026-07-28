@@ -354,54 +354,53 @@ input[type='range']::-webkit-slider-thumb:hover {
   user-select: none;
 }
 
-/* ── ACTIVE PLAYING SONG LED RUNNING BORDER ANIMATION ────────────────────────────── */
-@keyframes ledFlowGlow {
+/* ── REAL CHASING LED STREAMER (LED ĐUỔI CHẠY VÒNG QUANH KHUNG) ────────────────────────────── */
+@keyframes ledChasingSpin {
   0% {
-    box-shadow: 0 0 12px var(--led-glow), inset 0 0 8px var(--led-glow);
-    border-color: var(--led-color);
-  }
-  50% {
-    box-shadow: 0 0 24px var(--led-glow), 0 0 35px var(--led-color), inset 0 0 14px var(--led-glow);
-    border-color: #ffffff;
+    transform: rotate(0deg);
   }
   100% {
-    box-shadow: 0 0 12px var(--led-glow), inset 0 0 8px var(--led-glow);
-    border-color: var(--led-color);
-  }
-}
-
-@keyframes ledBorderSnake {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
+    transform: rotate(360deg);
   }
 }
 
 .active-playing-led-row {
   position: relative;
+  overflow: hidden;
+  border-radius: 1.1rem;
   z-index: 10;
-  border-radius: 1rem;
-  animation: ledFlowGlow 2s infinite ease-in-out;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 18px var(--led-glow);
 }
 
 .active-playing-led-row::before {
   content: '';
   position: absolute;
-  inset: -2.5px;
-  border-radius: 1.15rem;
-  padding: 2.5px;
-  background: linear-gradient(90deg, var(--led-color), #ffffff, var(--led-color), var(--led-glow));
-  background-size: 300% 300%;
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  animation: ledBorderSnake 2.2s linear infinite;
-  pointer-events: none;
-  z-index: 12;
+  top: -150%;
+  left: -150%;
+  width: 400%;
+  height: 400%;
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    transparent 0deg,
+    transparent 260deg,
+    var(--led-color) 310deg,
+    #ffffff 355deg,
+    var(--led-color) 360deg
+  );
+  animation: ledChasingSpin 2.2s linear infinite;
+  z-index: 1;
+}
+
+.active-playing-led-row::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: var(--row-bg, #18181c);
+  border-radius: 1rem;
+  z-index: 2;
+}
+
+.active-playing-led-row > * {
+  position: relative;
+  z-index: 5;
 }
