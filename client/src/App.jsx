@@ -596,6 +596,7 @@ export default function App() {
   const [adminName, setAdminName] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
+  const [adminAvatar, setAdminAvatar] = useState('');
   const [adminRole, setAdminRole] = useState('user');
   const [adminErr, setAdminErr] = useState('');
   const [adminSaving, setAdminSaving] = useState(false);
@@ -1891,14 +1892,16 @@ export default function App() {
           name: adminName,
           email: adminEmail,
           password: adminPassword,
-          role: adminRole
+          role: adminRole,
+          avatar: adminAvatar
         });
       } else {
         await axios.post('/api/admin/users', {
           name: adminName,
           email: adminEmail,
           password: adminPassword,
-          role: adminRole
+          role: adminRole,
+          avatar: adminAvatar
         });
       }
       await fetchAdminUsers();
@@ -1907,6 +1910,19 @@ export default function App() {
       setAdminErr(err.response?.data?.message || err.message || 'Lỗi lưu tài khoản vào DB.');
     } finally {
       setAdminSaving(false);
+    }
+  };
+
+  const handleChangeAvatarDirect = async (u) => {
+    if (isSuperAdminAccount(u) && !isCurrentSuperAdmin) return;
+    const newAvatar = window.prompt("Nhập URL ảnh đại diện mới:", u.avatar || "");
+    if (newAvatar !== null && newAvatar.trim() !== "") {
+      try {
+        await axios.put(`/api/admin/users/${u._id}`, { avatar: newAvatar.trim() });
+        fetchAdminUsers();
+      } catch (err) {
+        alert(err.response?.data?.message || err.message || 'Lỗi khi đổi ảnh đại diện.');
+      }
     }
   };
 
@@ -2925,7 +2941,9 @@ export default function App() {
                             <img
                               src={u.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
                               alt={u.name}
-                              className="w-12 h-12 rounded-xl object-cover shrink-0 shadow-xs"
+                              onClick={() => handleChangeAvatarDirect(u)}
+                              title="Bấm để đổi ảnh đại diện nhanh"
+                              className={`w-12 h-12 rounded-xl object-cover shrink-0 shadow-xs ${isSuperAdminAccount(u) && !isCurrentSuperAdmin ? '' : 'cursor-pointer hover:opacity-80 transition'}`}
                               style={{ border: `2px solid ${C.border}` }}
                             />
                             <div className="flex flex-col min-w-0">
@@ -2978,6 +2996,7 @@ export default function App() {
                                   setAdminName(u.name || '');
                                   setAdminEmail(u.email || '');
                                   setAdminPassword('');
+                                  setAdminAvatar(u.avatar || '');
                                   setAdminRole(u.role || 'user');
                                   setAdminErr('');
                                 }}
@@ -4156,6 +4175,16 @@ export default function App() {
                   className="w-full px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition"
                   style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
                   required
+                  disabled={adminSaving}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>URL Ảnh Đại Diện</label>
+                <input type="text" value={adminAvatar} onChange={e => setAdminAvatar(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition"
+                  style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
                   disabled={adminSaving}
                 />
               </div>
