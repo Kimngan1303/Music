@@ -63,12 +63,12 @@ const loginUser = async (req, res) => {
           { 
             $set: {
               email: matched.email,
-              password: hashedPassword,
-              role: matched.role || 'admin'
+              password: hashedPassword
             },
             $setOnInsert: {
               name: matched.name,
               avatar: matched.avatar,
+              role: matched.role || 'user',
               isLocked: false
             }
           },
