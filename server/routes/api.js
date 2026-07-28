@@ -317,7 +317,7 @@ router.get('/leaderboard', async (req, res) => {
     const topUsers = await User.find()
       .select('name avatar email totalActiveTime role')
       .sort({ totalActiveTime: -1 })
-      .limit(50);
+      .limit(10);
 
     const formatted = topUsers.map((u, index) => ({
       rank: index + 1,
@@ -325,8 +325,7 @@ router.get('/leaderboard', async (req, res) => {
       name: u.name,
       avatar: u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       email: u.email,
-      totalActiveTime: u.totalActiveTime || 0,
-      role: u.role || (u.email === 'admin@gmail.com' || u.email === 'unnull@gmail.com' ? 'admin' : 'user')
+      totalActiveTime: u.totalActiveTime || 0
     }));
 
     res.json(formatted);
@@ -340,6 +339,32 @@ router.get('/music', async (req, res) => {
   try {
     const songs = await Music.find().sort({ createdAt: -1 });
     res.json(songs);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// --- GLOBAL POPULAR SONGS ROUTE (Tất cả bài hát được nghe nhiều nhất của hệ thống) ---
+router.get('/music/popular', async (req, res) => {
+  try {
+    const popularSongs = await Music.find().sort({ playCount: -1, createdAt: -1 }).limit(15);
+    res.json(popularSongs);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Increment play count for a song when played by any user
+router.post('/music/:id/listen', async (req, res) => {
+  try {
+    const songId = req.params.id;
+    const song = await Music.findOne({ $or: [{ _id: songId }, { id: songId }, { youtubeId: songId }] });
+    if (song) {
+      song.playCount = (song.playCount || 0) + 1;
+      await song.save();
+      return res.json({ success: true, playCount: song.playCount });
+    }
+    res.json({ success: false });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

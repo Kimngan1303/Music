@@ -10,6 +10,7 @@ const musicSchema = new mongoose.Schema({
   addedBy: { type: String },
   inLibrary: { type: Boolean, default: true },
   id: { type: String }, // Custom ID to match frontend's s12345 format
+  playCount: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
 });
 

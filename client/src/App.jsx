@@ -1211,19 +1211,33 @@ export default function App() {
   const systemNotifs = getSystemNotifications(user, isAdmin);
   const unreadNotifsCount = systemNotifs.filter(n => !readNotifIds.includes(n.id)).length;
 
-  // Public Leaderboard State
+  // Public Leaderboard State (Top 10 users)
   const [publicLeaderboard, setPublicLeaderboard] = useState([]);
+  // Global Popular Songs State (Top songs listened by all users)
+  const [popularSongs, setPopularSongs] = useState([]);
 
   useEffect(() => {
     const fetchLeaderboard = () => {
       axios.get('/api/leaderboard').then(res => {
         if (Array.isArray(res.data)) {
-          setPublicLeaderboard(res.data);
+          setPublicLeaderboard(res.data.slice(0, 10));
         }
       }).catch(() => {});
     };
+    const fetchPopular = () => {
+      axios.get('/api/music/popular').then(res => {
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          setPopularSongs(res.data);
+        }
+      }).catch(() => {});
+    };
+
     fetchLeaderboard();
-    const interval = setInterval(fetchLeaderboard, 8000);
+    fetchPopular();
+    const interval = setInterval(() => {
+      fetchLeaderboard();
+      fetchPopular();
+    }, 8000);
     return () => clearInterval(interval);
   }, []);
 
@@ -1885,6 +1899,12 @@ export default function App() {
   const play = (trk, queue = null) => {
     if (!trk) return;
     setTrack(trk); setPlaying(true);
+
+    // Increment global play count in DB
+    const trkId = trk.id || trk.youtubeId || trk._id;
+    if (trkId) {
+      axios.post(`/api/music/${trkId}/listen`).catch(() => {});
+    }
 
     if (queue && Array.isArray(queue) && queue.length > 0) {
       setPlayingQueue(queue);
@@ -3770,30 +3790,30 @@ export default function App() {
             ) : tab === 'home' ? (
               <>
                 {/* ── Hero Banner ─────────────────────── */}
-              <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden rounded-3xl p-6 md:p-8 mt-4 md:mt-0 shadow-sm min-h-[400px]"
-                style={{ background: C.surface, border: `1.5px solid ${C.border}`, boxShadow: '0 8px 40px rgba(0,0,0,0.06)' }}
-              >
-                {/* 3D Glowing Glass Bubbles Canvas or Seasonal Items */}
-                <BubbleCanvas themeKey={themeKey} />
+                <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden rounded-3xl p-6 md:p-8 mt-4 md:mt-0 shadow-sm min-h-[400px]"
+                  style={{ background: C.surface, border: `1.5px solid ${C.border}`, boxShadow: '0 8px 40px rgba(0,0,0,0.06)' }}
+                >
+                  {/* 3D Glowing Glass Bubbles Canvas or Seasonal Items */}
+                  <BubbleCanvas themeKey={themeKey} />
 
-                {/* Blobs */}
-                <div className="absolute top-10 right-20 w-32 h-32 md:w-48 md:h-48 rounded-full pointer-events-none float-anim opacity-50"
-                  style={{ background: `radial-gradient(circle,${C.borderSel},transparent)` }} />
-                <div className="absolute bottom-10 left-20 w-24 h-24 md:w-32 md:h-32 rounded-full pointer-events-none float-anim opacity-30"
-                  style={{ background: `radial-gradient(circle,${C.primarySolid},transparent)`, animationDelay: '1.5s' }} />
+                  {/* Blobs */}
+                  <div className="absolute top-10 right-20 w-32 h-32 md:w-48 md:h-48 rounded-full pointer-events-none float-anim opacity-50"
+                    style={{ background: `radial-gradient(circle,${C.borderSel},transparent)` }} />
+                  <div className="absolute bottom-10 left-20 w-24 h-24 md:w-32 md:h-32 rounded-full pointer-events-none float-anim opacity-30"
+                    style={{ background: `radial-gradient(circle,${C.primarySolid},transparent)`, animationDelay: '1.5s' }} />
 
-                <div className="relative z-10 max-w-2xl text-center flex flex-col items-center">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 md:px-4 md:py-1.5 rounded-full text-xs font-bold mb-4 md:mb-6"
-                    style={{ background: C.tag, color: C.txt, border: `1px solid ${C.border}` }}>
-                    <span style={{ fontFamily: F.cursive }} className="text-[16px] md:text-[18px]">✦ Không gian nhạc cá nhân ✦</span>
-                  </span>
-                  <h1 className="leading-tight mb-4 text-3xl md:text-[42px]" style={{ color: C.txt, fontFamily: F.heading, fontWeight: 800 }}>
-                    Thư giãn &amp; thưởng thức<br />
-                    <span className="text-4xl md:text-[48px]" style={{ fontFamily: F.cursive, color: C.primarySolid, lineHeight: 1.4 }}>
-                      từng giai điệu ✨
+                  <div className="relative z-10 max-w-2xl text-center flex flex-col items-center">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 md:px-4 md:py-1.5 rounded-full text-xs font-bold mb-4 md:mb-6"
+                      style={{ background: C.tag, color: C.txt, border: `1px solid ${C.border}` }}>
+                      <span style={{ fontFamily: F.cursive }} className="text-[16px] md:text-[18px]">✦ Không gian nhạc cá nhân ✦</span>
                     </span>
-                  </h1>
-                  <p className="text-sm md:text-base mb-6 md:mb-8 leading-relaxed max-w-md" style={{ color: C.txtSub }}>
+                    <h1 className="leading-tight mb-4 text-3xl md:text-[42px]" style={{ color: C.txt, fontFamily: F.heading, fontWeight: 800 }}>
+                      Thư giãn &amp; thưởng thức<br />
+                      <span className="text-4xl md:text-[48px]" style={{ fontFamily: F.cursive, color: C.primarySolid, lineHeight: 1.4 }}>
+                        từng giai điệu ✨
+                      </span>
+                    </h1>
+                    <p className="text-sm md:text-base mb-6 md:mb-8 leading-relaxed max-w-md" style={{ color: C.txtSub }}>
                     Trang nhạc được tạo riêng cho bạn — khám phá, tạo danh sách phát và đắm chìm vào không gian âm nhạc không giới hạn.
                   </p>
                   <button onClick={() => setTab('library')}
@@ -3808,7 +3828,7 @@ export default function App() {
               {/* ── 2-COLUMN SECTION: LEADERBOARD (LEFT 65%) & POPULAR SONGS (RIGHT 35%) ── */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8 w-full">
                 
-                {/* LEFT (7 Cols): BẢNG XẾP HẠNG THỜI GIAN SỬ DỤNG (ALL USERS ONLINE TIME) */}
+                {/* LEFT (7 Cols): BẢNG XẾP HẠNG THỜI GIAN SỬ DỤNG (TOP 10 NGƯỜI DÙNG) */}
                 <div className="lg:col-span-7 flex flex-col gap-4 p-5 md:p-6 rounded-3xl border shadow-sm transition-all"
                   style={{ background: C.surface, borderColor: C.border }}>
                   
@@ -3823,7 +3843,7 @@ export default function App() {
                           Bảng Xếp Hạng Online
                         </h2>
                         <p className="text-xs" style={{ color: C.txtSub }}>
-                          Top thành viên tích lũy thời gian nghe nhạc &amp; hoạt động nhiều nhất
+                          Top 10 thành viên tích lũy thời gian nghe nhạc &amp; hoạt động nhiều nhất
                         </p>
                       </div>
                     </div>
@@ -3832,13 +3852,13 @@ export default function App() {
                     </span>
                   </div>
 
-                  {/* Leaderboard List */}
+                  {/* Leaderboard List (Tối đa Top 10 người dùng, không hiện Role) */}
                   <div className="flex flex-col gap-2.5 max-h-[460px] overflow-y-auto custom-scrollbar pr-1">
                     {publicLeaderboard.length === 0 ? (
                       <div className="py-12 text-center text-xs" style={{ color: C.txtFad }}>
                         Chưa có dữ liệu xếp hạng...
                       </div>
-                    ) : publicLeaderboard.map((lbUser, idx) => {
+                    ) : publicLeaderboard.slice(0, 10).map((lbUser, idx) => {
                       const badge = getLeaderboardBadge(lbUser.totalActiveTime);
                       const isTop1 = idx === 0;
                       const isTop2 = idx === 1;
@@ -3868,18 +3888,11 @@ export default function App() {
                             style={{ borderColor: isTop1 ? '#f59e0b' : C.border }}
                           />
 
-                          {/* User Details */}
+                          {/* User Details (Không hiện Role) */}
                           <div className="flex flex-col flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold truncate" style={{ color: C.txt }}>
-                                {lbUser.name}
-                              </span>
-                              {lbUser.role === 'admin' && (
-                                <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30">
-                                  Admin ✦
-                                </span>
-                              )}
-                            </div>
+                            <span className="text-xs font-bold truncate" style={{ color: C.txt }}>
+                              {lbUser.name}
+                            </span>
                             <span className="text-[11px] font-semibold flex items-center gap-1" style={{ color: C.primarySolid }}>
                               <i className="ri-time-line text-xs"></i> {fmtActiveTime(lbUser.totalActiveTime)}
                             </span>
@@ -3896,7 +3909,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* RIGHT (5 Cols): TOP BÀI HÁT ĐƯỢC NGHE NHIỀU NHẤT (POPULAR SONGS) */}
+                {/* RIGHT (5 Cols): TOP BÀI HÁT ĐƯỢC NGHE NHIỀU NHẤT CỦA TOÀN BỘ HỆ THỐNG */}
                 <div className="lg:col-span-5 flex flex-col gap-4 p-5 md:p-6 rounded-3xl border shadow-sm transition-all"
                   style={{ background: C.surface, borderColor: C.border }}>
                   
@@ -3911,22 +3924,23 @@ export default function App() {
                           Bài Hát Thịnh Hành
                         </h2>
                         <p className="text-xs" style={{ color: C.txtSub }}>
-                          Nghe thử &amp; thêm vào danh sách phát
+                          Được nghe nhiều nhất bởi toàn bộ người dùng
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Songs List */}
+                  {/* Popular Songs List (Dynamic from all users' listening history) */}
                   <div className="flex flex-col gap-2.5 max-h-[460px] overflow-y-auto custom-scrollbar pr-1">
-                    {songs.length === 0 ? (
+                    {(popularSongs.length > 0 ? popularSongs : songs).length === 0 ? (
                       <div className="py-12 text-center text-xs" style={{ color: C.txtFad }}>
-                        Chưa có bài hát nào trong thư viện.
+                        Chưa có bài hát nào trên hệ thống.
                       </div>
-                    ) : songs.slice(0, 15).map((s, idx) => {
+                    ) : (popularSongs.length > 0 ? popularSongs : songs).slice(0, 15).map((s, idx) => {
                       const isPlayingThis = track?.id === s.id && playing;
+                      const displayQueue = popularSongs.length > 0 ? popularSongs : songs;
                       return (
-                        <div key={s.id || idx}
+                        <div key={s.id || s._id || idx}
                           className="flex items-center gap-3 p-2.5 rounded-2xl border transition-all duration-200 group hover:scale-[1.01]"
                           style={{
                             background: isPlayingThis ? C.tag : (C.isDark ? 'rgba(30,41,59,0.4)' : '#f8fafc'),
@@ -3939,7 +3953,7 @@ export default function App() {
                               if (track?.id === s.id) {
                                 togglePlay();
                               } else {
-                                play(s, songs);
+                                play(s, displayQueue);
                               }
                             }}>
                             <img src={s.thumbnail} alt={s.title} className="w-full h-full object-cover" />
@@ -3956,20 +3970,27 @@ export default function App() {
                           <div className="flex flex-col flex-1 min-w-0">
                             <span className="text-xs font-bold truncate cursor-pointer hover:underline"
                               style={{ color: isPlayingThis ? C.primarySolid : C.txt }}
-                              onClick={() => play(s, songs)}>
+                              onClick={() => play(s, displayQueue)}>
                               {s.title}
                             </span>
-                            <span className="text-[11px] truncate" style={{ color: C.txtSub }}>
-                              {s.artist}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] truncate" style={{ color: C.txtSub }}>
+                                {s.artist}
+                              </span>
+                              {s.playCount > 0 && (
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-red-500/15 text-red-500 border border-red-500/20 shrink-0">
+                                  🔥 {s.playCount} lượt nghe
+                                </span>
+                              )}
+                            </div>
                           </div>
 
                           {/* Action Buttons: Add to Playlist */}
                           <button
                             onClick={() => setSongToAdd(s)}
-                            title="Thêm bài hát này vào danh sách phát của bạn"
+                            title="Thêm bài hát này vào danh sách phát tùy chọn của bạn"
                             className="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer hover:scale-105 active:scale-95 shrink-0"
-                            style={{ background: C.tag, border: `1px solid ${C.border}`, color: C.primarySolid }}
+                            style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.primarySolid }}
                           >
                             <i className="ri-playlist-add-line text-sm"></i>
                             <span className="hidden sm:inline">Thêm</span>
