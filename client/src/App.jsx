@@ -2731,6 +2731,7 @@ export default function App() {
                     .filter(u => !adminSearch || u.name?.toLowerCase().includes(adminSearch.toLowerCase()) || u.email?.toLowerCase().includes(adminSearch.toLowerCase()))
                     .map(u => {
                       const isUserAdmin = u.role === 'admin' || u.email === 'admin@gmail.com' || u.email === 'unnull@gmail.com';
+                      const isOnline = u.lastSeen && (Date.now() - new Date(u.lastSeen).getTime()) < 5 * 60 * 1000;
                       return (
                         <div
                           key={u._id}
@@ -2747,6 +2748,22 @@ export default function App() {
                             <div className="flex flex-col min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-bold truncate" style={{ color: C.txt }}>{u.name}</span>
+                                {/* Online / Offline Status Dot */}
+                                <span
+                                  title={isOnline ? 'Đang hoạt động' : 'Không hoạt động'}
+                                  style={{
+                                    display: 'inline-block',
+                                    width: 9,
+                                    height: 9,
+                                    borderRadius: '50%',
+                                    background: isOnline ? '#22c55e' : '#6b7280',
+                                    boxShadow: isOnline ? '0 0 6px 2px rgba(34,197,94,0.55)' : 'none',
+                                    flexShrink: 0,
+                                  }}
+                                />
+                                <span className="text-[9px] font-bold" style={{ color: isOnline ? '#22c55e' : '#6b7280' }}>
+                                  {isOnline ? 'Online' : 'Offline'}
+                                </span>
                                 <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${isUserAdmin ? 'bg-amber-500/20 text-amber-500 border border-amber-500/40 shadow-xs' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
                                   {isUserAdmin ? 'Admin ✦' : 'Member'}
                                 </span>
