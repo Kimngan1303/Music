@@ -610,6 +610,7 @@ export default function App() {
   // Always start at landing page on fresh visit
   const [page, setPage] = useState('landing');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [hoverTab, setHoverTab] = useState(null);
 
   const [loginModal, setLoginModal] = useState(false);
   const [email, setEmail] = useState('');
@@ -1583,18 +1584,24 @@ export default function App() {
               },
             ].map(t => {
               const active = tab === t.key;
+              const isHovered = hoverTab === t.key;
+              const isHighlighted = active || isHovered;
               return (
                 <button
                   key={t.key}
                   onClick={() => { setTab(t.key); setIsMobileMenuOpen(false); }}
+                  onMouseEnter={() => setHoverTab(t.key)}
+                  onMouseLeave={() => setHoverTab(null)}
                   title={t.tooltip}
-                  className={`flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-200 text-left shrink-0 cursor-pointer ${active ? 'opacity-100' : 'hover:opacity-85 active:scale-95'}`}
-                  style={active
+                  className="flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-200 text-left shrink-0 cursor-pointer active:scale-95"
+                  style={isHighlighted
                     ? {
                       background: C.tag,
                       color: C.txt,
-                      border: `1.5px solid ${C.borderSel || C.primarySolid}`,
-                      boxShadow: `0 4px 16px ${C.primaryGlow || 'rgba(0,0,0,0.1)'}`
+                      border: `1.5px solid ${active ? (C.borderSel || C.primarySolid) : (C.borderSel || C.primarySolid)}`,
+                      boxShadow: isHovered
+                        ? `0 8px 24px ${C.primaryGlow || 'rgba(0,0,0,0.25)'}, 0 2px 10px rgba(0,0,0,0.15)`
+                        : `0 4px 16px ${C.primaryGlow || 'rgba(0,0,0,0.15)'}`
                     }
                     : {
                       background: 'transparent',
@@ -1610,7 +1617,7 @@ export default function App() {
                     <i className={`${t.icon} text-lg`}></i>
                   </div>
                   <div className="flex flex-col min-w-0 flex-1 leading-tight">
-                    <span className="text-sm font-bold truncate" style={{ color: active ? C.primarySolid : C.txt }}>
+                    <span className="text-sm font-bold truncate" style={{ color: isHighlighted ? C.primarySolid : C.txt }}>
                       {t.label}
                     </span>
                     <span className="text-[11px] font-medium truncate mt-0.5" style={{ color: C.txtSub }}>
@@ -1633,6 +1640,8 @@ export default function App() {
             {playlists.map(p => {
               const tabKey = `playlist_${p._id}`;
               const active = tab === tabKey;
+              const isHovered = hoverTab === tabKey;
+              const isHighlighted = active || isHovered;
 
               const firstSongId = p.songs?.[0];
               const firstSong = firstSongId ? songs.find(s => s.id === firstSongId) : null;
@@ -1642,14 +1651,18 @@ export default function App() {
                 <button
                   key={p._id}
                   onClick={() => { setTab(tabKey); setIsMobileMenuOpen(false); }}
+                  onMouseEnter={() => setHoverTab(tabKey)}
+                  onMouseLeave={() => setHoverTab(null)}
                   title={`Mở danh sách phát: ${p.name}`}
-                  className={`flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-200 text-left shrink-0 cursor-pointer ${active ? 'opacity-100' : 'hover:opacity-85 active:scale-95'}`}
-                  style={active
+                  className="flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-200 text-left shrink-0 cursor-pointer active:scale-95"
+                  style={isHighlighted
                     ? {
                       background: C.tag,
                       color: C.txt,
-                      border: `1.5px solid ${C.borderSel || C.primarySolid}`,
-                      boxShadow: `0 4px 16px ${C.primaryGlow || 'rgba(0,0,0,0.1)'}`
+                      border: `1.5px solid ${active ? (C.borderSel || C.primarySolid) : (C.borderSel || C.primarySolid)}`,
+                      boxShadow: isHovered
+                        ? `0 8px 24px ${C.primaryGlow || 'rgba(0,0,0,0.25)'}, 0 2px 10px rgba(0,0,0,0.15)`
+                        : `0 4px 16px ${C.primaryGlow || 'rgba(0,0,0,0.15)'}`
                     }
                     : {
                       background: 'transparent',
@@ -1663,18 +1676,18 @@ export default function App() {
                       src={coverThumb}
                       alt={p.name}
                       className="w-11 h-11 rounded-xl object-cover shrink-0 shadow-sm"
-                      style={{ border: `1.5px solid ${active ? C.borderSel : C.border}` }}
+                      style={{ border: `1.5px solid ${isHighlighted ? (C.borderSel || C.primarySolid) : C.border}` }}
                     />
                   ) : (
                     <div
                       className="w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm"
-                      style={{ background: active ? C.primary : 'linear-gradient(135deg, #475569, #334155)' }}
+                      style={{ background: isHighlighted ? C.primary : 'linear-gradient(135deg, #475569, #334155)' }}
                     >
-                      <i className={active ? "ri-folder-music-fill text-lg" : "ri-folder-music-line text-lg"}></i>
+                      <i className={isHighlighted ? "ri-folder-music-fill text-lg" : "ri-folder-music-line text-lg"}></i>
                     </div>
                   )}
                   <div className="flex flex-col min-w-0 flex-1 leading-tight">
-                    <span className="text-sm font-bold truncate" style={{ color: active ? C.primarySolid : C.txt }}>
+                    <span className="text-sm font-bold truncate" style={{ color: isHighlighted ? C.primarySolid : C.txt }}>
                       {p.name}
                     </span>
                     <span className="text-[11px] font-medium truncate mt-0.5" style={{ color: C.txtSub }}>
