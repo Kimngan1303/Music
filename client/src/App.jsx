@@ -1617,9 +1617,6 @@ export default function App() {
                       {t.sub}
                     </span>
                   </div>
-                  {active && (
-                    <i className="ri-volume-up-fill text-sm animate-pulse shrink-0" style={{ color: C.primarySolid }}></i>
-                  )}
                 </button>
               );
             })}
@@ -1684,9 +1681,6 @@ export default function App() {
                       Playlist • {p.songs ? p.songs.length : 0} bài
                     </span>
                   </div>
-                  {active && (
-                    <i className="ri-volume-up-fill text-sm animate-pulse shrink-0" style={{ color: C.primarySolid }}></i>
-                  )}
                 </button>
               );
             })}
