@@ -567,26 +567,28 @@ const DYNAMIC_UNLOCK_MILESTONES = {
   prisma_mix: { reqMinutes: 720, label: '12 giờ (720p)' }
 };
 
-const fmtListenTime = (totalSeconds) => {
-  const mins = Math.floor(totalSeconds / 60);
-  if (mins < 60) return `${mins} phút`;
-  const hrs = (mins / 60).toFixed(1);
-  return `${hrs} giờ`;
+const fmtActiveTime = (totalSeconds) => {
+  const s = totalSeconds || 0;
+  if (s < 60) return `${s} giây`;
+  if (s < 3600) return `${Math.floor(s / 60)} phút ${s % 60} giây`;
+  const hrs = Math.floor(s / 3600);
+  const mins = Math.floor((s % 3600) / 60);
+  return `${hrs} giờ ${mins} phút`;
 };
 
-const getThemeLockStatus = (theme, listenSeconds, isAdminUser) => {
+const getThemeLockStatus = (theme, activeSeconds, isAdminUser) => {
   const tKey = theme.key;
   const now = new Date();
   const m = now.getMonth(); // 0 = Jan, 11 = Dec
   const d = now.getDate();
 
-  // 1. DYNAMIC THEMES (Tích lũy thời gian nghe nhạc)
+  // 1. DYNAMIC THEMES (Tích lũy thời gian hoạt động online - totalActiveTime)
   if (theme.category === 'mix') {
     const milestone = DYNAMIC_UNLOCK_MILESTONES[tKey] || { reqMinutes: 0, label: 'Miễn phí' };
-    const listenMinutes = Math.floor(listenSeconds / 60);
-    const isTimeReached = listenMinutes >= milestone.reqMinutes;
+    const activeMinutes = Math.floor((activeSeconds || 0) / 60);
+    const isTimeReached = activeMinutes >= milestone.reqMinutes;
     const isLocked = !isTimeReached && !isAdminUser;
-    const remainingMins = Math.max(0, milestone.reqMinutes - listenMinutes);
+    const remainingMins = Math.max(0, milestone.reqMinutes - activeMinutes);
 
     return {
       isLocked,
@@ -1043,7 +1045,7 @@ export default function App() {
       // Fetch latest profile & favorites
       axios.get('/api/auth/me', { headers: { Authorization: `Bearer ${user.token}` } }).then(res => {
         const dbProfile = res.data;
-        const updatedUser = { ...user, name: dbProfile.name, avatar: dbProfile.avatar, favorites: dbProfile.favorites };
+        const updatedUser = { ...user, name: dbProfile.name, avatar: dbProfile.avatar, favorites: dbProfile.favorites, totalActiveTime: dbProfile.totalActiveTime };
         setUser(updatedUser);
         localStorage.setItem('aura_user', JSON.stringify(updatedUser));
 
@@ -1056,18 +1058,34 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?._id]);
 
-  // ── HEARTBEAT: Ping server every 30s to update lastSeen (online status) ──
+  // ── HEARTBEAT: Ping server every 5s to update lastSeen & totalActiveTime ──
   useEffect(() => {
     if (!user?.token) return;
     const sendHeartbeat = () => {
       axios.post('/api/auth/heartbeat', {}, {
         headers: { Authorization: `Bearer ${user.token}` }
+      }).then(res => {
+        if (res.data?.totalActiveTime !== undefined) {
+          setUser(prev => prev ? ({ ...prev, totalActiveTime: res.data.totalActiveTime }) : prev);
+        }
       }).catch(() => {});
     };
     sendHeartbeat(); // ping immediately on login/mount
     const hbInterval = setInterval(sendHeartbeat, 5000);
     return () => clearInterval(hbInterval);
   }, [user?.token]);
+
+  // Local active timer (increments active time by 1s every second for smooth UI count)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setUser(prev => {
+        if (!prev) return prev;
+        const curActive = prev.totalActiveTime || 0;
+        return { ...prev, totalActiveTime: curActive + 1 };
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Theme State & Persistent Selection
   const [themeKey, setThemeKeyRaw] = useState(() => {
@@ -3955,11 +3973,11 @@ export default function App() {
                 <div className="p-3 rounded-2xl flex items-center justify-between gap-2 border text-xs font-semibold animate-in fade-in duration-200"
                   style={{ background: C.tag, borderColor: C.border, color: C.txt }}>
                   <div className="flex items-center gap-2">
-                    <i className="ri-headphone-fill text-amber-500 text-sm animate-bounce"></i>
-                    <span>Thời gian nghe nhạc: <strong style={{ color: C.primarySolid }}>{fmtListenTime(listenSeconds)}</strong></span>
+                    <i className="ri-time-fill text-amber-500 text-sm animate-bounce"></i>
+                    <span>Thời gian hoạt động (Online): <strong style={{ color: C.primarySolid }}>{fmtActiveTime(user?.totalActiveTime || 0)}</strong></span>
                   </div>
                   <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30">
-                    Nghe càng nhiều, mở thêm màu! 🎧
+                    Đồng bộ BXH Top Hoạt Động! ⚡
                   </span>
                 </div>
               )}
@@ -3970,14 +3988,14 @@ export default function App() {
                   .filter(t => t.category === themeCategory)
                   .map(t => {
                     const isSelected = themeKey === t.key;
-                    const status = getThemeLockStatus(t, listenSeconds, isAdmin);
+                    const status = getThemeLockStatus(t, user?.totalActiveTime || 0, isAdmin);
                     return (
                       <div
                         key={t.key}
                         onClick={() => {
                           if (status.isLocked) {
                             if (status.type === 'dynamic') {
-                              setLockedThemeNotice(`🔒 Giao diện "${t.name}" cần tích lũy ${status.milestoneLabel}! Hiện tại bạn đã nghe ${fmtListenTime(listenSeconds)} (${status.remainingText} nữa). Hãy tiếp tục nghe nhạc để mở khóa! 🎧`);
+                              setLockedThemeNotice(`🔒 Giao diện "${t.name}" cần tích lũy ${status.milestoneLabel} thời gian hoạt động (Online)! Hiện tại thời gian của bạn là ${fmtActiveTime(user?.totalActiveTime || 0)} (${status.remainingText} nữa). Hãy tiếp tục trải nghiệm app để mở khóa! ⚡`);
                             } else {
                               setLockedThemeNotice(`🔒 Giao diện "${t.name}" đang tạm khóa! Tự động mở vào đúng dịp ${status.holidayLabel} (${status.periodText}).`);
                             }
@@ -4022,7 +4040,7 @@ export default function App() {
                             <span className="text-[9px] font-bold text-blue-500 dark:text-blue-400 flex items-center gap-0.5 mt-0.5 truncate">
                               🔑 Admin (Dịp {status.periodText})
                             </span>
-                          ) : t.category === 'mix' && status.reqMinutes > 0 && isAdmin && (listenSeconds / 60) < status.reqMinutes ? (
+                          ) : t.category === 'mix' && status.reqMinutes > 0 && isAdmin && ((user?.totalActiveTime || 0) / 60) < status.reqMinutes ? (
                             <span className="text-[9px] font-bold text-blue-500 dark:text-blue-400 flex items-center gap-0.5 mt-0.5 truncate">
                               🔑 Admin (Mốc {status.milestoneLabel})
                             </span>

@@ -42,7 +42,7 @@ router.post('/auth/login', async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
     const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET || 'aura_music_secret_jwt_key_2026', { expiresIn: '7d' });
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    res.json({ token, user: { id: user._id, _id: user._id, name: user.name, email: user.email, avatar: user.avatar, role: user.role || (user.email === 'tyn@gmail.com' ? 'admin' : 'user'), totalActiveTime: user.totalActiveTime || 0 } });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -105,7 +105,7 @@ router.get('/auth/me', auth, async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
     const userRole = user.role || (user.email === 'tyn@gmail.com' ? 'admin' : 'user');
-    res.json({ _id: user._id, name: user.name, email: user.email, avatar: user.avatar, role: userRole, isLocked: user.isLocked || false, favorites: user.favorites || [], lastSeen: user.lastSeen });
+    res.json({ _id: user._id, name: user.name, email: user.email, avatar: user.avatar, role: userRole, isLocked: user.isLocked || false, favorites: user.favorites || [], lastSeen: user.lastSeen, totalActiveTime: user.totalActiveTime || 0 });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -115,18 +115,18 @@ router.get('/auth/me', auth, async (req, res) => {
 router.post('/auth/heartbeat', auth, async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
-    await Promise.all([
+    const [updatedUser] = await Promise.all([
       User.findByIdAndUpdate(req.user.id, { 
         lastSeen: new Date(),
         $inc: { totalActiveTime: 5 } // Increment by 5 seconds
-      }),
+      }, { new: true }),
       DailyStat.findOneAndUpdate(
         { date: today },
         { $addToSet: { activeUsers: req.user.id } },
         { upsert: true }
       )
     ]);
-    res.json({ ok: true });
+    res.json({ ok: true, totalActiveTime: updatedUser ? updatedUser.totalActiveTime : 0 });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
