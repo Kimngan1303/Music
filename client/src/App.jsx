@@ -4278,23 +4278,19 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Middle: Live Video Player or Album Artwork */}
+              {/* Middle: High-Res Album Artwork with Animated Badge */}
               <div className="relative w-full flex-1 bg-black group overflow-hidden select-none min-h-[180px]">
-                {ytId ? (
-                  <iframe
-                    src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0`}
-                    title={track.title}
-                    className="w-full h-full border-0 object-cover"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                ) : (
-                  <img
-                    src={track.thumbnail}
-                    alt={track.title}
-                    className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
-                  />
-                )}
+                <img
+                  src={track.thumbnail}
+                  alt={track.title}
+                  className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+                />
+
+                {/* Animated Playing Indicator Badge */}
+                <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/65 backdrop-blur-md flex items-center gap-1.5 border border-white/15 pointer-events-none z-10">
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: C.primarySolid }} />
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-white/90">Aura Playing</span>
+                </div>
 
                 {/* Hover Overlay Controls matching Theme Colors */}
                 <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col justify-between p-3 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
