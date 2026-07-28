@@ -2133,10 +2133,10 @@ export default function App() {
           style={{ background: `radial-gradient(circle,${C.primarySolid},transparent)`, animationDelay: '1.5s' }} />
 
         {/* Login Card */}
-        <div className="w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10 flex flex-col max-h-[90vh]"
+        <div className="w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10"
           style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 25px 70px rgba(0,0,0,0.12)' }}>
 
-          <div className="text-center mb-4 sm:mb-6 shrink-0">
+          <div className="text-center mb-4 sm:mb-6">
             <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mx-auto mb-2 sm:mb-3 shadow-md" style={{ background: C.primary }}>
               <i className="ri-disc-fill text-2xl sm:text-3xl text-white spin-slow"></i>
             </div>
@@ -2146,7 +2146,7 @@ export default function App() {
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="flex flex-col gap-3 sm:gap-4 overflow-y-auto pr-2 pb-2" style={{ scrollbarWidth: 'thin' }}>
+          <form onSubmit={handleLogin} className="flex flex-col gap-3 sm:gap-4">
             <div>
               <label className="block text-xs font-bold mb-1 sm:mb-1.5" style={{ color: C.txtSub }}>Email / Tên đăng nhập</label>
               <input
