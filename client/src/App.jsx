@@ -1165,29 +1165,15 @@ export default function App() {
     }
   };
 
-  // Auto-Launch PiP when switching away from tab & Auto-Close PiP when switching back to tab
+  // Auto-Launch OS Picture-in-Picture window when switching tabs while playing (YouTube & Spotify Web standard behavior)
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (document.hidden && playing && track) {
-        // Tab is hidden / inactive -> Auto launch floating mini player window
+        // Tab is hidden / inactive -> Auto launch floating mini player window if not open
         if ('documentPictureInPicture' in window && !pipWindowRef.current) {
           try { await togglePipWindow(); } catch (e) {}
         } else if (!pipWindowRef.current && !mobilePipActiveRef.current) {
           try { await triggerMobilePip(); } catch (e) {}
-        }
-      } else if (!document.hidden) {
-        // Tab is visible / active again -> Auto close floating mini player window!
-        if (pipWindowRef.current) {
-          try {
-            pipWindowRef.current.close();
-          } catch (e) {}
-          updatePipWindow(null);
-        }
-        if (document.pictureInPictureElement) {
-          try {
-            await document.exitPictureInPicture();
-          } catch (e) {}
-          updateMobilePipActive(false);
         }
       }
     };
