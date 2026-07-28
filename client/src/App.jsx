@@ -500,90 +500,6 @@ function CyberMusicFish() {
   );
 }
 
-// ─── Liquid Metal Button Component (JolyUI 3D Liquid Metal Ripple Effect) ───
-function LiquidMetalBtn({ children, type = "button", onClick, style, className = "", variant = "primary" }) {
-  const [ripples, setRipples] = useState([]);
-  const [isPressed, setIsPressed] = useState(false);
-  const btnRef = useRef(null);
-
-  const handleClick = (e) => {
-    if (btnRef.current) {
-      const rect = btnRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const id = Date.now() + Math.random();
-      setRipples((prev) => [...prev, { x, y, id }]);
-      setTimeout(() => {
-        setRipples((prev) => prev.filter((r) => r.id !== id));
-      }, 650);
-    }
-    if (onClick) onClick(e);
-  };
-
-  const baseMetalStyle = variant === 'cancel'
-    ? {
-      background: 'linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02), rgba(255,255,255,0.12))',
-      border: '1.5px solid rgba(255,255,255,0.18)',
-      boxShadow: isPressed
-        ? 'inset 0 3px 6px rgba(0,0,0,0.5)'
-        : '0 4px 15px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.3)',
-    }
-    : {
-      background: style?.background || 'linear-gradient(135deg, #00f2fe, #4facfe, #9d4edd, #f72585)',
-      boxShadow: isPressed
-        ? 'inset 0 3px 8px rgba(0,0,0,0.4)'
-        : style?.boxShadow || '0 6px 20px rgba(0,242,254,0.4), inset 0 1px 2px rgba(255,255,255,0.5)',
-    };
-
-  return (
-    <button
-      ref={btnRef}
-      type={type}
-      onClick={handleClick}
-      onMouseDown={() => setIsPressed(true)}
-      onMouseUp={() => setIsPressed(false)}
-      onMouseLeave={() => setIsPressed(false)}
-      className={`liquid-metal-btn relative flex-1 py-3 px-5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 cursor-pointer outline-none transition-all ${className}`}
-      style={{
-        ...style,
-        ...baseMetalStyle,
-        transform: isPressed ? 'scale(0.96) translateY(1px)' : undefined,
-      }}
-    >
-      {/* Liquid Shimmer Light */}
-      <span className="liquid-shimmer opacity-60" />
-
-      {/* Ripple Animation Effects */}
-      {ripples.map((r) => (
-        <span
-          key={r.id}
-          className="liquid-ripple"
-          style={{
-            left: `${r.x}px`,
-            top: `${r.y}px`,
-            width: '24px',
-            height: '24px',
-          }}
-        />
-      ))}
-
-      {/* Button Content */}
-      <span className="relative z-10 flex items-center justify-center gap-2 drop-shadow-sm">
-        {children}
-      </span>
-    </button>
-  );
-}
-
-// Preset Avatars for quick selection
-const PRESET_AVATARS = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
-];
-
 // Start with empty library — user adds their own songs
 const DEFAULT_SONGS = [];
 
@@ -1967,22 +1883,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Quick Avatar Presets */}
-                <div>
-                  <span className="block text-[11px] font-semibold mb-2" style={{ color: C.txtFad }}>Chọn avatar gợi ý nhanh:</span>
-                  <div className="flex gap-2.5 overflow-x-auto pb-1">
-                    {PRESET_AVATARS.map((url, idx) => (
-                      <img
-                        key={idx}
-                        src={url}
-                        alt={`Preset ${idx}`}
-                        onClick={() => setEditAvatar(url)}
-                        className={`w-10 h-10 rounded-full object-cover cursor-pointer hover:scale-110 transition ${editAvatar === url ? 'ring-2 ring-offset-1' : 'opacity-70 hover:opacity-100'}`}
-                        style={{ border: `2px solid ${editAvatar === url ? C.primarySolid : C.border}` }}
-                      />
-                    ))}
-                  </div>
-                </div>
+
 
                 {/* Display Name Input */}
                 <div>
@@ -2081,20 +1982,22 @@ export default function App() {
 
               {/* Submit / Cancel Actions */}
               <div className="flex gap-3 pt-3 mt-2" style={{ borderTop: `1.5px solid ${C.border}` }}>
-                <LiquidMetalBtn
-                  variant="cancel"
+                <button
+                  type="button"
                   onClick={() => setProfileModal(false)}
-                  style={{ color: C.txt }}
+                  className="flex-1 py-3 px-5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-all duration-150 active:scale-95 hover:opacity-90"
+                  style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
                 >
                   Hủy
-                </LiquidMetalBtn>
-                <LiquidMetalBtn
+                </button>
+                <button
                   type="submit"
-                  style={{ background: C.primary, color: '#fff', boxShadow: `0 6px 18px ${C.primaryGlow}` }}
+                  className="flex-1 py-3 px-5 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 cursor-pointer transition-all duration-150 active:scale-95 hover:opacity-90 shadow-md"
+                  style={{ background: C.primary, boxShadow: `0 4px 16px ${C.primaryGlow}` }}
                 >
                   <i className="ri-check-line text-lg"></i>
                   Lưu Thay Đổi
-                </LiquidMetalBtn>
+                </button>
               </div>
             </form>
           </div>
