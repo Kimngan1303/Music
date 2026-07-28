@@ -711,6 +711,17 @@ const getSystemNotifications = (userObj, isAdminUser) => {
   return list;
 };
 
+const getLeaderboardBadge = (totalSecs) => {
+  const mins = Math.floor((totalSecs || 0) / 60);
+  if (mins >= 60000) return { label: '👑 1000h Master', color: '#ec4899', bg: 'rgba(236,72,153,0.15)' };
+  if (mins >= 45000) return { label: '🔥 750h Lửa', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' };
+  if (mins >= 30000) return { label: '🌆 500h Sunset', color: '#f97316', bg: 'rgba(249,115,22,0.15)' };
+  if (mins >= 18000) return { label: '👾 300h Cyber', color: '#a855f7', bg: 'rgba(168,85,247,0.15)' };
+  if (mins >= 9000) return { label: '🌌 150h Aurora', color: '#06b6d4', bg: 'rgba(6,182,212,0.15)' };
+  if (mins >= 3000) return { label: '🔮 50h Tinh Vân', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)' };
+  return { label: '🌱 Tân thủ', color: '#10b981', bg: 'rgba(16,185,129,0.15)' };
+};
+
 
 
 // ─── Cyber Music Fish Component (Chú cá đeo tai nghe phát nhạc) ───
@@ -1199,6 +1210,22 @@ export default function App() {
 
   const systemNotifs = getSystemNotifications(user, isAdmin);
   const unreadNotifsCount = systemNotifs.filter(n => !readNotifIds.includes(n.id)).length;
+
+  // Public Leaderboard State
+  const [publicLeaderboard, setPublicLeaderboard] = useState([]);
+
+  useEffect(() => {
+    const fetchLeaderboard = () => {
+      axios.get('/api/leaderboard').then(res => {
+        if (Array.isArray(res.data)) {
+          setPublicLeaderboard(res.data);
+        }
+      }).catch(() => {});
+    };
+    fetchLeaderboard();
+    const interval = setInterval(fetchLeaderboard, 8000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Listen Time tracking state (accumulated active music play time in seconds)
   const listenSecondsKey = uid => `aura_listen_seconds_${uid || 'guest'}`;
@@ -3741,7 +3768,8 @@ export default function App() {
                 </div>
               </div>
             ) : tab === 'home' ? (
-              /* ── Hero Banner ─────────────────────── */
+              <>
+                {/* ── Hero Banner ─────────────────────── */}
               <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden rounded-3xl p-6 md:p-8 mt-4 md:mt-0 shadow-sm min-h-[400px]"
                 style={{ background: C.surface, border: `1.5px solid ${C.border}`, boxShadow: '0 8px 40px rgba(0,0,0,0.06)' }}
               >
@@ -3776,6 +3804,183 @@ export default function App() {
                   </button>
                 </div>
               </div>
+
+              {/* ── 2-COLUMN SECTION: LEADERBOARD (LEFT 65%) & POPULAR SONGS (RIGHT 35%) ── */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8 w-full">
+                
+                {/* LEFT (7 Cols): BẢNG XẾP HẠNG THỜI GIAN SỬ DỤNG (ALL USERS ONLINE TIME) */}
+                <div className="lg:col-span-7 flex flex-col gap-4 p-5 md:p-6 rounded-3xl border shadow-sm transition-all"
+                  style={{ background: C.surface, borderColor: C.border }}>
+                  
+                  <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: C.border }}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl shadow-sm"
+                        style={{ background: 'linear-gradient(135deg, #f59e0b, #ec4899)', color: '#fff' }}>
+                        🏆
+                      </div>
+                      <div>
+                        <h2 className="text-lg md:text-xl font-bold flex items-center gap-2" style={{ color: C.txt, fontFamily: F.heading }}>
+                          Bảng Xếp Hạng Online
+                        </h2>
+                        <p className="text-xs" style={{ color: C.txtSub }}>
+                          Top thành viên tích lũy thời gian nghe nhạc &amp; hoạt động nhiều nhất
+                        </p>
+                      </div>
+                    </div>
+                    <span className="hidden sm:inline-block text-[10px] font-extrabold px-3 py-1 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                      ⚡ Cập nhật liên tục
+                    </span>
+                  </div>
+
+                  {/* Leaderboard List */}
+                  <div className="flex flex-col gap-2.5 max-h-[460px] overflow-y-auto custom-scrollbar pr-1">
+                    {publicLeaderboard.length === 0 ? (
+                      <div className="py-12 text-center text-xs" style={{ color: C.txtFad }}>
+                        Chưa có dữ liệu xếp hạng...
+                      </div>
+                    ) : publicLeaderboard.map((lbUser, idx) => {
+                      const badge = getLeaderboardBadge(lbUser.totalActiveTime);
+                      const isTop1 = idx === 0;
+                      const isTop2 = idx === 1;
+                      const isTop3 = idx === 2;
+
+                      return (
+                        <div key={lbUser._id || idx}
+                          className="flex items-center gap-3 p-3 rounded-2xl border transition-all duration-200 hover:scale-[1.01]"
+                          style={{
+                            background: isTop1 ? 'rgba(245, 158, 11, 0.08)' : (isTop2 ? 'rgba(148, 163, 184, 0.08)' : (isTop3 ? 'rgba(217, 119, 6, 0.06)' : (C.isDark ? 'rgba(30,41,59,0.4)' : '#f8fafc'))),
+                            borderColor: isTop1 ? '#f59e0b' : (isTop2 ? '#94a3b8' : (isTop3 ? '#b45309' : C.border))
+                          }}>
+                          
+                          {/* Rank Medal */}
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-xs"
+                            style={{
+                              background: isTop1 ? 'linear-gradient(135deg,#f59e0b,#fbbf24)' : (isTop2 ? 'linear-gradient(135deg,#94a3b8,#cbd5e1)' : (isTop3 ? 'linear-gradient(135deg,#b45309,#d97706)' : C.tag)),
+                              color: isTop1 || isTop2 || isTop3 ? '#fff' : C.txtSub
+                            }}>
+                            {isTop1 ? '🥇' : (isTop2 ? '🥈' : (isTop3 ? '🥉' : `#${idx + 1}`))}
+                          </div>
+
+                          {/* Avatar */}
+                          <img src={lbUser.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                            alt={lbUser.name}
+                            className="w-10 h-10 rounded-full object-cover shrink-0 border-2"
+                            style={{ borderColor: isTop1 ? '#f59e0b' : C.border }}
+                          />
+
+                          {/* User Details */}
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold truncate" style={{ color: C.txt }}>
+                                {lbUser.name}
+                              </span>
+                              {lbUser.role === 'admin' && (
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                                  Admin ✦
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] font-semibold flex items-center gap-1" style={{ color: C.primarySolid }}>
+                              <i className="ri-time-line text-xs"></i> {fmtActiveTime(lbUser.totalActiveTime)}
+                            </span>
+                          </div>
+
+                          {/* Unlocked Title Badge */}
+                          <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full shrink-0 border"
+                            style={{ background: badge.bg, color: badge.color, borderColor: badge.color + '40' }}>
+                            {badge.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* RIGHT (5 Cols): TOP BÀI HÁT ĐƯỢC NGHE NHIỀU NHẤT (POPULAR SONGS) */}
+                <div className="lg:col-span-5 flex flex-col gap-4 p-5 md:p-6 rounded-3xl border shadow-sm transition-all"
+                  style={{ background: C.surface, borderColor: C.border }}>
+                  
+                  <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: C.border }}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl shadow-sm"
+                        style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)', color: '#fff' }}>
+                        🔥
+                      </div>
+                      <div>
+                        <h2 className="text-lg md:text-xl font-bold flex items-center gap-2" style={{ color: C.txt, fontFamily: F.heading }}>
+                          Bài Hát Thịnh Hành
+                        </h2>
+                        <p className="text-xs" style={{ color: C.txtSub }}>
+                          Nghe thử &amp; thêm vào danh sách phát
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Songs List */}
+                  <div className="flex flex-col gap-2.5 max-h-[460px] overflow-y-auto custom-scrollbar pr-1">
+                    {songs.length === 0 ? (
+                      <div className="py-12 text-center text-xs" style={{ color: C.txtFad }}>
+                        Chưa có bài hát nào trong thư viện.
+                      </div>
+                    ) : songs.slice(0, 15).map((s, idx) => {
+                      const isPlayingThis = track?.id === s.id && playing;
+                      return (
+                        <div key={s.id || idx}
+                          className="flex items-center gap-3 p-2.5 rounded-2xl border transition-all duration-200 group hover:scale-[1.01]"
+                          style={{
+                            background: isPlayingThis ? C.tag : (C.isDark ? 'rgba(30,41,59,0.4)' : '#f8fafc'),
+                            borderColor: isPlayingThis ? C.primarySolid : C.border
+                          }}>
+                          
+                          {/* Song Thumbnail & Play Overlay */}
+                          <div className="relative w-11 h-11 rounded-xl overflow-hidden shrink-0 group/img cursor-pointer"
+                            onClick={() => {
+                              if (track?.id === s.id) {
+                                togglePlay();
+                              } else {
+                                play(s, songs);
+                              }
+                            }}>
+                            <img src={s.thumbnail} alt={s.title} className="w-full h-full object-cover" />
+                            <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlayingThis ? 'opacity-100' : 'opacity-0 group-hover/img:opacity-100'}`}>
+                              {isPlayingThis ? (
+                                <i className="ri-pause-fill text-white text-lg animate-pulse" />
+                              ) : (
+                                <i className="ri-play-fill text-white text-lg ml-0.5" />
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Song Info */}
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="text-xs font-bold truncate cursor-pointer hover:underline"
+                              style={{ color: isPlayingThis ? C.primarySolid : C.txt }}
+                              onClick={() => play(s, songs)}>
+                              {s.title}
+                            </span>
+                            <span className="text-[11px] truncate" style={{ color: C.txtSub }}>
+                              {s.artist}
+                            </span>
+                          </div>
+
+                          {/* Action Buttons: Add to Playlist */}
+                          <button
+                            onClick={() => setSongToAdd(s)}
+                            title="Thêm bài hát này vào danh sách phát của bạn"
+                            className="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer hover:scale-105 active:scale-95 shrink-0"
+                            style={{ background: C.tag, border: `1px solid ${C.border}`, color: C.primarySolid }}
+                          >
+                            <i className="ri-playlist-add-line text-sm"></i>
+                            <span className="hidden sm:inline">Thêm</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              </>
             ) : (
               <>
                 {/* ── SPOTIFY-STYLE PLAYLIST / TAB HERO BANNER ─────────────────── */}

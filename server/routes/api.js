@@ -311,6 +311,30 @@ router.delete('/admin/users/:id', async (req, res) => {
   }
 });
 
+// --- PUBLIC LEADERBOARD ROUTE ---
+router.get('/leaderboard', async (req, res) => {
+  try {
+    const topUsers = await User.find()
+      .select('name avatar email totalActiveTime role')
+      .sort({ totalActiveTime: -1 })
+      .limit(50);
+
+    const formatted = topUsers.map((u, index) => ({
+      rank: index + 1,
+      _id: u._id,
+      name: u.name,
+      avatar: u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      email: u.email,
+      totalActiveTime: u.totalActiveTime || 0,
+      role: u.role || (u.email === 'admin@gmail.com' || u.email === 'unnull@gmail.com' ? 'admin' : 'user')
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // --- MUSIC ROUTES ---
 router.get('/music', async (req, res) => {
   try {
