@@ -12,13 +12,14 @@ const loginUser = async (req, res) => {
     const cleanInput = email.trim().toLowerCase();
     const fullEmail = cleanInput.includes('@') ? cleanInput : `${cleanInput}@gmail.com`;
 
-    // List of hardcoded accounts (from .env)
+    // List of default template accounts (from .env)
     const hardcodedAccounts = [
       {
-        email:    process.env.ADMIN_EMAIL    || 'admin@gmail.com',
-        password: process.env.ADMIN_PASSWORD || 'admin123',
+        email:    process.env.ADMIN_EMAIL    || 'tyn@gmail.com',
+        username: 'tyn',
+        password: process.env.ADMIN_PASSWORD || 'tyn',
         id:       'admin-owner',
-        name:     'Chủ sở hữu (Admin)',
+        name:     'Tyn (Admin)',
         avatar:   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
         role:     'admin',
       },
@@ -50,14 +51,12 @@ const loginUser = async (req, res) => {
       },
     ];
 
-    // Find matched hardcoded template config (if any)
+    // Find matched hardcoded template config (strictly exact email or username)
     const matchedConfig = hardcodedAccounts.find(
       acc => (
         acc.email.toLowerCase() === cleanInput ||
         acc.email.toLowerCase() === fullEmail ||
-        (acc.username && acc.username.toLowerCase() === cleanInput) ||
-        acc.email.split('@')[0].toLowerCase() === cleanInput ||
-        acc.id.toLowerCase() === cleanInput
+        (acc.username && acc.username.toLowerCase() === cleanInput)
       )
     );
 

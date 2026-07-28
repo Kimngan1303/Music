@@ -103,7 +103,7 @@ router.get('/auth/me', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    const userRole = user.role || (user.email === 'admin@gmail.com' ? 'admin' : 'user');
+    const userRole = user.role || (user.email === 'tyn@gmail.com' ? 'admin' : 'user');
     res.json({ _id: user._id, name: user.name, email: user.email, avatar: user.avatar, role: userRole, isLocked: user.isLocked || false, favorites: user.favorites || [] });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -114,12 +114,12 @@ router.get('/auth/me', auth, async (req, res) => {
 router.get('/admin/users', async (req, res) => {
   try {
     await User.updateMany(
-      { $or: [{ email: 'admin@gmail.com' }, { email: 'unnull@gmail.com' }, { _id: 'admin-owner' }] },
+      { $or: [{ email: 'tyn@gmail.com' }, { email: 'unnull@gmail.com' }, { _id: 'admin-owner' }] },
       { $set: { role: 'admin' } }
     );
     const users = await User.find().select('-password').sort({ createdAt: -1 });
     const formatted = users.map(u => {
-      const isSuperAdmin = u.email === 'admin@gmail.com' || u.email === 'unnull@gmail.com';
+      const isSuperAdmin = u.email === 'tyn@gmail.com' || u.email === 'unnull@gmail.com';
       return {
         ...u._doc,
         role: isSuperAdmin ? 'admin' : (u.role || 'user')
