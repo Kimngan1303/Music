@@ -27,7 +27,7 @@ const createPlaylist = async (req, res) => {
 const updatePlaylist = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, pinned, cover } = req.body;
+    const { name, pinned, cover, songs } = req.body;
     
     const playlist = await Playlist.findById(id);
     if (!playlist) return res.status(404).json({ message: 'Playlist not found' });
@@ -35,6 +35,7 @@ const updatePlaylist = async (req, res) => {
     if (name !== undefined) playlist.name = name;
     if (pinned !== undefined) playlist.pinned = pinned;
     if (cover !== undefined) playlist.cover = cover;
+    if (songs !== undefined) playlist.songs = songs;
     
     await playlist.save();
     res.json(playlist);
