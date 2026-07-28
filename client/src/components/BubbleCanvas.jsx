@@ -58,15 +58,15 @@ const SEASONAL_CONFIG = {
     rotate: true
   },
   summer_season: {
-    items: ['🏖️', '🌊', '🐚', '☀️', '💧', '🌴'],
+    items: ['☀️', '🌞', '🌤️', '☀️', '🔥', '✨', '🌞'],
     direction: 'up',
-    count: 42,
+    count: 48,
     speedMin: 0.5,
-    speedMax: 1.5,
-    sizeMin: 14,
-    sizeMax: 26,
-    wobble: 1.5,
-    rotate: false
+    speedMax: 1.6,
+    sizeMin: 16,
+    sizeMax: 32,
+    wobble: 1.8,
+    rotate: true
   }
 };
 
