@@ -3092,6 +3092,7 @@ export default function App() {
                     </div>
                   ) : list.map((song, i) => {
                     const sel = track?.id === song.id;
+                    const isPlayingThis = sel && playing;
                     const isSelected = selectedSongIds.includes(song.id);
                     return (
                       <div key={song.id}
@@ -3103,11 +3104,15 @@ export default function App() {
                           }
                         }}
                         title={isSelectMode ? `Bấm để ${isSelected ? 'bỏ chọn' : 'chọn'} ${song.title}` : `Bấm để phát: ${song.title} - ${song.artist}`}
-                        className="flex items-center p-2 md:p-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-200 group gap-2 md:gap-3 hover:opacity-95"
+                        className={`flex items-center p-2 md:p-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-200 group gap-2 md:gap-3 hover:opacity-95 ${
+                          isPlayingThis ? 'active-playing-led-row' : ''
+                        }`}
                         style={{
+                          '--led-color': C.primarySolid,
+                          '--led-glow': C.primaryGlow,
                           background: isSelected ? C.tag : (sel ? C.tag : C.surface),
-                          border: `1.5px solid ${isSelected ? C.primarySolid : (sel ? C.borderSel : 'transparent')}`,
-                          boxShadow: sel || isSelected ? '0 4px 18px rgba(0,0,0,0.06)' : 'none',
+                          border: isPlayingThis ? `2px solid ${C.primarySolid}` : `1.5px solid ${isSelected ? C.primarySolid : (sel ? C.borderSel : 'transparent')}`,
+                          boxShadow: isPlayingThis ? `0 0 22px ${C.primaryGlow}` : (sel || isSelected ? '0 4px 18px rgba(0,0,0,0.06)' : 'none'),
                         }}
                       >
                         {/* If select mode is active, show checkbox on left instead of track number */}
