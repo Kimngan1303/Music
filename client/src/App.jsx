@@ -804,16 +804,27 @@ export default function App() {
 
   const activePlaylist = tab.startsWith('playlist_') ? playlists.find(p => p._id === tab.split('_')[1]) : null;
 
-  const list = songs
-    .filter(s => s.title.toLowerCase().includes(query.toLowerCase()) || s.artist.toLowerCase().includes(query.toLowerCase()))
-    .filter(s => {
-      if (tab === 'favorites') return favs.includes(s.id);
-      if (activePlaylist) return activePlaylist.songs.includes(s.id);
-      return s.inLibrary !== false;
-    });
+  const getBaseList = () => {
+    if (tab.startsWith('playlist_') && activePlaylist) {
+      return activePlaylist.songs.map(id => songs.find(s => s.id === id)).filter(Boolean);
+    }
+    if (tab === 'favorites') {
+      return songs.filter(s => favs.includes(s.id));
+    }
+    return songs.filter(s => s.inLibrary !== false);
+  };
+
+  const list = getBaseList()
+    .filter(s => s.title.toLowerCase().includes(query.toLowerCase()) || s.artist.toLowerCase().includes(query.toLowerCase()));
 
   const getCurrentTrackList = () => {
-    // 1. If currently viewing a specific playlist tab, use songs in that playlist
+    // 1. If playingQueue state is active and valid (highest priority)
+    if (playingQueue && playingQueue.length > 0) {
+      const validQueue = playingQueue.filter(qSong => songs.some(s => s.id === qSong.id));
+      if (validQueue.length > 0) return validQueue;
+    }
+
+    // 2. If currently viewing a specific playlist tab, use songs in that playlist
     if (tab.startsWith('playlist_')) {
       const playlistId = tab.split('_')[1];
       const pl = playlists.find(p => p._id === playlistId);
@@ -825,16 +836,10 @@ export default function App() {
       }
     }
 
-    // 2. If currently viewing Favorites tab, use favorite songs
+    // 3. If currently viewing Favorites tab, use favorite songs
     if (tab === 'favorites') {
       const favSongs = songs.filter(s => favs.includes(s.id));
       if (favSongs.length > 0) return favSongs;
-    }
-
-    // 3. If playingQueue state is active and valid
-    if (playingQueue && playingQueue.length > 0) {
-      const validQueue = playingQueue.filter(qSong => songs.some(s => s.id === qSong.id));
-      if (validQueue.length > 0) return validQueue;
     }
 
     // 4. Default: current displayed list or library songs
