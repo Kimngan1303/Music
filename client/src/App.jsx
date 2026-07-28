@@ -1539,7 +1539,7 @@ export default function App() {
         )}
 
         <aside
-          className={`fixed md:relative z-50 w-64 h-full flex flex-col gap-5 p-6 shrink-0 transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+          className={`fixed md:relative z-50 w-72 h-full flex flex-col gap-5 p-6 shrink-0 transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
           style={{ ...glass, borderRight: `1.5px solid ${C.border}`, borderTop: 'none', borderBottom: 'none', borderLeft: 'none', background: C.surface }}
         >
           {/* Brand */}
