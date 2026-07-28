@@ -86,8 +86,15 @@ input[type='range']::-webkit-slider-thumb {
   transition: transform 0.15s;
 }
 
-input[type='range']::-webkit-slider-thumb:hover {
-  transform: scale(1.3);
+/* Bell Ring Shaking Animation for Notifications */
+@keyframes bellRing {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  15%, 45%, 75% { transform: rotate(14deg) scale(1.1); }
+  30%, 60% { transform: rotate(-14deg) scale(1.1); }
+}
+
+.bell-ring-anim {
+  animation: bellRing 1.8s ease-in-out infinite !important;
 }
 
 /* Sun Theme Play Button & Sun Ray Pulsing Effects */

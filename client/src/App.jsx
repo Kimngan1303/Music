@@ -655,6 +655,62 @@ const getThemeLockStatus = (theme, activeSeconds, isAdminUser) => {
   return { isLocked: false, isDateActive: true, type: 'standard' };
 };
 
+const getSystemNotifications = (userObj, isAdminUser) => {
+  const list = [];
+  const activeSecs = userObj?.totalActiveTime || 0;
+  const activeMins = Math.floor(activeSecs / 60);
+
+  // 1. Seasonal notifications (Mùa & Ngày Lễ)
+  const seasonalThemes = Object.values(THEMES).filter(t => t.category === 'seasonal');
+  seasonalThemes.forEach(t => {
+    const status = getThemeLockStatus(t, activeSecs, isAdminUser);
+    if (status.isDateActive) {
+      list.push({
+        id: `notif_seasonal_${t.key}`,
+        themeKey: t.key,
+        themeName: t.name,
+        icon: t.icon,
+        title: `Mùa & Dịp Lễ: ${t.name}`,
+        message: `Đang diễn ra dịp ${status.holidayLabel || 'Lễ'} (${status.periodText}). Nhấp vào để áp dụng ngay!`,
+        tag: 'Dịp Lễ',
+        tagBg: 'rgba(244, 114, 182, 0.15)',
+        tagColor: '#ec4899',
+        type: 'seasonal'
+      });
+    }
+  });
+
+  // 2. Dynamic Unlock notifications (Mở khóa theo thời gian)
+  Object.entries(DYNAMIC_UNLOCK_MILESTONES).forEach(([tKey, milestone]) => {
+    const t = THEMES[tKey];
+    if (!t) return;
+
+    if (activeMins >= milestone.reqMinutes || (isAdminUser && milestone.reqMinutes > 0)) {
+      let msg = `Bạn đã tích lũy ${milestone.label} thời gian hoạt động online! Giao diện đã được mở khóa.`;
+      if (milestone.reqMinutes === 60000) {
+        msg = `👑 MỐC KHỦNG 1000 GIỜ! Bạn đã chinh phục giao diện Cực Phẩm Cầu Vồng Prisma Dynamic!`;
+      } else if (milestone.reqMinutes === 0) {
+        msg = `Giao diện mặc định dành cho tân thủ trải nghiệm không gian âm nhạc.`;
+      }
+
+      list.push({
+        id: `notif_dynamic_${tKey}`,
+        themeKey: tKey,
+        themeName: t.name,
+        icon: t.icon,
+        title: milestone.reqMinutes === 0 ? `✨ Giao diện: ${t.name}` : `🎉 Mở khóa: ${t.name}`,
+        message: msg,
+        tag: milestone.reqMinutes === 0 ? 'Tân thủ' : milestone.label,
+        tagBg: 'rgba(245, 158, 11, 0.15)',
+        tagColor: '#f59e0b',
+        type: 'dynamic'
+      });
+    }
+  });
+
+  return list;
+};
+
 
 
 // ─── Cyber Music Fish Component (Chú cá đeo tai nghe phát nhạc) ───
@@ -1107,7 +1163,36 @@ export default function App() {
     localStorage.setItem('aura_theme_key', key);
   };
 
-  const [themeCategory, setThemeCategory] = useState('mix');
+  // Notification system state
+  const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const readNotifsKey = uid => `aura_read_notifs_${uid || 'guest'}`;
+  const [readNotifIds, setReadNotifIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem(readNotifsKey(initUserId));
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const markNotifRead = (id) => {
+    setReadNotifIds(prev => {
+      if (prev.includes(id)) return prev;
+      const updated = [...prev, id];
+      localStorage.setItem(readNotifsKey(user?._id), JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const markAllNotifsRead = () => {
+    const notifs = getSystemNotifications(user, isAdmin);
+    const ids = notifs.map(n => n.id);
+    setReadNotifIds(ids);
+    localStorage.setItem(readNotifsKey(user?._id), JSON.stringify(ids));
+  };
+
+  const systemNotifs = getSystemNotifications(user, isAdmin);
+  const unreadNotifsCount = systemNotifs.filter(n => !readNotifIds.includes(n.id)).length;
 
   // Listen Time tracking state (accumulated active music play time in seconds)
   const listenSecondsKey = uid => `aura_listen_seconds_${uid || 'guest'}`;
@@ -2971,6 +3056,113 @@ export default function App() {
                       </span>
                     </div>
                     <i className={`ri-chevron-down-s-line text-sm transition-transform duration-200 ${profileDropdown ? 'rotate-180' : ''}`} style={{ color: C.txtFad }}></i>
+                  </div>
+
+                  {/* 🔔 Notification Bell Button & Dropdown Panel (Chuông thông báo giao diện) */}
+                  <div className="relative z-50 ml-1.5 md:ml-2">
+                    <button
+                      onClick={() => setShowNotifMenu(!showNotifMenu)}
+                      className={`relative p-2 rounded-full transition-all cursor-pointer hover:scale-110 active:scale-95 flex items-center justify-center ${unreadNotifsCount > 0 ? 'bell-ring-anim' : ''}`}
+                      style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                      title="Thông báo mở khóa giao diện & mùa lễ"
+                    >
+                      <i className={`text-base md:text-lg ${unreadNotifsCount > 0 ? 'ri-notification-3-fill text-amber-500' : 'ri-notification-3-line'}`}></i>
+                      {unreadNotifsCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center border border-white shadow-md">
+                          {unreadNotifsCount}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Dropdown Bảng Thông Báo ngay bên dưới Nút Chuông */}
+                    {showNotifMenu && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowNotifMenu(false)}
+                        />
+                        <div
+                          className="absolute right-0 top-full mt-2.5 z-50 w-80 md:w-96 rounded-3xl p-4 shadow-2xl overflow-hidden transition-all duration-200"
+                          style={{
+                            background: C.isDark ? '#0f172a' : '#ffffff',
+                            border: `1.5px solid ${C.border}`,
+                            color: C.txt,
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.35)'
+                          }}
+                        >
+                          <div className="flex items-center justify-between pb-3 mb-3 border-b" style={{ borderColor: C.border }}>
+                            <div className="flex items-center gap-2">
+                              <i className="ri-notification-badge-fill text-amber-500 text-lg"></i>
+                              <span className="font-bold text-sm">Thông Báo Giao Diện</span>
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500">
+                                {systemNotifs.length}
+                              </span>
+                            </div>
+                            {unreadNotifsCount > 0 && (
+                              <button
+                                onClick={markAllNotifsRead}
+                                className="text-[11px] font-semibold text-blue-500 hover:underline cursor-pointer"
+                              >
+                                Đánh dấu đã đọc
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col gap-2.5 max-h-80 overflow-y-auto custom-scrollbar pr-1">
+                            {systemNotifs.length === 0 ? (
+                              <div className="py-8 text-center text-xs" style={{ color: C.txtFad }}>
+                                Không có thông báo nào mới.
+                              </div>
+                            ) : systemNotifs.map(notif => {
+                              const isRead = readNotifIds.includes(notif.id);
+                              const isCurrentTheme = themeKey === notif.themeKey;
+                              return (
+                                <div
+                                  key={notif.id}
+                                  onClick={() => {
+                                    setThemeKey(notif.themeKey);
+                                    markNotifRead(notif.id);
+                                    setShowNotifMenu(false);
+                                  }}
+                                  className={`p-3 rounded-2xl border transition-all cursor-pointer flex gap-3 items-start relative group hover:scale-[1.02] ${!isRead ? 'bg-amber-500/5' : ''}`}
+                                  style={{
+                                    borderColor: isCurrentTheme ? C.primarySolid : C.border,
+                                    background: isCurrentTheme ? C.tag : (C.isDark ? 'rgba(30,41,59,0.6)' : '#f8fafc')
+                                  }}
+                                >
+                                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-sm"
+                                    style={{ background: THEMES[notif.themeKey]?.bg || C.primary, color: '#fff' }}>
+                                    {notif.icon}
+                                  </div>
+                                  <div className="flex flex-col flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-1 mb-0.5">
+                                      <span className="text-xs font-bold truncate" style={{ color: isCurrentTheme ? C.primarySolid : C.txt }}>
+                                        {notif.title}
+                                      </span>
+                                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full shrink-0"
+                                        style={{ background: notif.tagBg, color: notif.tagColor }}>
+                                        {notif.tag}
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] leading-snug line-clamp-2" style={{ color: C.txtSub }}>
+                                      {notif.message}
+                                    </p>
+                                    <div className="mt-1.5 flex items-center justify-between text-[10px]">
+                                      <span className="font-bold text-emerald-500 flex items-center gap-1">
+                                        {isCurrentTheme ? '✓ Đang kích hoạt' : '👉 Bấm để áp dụng ngay'}
+                                      </span>
+                                      {!isRead && (
+                                        <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Dropdown Bảng Sửa Hồ Sơ Cá Nhân ngay bên dưới Avatar */}
