@@ -1020,6 +1020,15 @@ export default function App() {
         return updatedFavs;
       });
 
+      setPlaylists(prev => {
+        const updated = prev.map(pl => ({
+          ...pl,
+          songs: (pl.songs || []).filter(sId => !idsToDelete.includes(sId))
+        }));
+        if (user) localStorage.setItem(playlistsKey(user._id), JSON.stringify(updated));
+        return updated;
+      });
+
       try {
         await axios.post('/api/music/batch-delete', { ids: idsToDelete });
       } catch (err) {
@@ -1616,6 +1625,14 @@ export default function App() {
           headers: { Authorization: `Bearer ${user.token}` }
         }).catch(() => { });
       }
+      return updated;
+    });
+    setPlaylists(prev => {
+      const updated = prev.map(pl => ({
+        ...pl,
+        songs: (pl.songs || []).filter(sId => sId !== id)
+      }));
+      if (user) localStorage.setItem(playlistsKey(user._id), JSON.stringify(updated));
       return updated;
     });
     if (track?.id === id) {
@@ -2445,8 +2462,8 @@ export default function App() {
               const isHovered = hoverTab === tabKey;
               const isHighlighted = active || isHovered;
 
-              const firstSongId = p.songs?.[0];
-              const firstSong = firstSongId ? songs.find(s => s.id === firstSongId) : null;
+              const validPlaylistSongs = (p.songs || []).map(sId => songs.find(s => s.id === sId)).filter(Boolean);
+              const firstSong = validPlaylistSongs[0];
               const coverThumb = p.cover || firstSong?.thumbnail;
 
               return (
@@ -2502,7 +2519,7 @@ export default function App() {
                     </span>
                     <span className="text-[11px] font-medium truncate mt-0.5 flex items-center gap-1" style={{ color: C.txtSub }}>
                       {p.pinned && <i className="ri-pushpin-fill text-[11px] text-green-500 shrink-0"></i>}
-                      Playlist • {p.songs ? p.songs.length : 0} bài
+                      Playlist • {validPlaylistSongs.length} bài
                     </span>
                   </div>
                 </button>
