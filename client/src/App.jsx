@@ -1167,6 +1167,8 @@ export default function App() {
     localStorage.setItem('aura_theme_key', key);
   };
 
+  const [themeCategory, setThemeCategory] = useState('mix');
+
   // Notification system state
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const readNotifsKey = uid => `aura_read_notifs_${uid || 'guest'}`;
