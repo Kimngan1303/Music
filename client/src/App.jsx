@@ -503,6 +503,25 @@ function CyberMusicFish() {
   );
 }
 
+// ─── Precision Center-Aligned SVG Icons ───
+// 24x24 SVG coordinate system with origin (0,0) at center (viewBox="-12 -12 24 24")
+function PlayIcon({ className = "w-4 h-4" }) {
+  return (
+    <svg viewBox="-12 -12 24 24" className={className} fill="currentColor" aria-hidden="true">
+      <path d="M-4 -6 C-4 -6.6 -3.3 -7.0 -2.7 -6.6 L5.7 -0.6 C6.3 -0.2 6.3 0.2 5.7 0.6 L-2.7 6.6 C-3.3 7.0 -4 6.6 -4 6 Z" />
+    </svg>
+  );
+}
+
+function PauseIcon({ className = "w-4 h-4" }) {
+  return (
+    <svg viewBox="-12 -12 24 24" className={className} fill="currentColor" aria-hidden="true">
+      <rect x="-4.5" y="-6" width="3" height="12" rx="1" />
+      <rect x="1.5" y="-6" width="3" height="12" rx="1" />
+    </svg>
+  );
+}
+
 // ─── Floating Tooltip Component (Hiển thị nhãn ghi chú phía trên button) ───
 function Tooltip({ text, children }) {
   if (!text) return children;
@@ -2454,7 +2473,7 @@ export default function App() {
                       className="w-9 h-9 md:w-10 md:h-10 rounded-full text-white shadow-md flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0"
                       style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
                     >
-                      <i className="ri-play-fill text-lg md:text-xl ml-0.5 translate-y-[1px]"></i>
+                      <PlayIcon className="w-4 h-4 md:w-5 md:h-5" />
                     </button>
                   )}
                   <span className="text-xs md:text-sm font-extrabold truncate max-w-[120px] lg:max-w-[180px]" style={{ color: C.txt, fontFamily: F.heading }}>
@@ -3252,7 +3271,7 @@ export default function App() {
                           className="w-12 h-12 rounded-full text-white shadow-xl flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer"
                           style={{ background: C.primary, boxShadow: `0 6px 20px ${C.primaryGlow}` }}
                         >
-                          <i className="ri-play-fill text-2xl ml-0.5 translate-y-[1px]"></i>
+                          <PlayIcon className="w-6 h-6" />
                         </button>
                       )}
 
@@ -3935,7 +3954,7 @@ export default function App() {
               <button onClick={togglePlay}
                 className="w-8 h-8 md:w-10 md:h-10 rounded-full text-white flex items-center justify-center shadow-md transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
                 style={{ background: C.primary, boxShadow: `0 3px 12px ${C.primaryGlow}` }}>
-                <i className={playing ? 'ri-pause-fill text-base md:text-lg' : 'ri-play-fill text-base md:text-lg pl-0.5 translate-y-[1px]'}></i>
+                {playing ? <PauseIcon className="w-4 h-4 md:w-5 md:h-5" /> : <PlayIcon className="w-4 h-4 md:w-5 md:h-5" />}
               </button>
             </Tooltip>
 
@@ -4509,7 +4528,7 @@ export default function App() {
                       style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
                       title={playing ? "Tạm dừng" : "Phát nhạc"}
                     >
-                      <i className={playing ? "ri-pause-fill text-lg" : "ri-play-fill text-lg pl-0.5 translate-y-[1px]"}></i>
+                      {playing ? <PauseIcon className="w-4 h-4 md:w-5 md:h-5" /> : <PlayIcon className="w-4 h-4 md:w-5 md:h-5" />}
                     </button>
 
                     {/* Next Track */}
@@ -4609,7 +4628,7 @@ export default function App() {
                       style={{ background: C.primary, boxShadow: `0 4px 18px ${C.primaryGlow}` }}
                       title={playing ? "Tạm dừng" : "Phát nhạc"}
                     >
-                      <i className={playing ? "ri-pause-fill text-xl" : "ri-play-fill text-xl pl-0.5 translate-y-[1px]"}></i>
+                      {playing ? <PauseIcon className="w-5 h-5 md:w-6 md:h-6" /> : <PlayIcon className="w-5 h-5 md:w-6 md:h-6" />}
                     </button>
 
                     <button onClick={nextTrack} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer pointer-events-auto" title="Bài tiếp">
