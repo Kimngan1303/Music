@@ -647,8 +647,11 @@ export default function App() {
   const [loggingIn, setLoggingIn] = useState(false);
 
 
-  // Profile & Theme Customization Modal
-  const [profileModal, setProfileModal] = useState(false);
+  // Profile Dropdown & Theme Modal States
+  const [themeModal, setThemeModal] = useState(false);
+  const [profileDropdown, setProfileDropdown] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSavedMsg, setProfileSavedMsg] = useState('');
   const [editName, setEditName] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
   const avatarFileInputRef = useRef(null);
@@ -792,13 +795,13 @@ export default function App() {
 
   const yt = useRef(null);
 
-  // Sync profile edit state when opening modal
+  // Sync profile edit state when opening profile dropdown
   useEffect(() => {
     if (user) {
       setEditName(user.name || '');
       setEditAvatar(user.avatar || '');
     }
-  }, [user, profileModal]);
+  }, [user, profileDropdown]);
 
   // Handle local avatar image upload from computer
   const handleAvatarFileUpload = (e) => {
@@ -1157,10 +1160,12 @@ export default function App() {
     localStorage.removeItem('aura_token');
   };
 
-  // Save Profile & Theme updates
-  const handleSaveProfileAndTheme = async (e) => {
-    e.preventDefault();
+  // Save Profile updates (from profile dropdown under avatar)
+  const handleSaveProfile = async (e) => {
+    if (e) e.preventDefault();
     if (user) {
+      setProfileSaving(true);
+      setProfileSavedMsg('');
       const updated = {
         ...user,
         name: editName.trim() || user.name,
@@ -1169,7 +1174,6 @@ export default function App() {
       setUser(updated);
       localStorage.setItem('aura_user', JSON.stringify(updated));
 
-      // Save to backend
       try {
         await axios.put('/api/auth/profile', {
           name: updated.name,
@@ -1177,12 +1181,22 @@ export default function App() {
         }, {
           headers: { Authorization: `Bearer ${user.token}` }
         });
+        setProfileSavedMsg('Đã lưu hồ sơ thành công!');
+        setTimeout(() => setProfileSavedMsg(''), 2500);
       } catch (err) {
         console.error("Failed to save profile to server", err);
+        setProfileSavedMsg('Lỗi khi lưu lên máy chủ');
+      } finally {
+        setProfileSaving(false);
       }
     }
+  };
+
+  // Save Theme updates (from theme modal in center of screen)
+  const handleSaveTheme = (e) => {
+    if (e) e.preventDefault();
     localStorage.setItem('aura_theme_key', themeKey);
-    setProfileModal(false);
+    setThemeModal(false);
   };
 
   const addSong = async e => {
@@ -1932,37 +1946,178 @@ export default function App() {
                 <i className="ri-youtube-line text-sm md:text-base"></i> <span className="hidden md:inline">Thêm Nhạc</span>
               </button>
 
-              {/* Profile & Theme Customization Button */}
+              {/* Theme Customization Button (Khung chỉnh sửa giao diện ở giữa màn hình) */}
               <button
-                onClick={() => setProfileModal(true)}
-                title="Tùy chỉnh Hồ Sơ & Bảng Màu Giao Diện"
-                className="flex items-center gap-1 md:gap-2 text-[11px] md:text-sm font-semibold px-2 py-1.5 md:px-4 md:py-2 rounded-full transition-all shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
+                onClick={() => setThemeModal(true)}
+                title="Tùy chỉnh Giao Diện & Bảng Màu"
+                className="flex items-center gap-1.5 md:gap-2 text-[11px] md:text-sm font-semibold px-2.5 py-1.5 md:px-4 md:py-2 rounded-full transition-all shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
                 style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
               >
                 <i className="ri-palette-line text-sm md:text-base" style={{ color: C.primarySolid }}></i>
-                <span className="hidden lg:inline">Giao Diện &amp; Profile</span>
+                <span className="hidden lg:inline">Chỉnh Sửa Giao Diện</span>
               </button>
 
-              {/* User Avatar & Name (Original Right Side) */}
+              {/* User Avatar Dropdown (Xổ xuống 1 bảng ngay dưới ảnh đại diện) */}
               {user ? (
-                <div
-                  onClick={() => setProfileModal(true)}
-                  className="flex items-center gap-1 md:gap-2.5 pl-1.5 md:pl-3 cursor-pointer group ml-0 md:ml-1"
-                  style={{ borderLeft: `1.5px solid ${C.border}` }}
-                  title="Chỉnh sửa Hồ Sơ & Giao Diện cá nhân"
-                >
-                  <img src={user.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
-                    alt={user.name} className="w-7 h-7 md:w-9 md:h-9 rounded-full object-cover group-hover:scale-105 transition" style={{ border: `2px solid ${C.borderSel}` }}
-                  />
-                  <div className="hidden md:flex flex-col leading-tight">
-                    <span className="text-xs font-bold group-hover:underline" style={{ color: C.txt }}>{user.name}</span>
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: isAdmin ? '#f59e0b' : C.primarySolid }}>
-                      {isAdmin ? 'Admin ✦' : 'Member'}
-                    </span>
+                <div className="relative">
+                  <div
+                    onClick={() => setProfileDropdown(!profileDropdown)}
+                    className="flex items-center gap-1.5 md:gap-2.5 pl-1.5 md:pl-3 cursor-pointer group ml-0 md:ml-1 select-none"
+                    style={{ borderLeft: `1.5px solid ${C.border}` }}
+                    title="Bấm để chỉnh sửa hồ sơ cá nhân"
+                  >
+                    <img src={user.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                      alt={user.name} className="w-7 h-7 md:w-9 md:h-9 rounded-full object-cover group-hover:scale-105 transition" style={{ border: `2px solid ${C.borderSel}` }}
+                    />
+                    <div className="hidden md:flex flex-col leading-tight">
+                      <span className="text-xs font-bold group-hover:underline" style={{ color: C.txt }}>{user.name}</span>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: isAdmin ? '#f59e0b' : C.primarySolid }}>
+                        {isAdmin ? 'Admin ✦' : 'Member'}
+                      </span>
+                    </div>
+                    <i className={`ri-chevron-down-s-line text-sm transition-transform duration-200 ${profileDropdown ? 'rotate-180' : ''}`} style={{ color: C.txtFad }}></i>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); logout(); }} title="Đăng xuất tài khoản" className="p-1.5 md:p-2 rounded-full hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: C.txtFad }}>
-                    <i className="ri-logout-box-r-line text-base hover:text-red-500 transition"></i>
-                  </button>
+
+                  {/* Dropdown Bảng Sửa Hồ Sơ Cá Nhân ngay bên dưới Avatar */}
+                  {profileDropdown && (
+                    <>
+                      {/* Transparent backdrop overlay to dismiss on outside click */}
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setProfileDropdown(false)}
+                      />
+
+                      <div
+                        className="absolute right-0 top-full mt-2.5 z-50 w-80 md:w-88 rounded-3xl p-5 shadow-2xl overflow-hidden transition-all duration-200"
+                        style={{
+                          background: C.isDark ? '#1e293b' : '#fffcf9',
+                          border: `1.5px solid ${C.border}`,
+                          color: C.txt,
+                          boxShadow: '0 20px 50px rgba(0,0,0,0.35)'
+                        }}
+                      >
+                        {/* Profile Header */}
+                        <div className="relative mb-4 pb-3 border-b" style={{ borderColor: C.border }}>
+                          <div className="flex items-center gap-3.5">
+                            {/* Avatar with Click to Change */}
+                            <div className="relative group/avatar cursor-pointer shrink-0" onClick={() => avatarFileInputRef.current?.click()} title="Bấm để đổi ảnh đại diện">
+                              <img
+                                src={editAvatar || user.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                                alt={user.name}
+                                className="w-14 h-14 rounded-full object-cover shadow-md transition group-hover/avatar:opacity-85"
+                                style={{ border: `2.5px solid ${C.borderSel}` }}
+                              />
+                              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition">
+                                <i className="ri-camera-switch-line text-white text-base"></i>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="text-sm font-bold truncate" style={{ color: C.txt }}>{user.name}</span>
+                              <span className="text-xs truncate font-mono" style={{ color: C.txtSub }}>{user.email}</span>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${isAdmin ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+                                  {isAdmin ? 'Admin ✦' : 'Member'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Edit Form */}
+                        <form onSubmit={handleSaveProfile} className="flex flex-col gap-3.5 mb-4">
+                          <div>
+                            <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: C.txtSub }}>
+                              Tên Hiển Thị
+                            </label>
+                            <input
+                              type="text"
+                              value={editName}
+                              onChange={e => setEditName(e.target.value)}
+                              placeholder="Nhập tên hiển thị..."
+                              className="w-full px-3.5 py-2 rounded-xl text-xs font-semibold outline-none transition"
+                              style={{ background: C.isDark ? '#0f172a' : C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                              required
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => avatarFileInputRef.current?.click()}
+                              className="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer hover:opacity-90 active:scale-95"
+                              style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                            >
+                              <i className="ri-folder-image-line text-sm" style={{ color: C.primarySolid }}></i>
+                              <span>Đổi Ảnh</span>
+                            </button>
+                            <input
+                              type="file"
+                              ref={avatarFileInputRef}
+                              onChange={handleAvatarFileUpload}
+                              accept="image/*"
+                              className="hidden"
+                            />
+
+                            <button
+                              type="submit"
+                              disabled={profileSaving}
+                              className="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-white transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md hover:scale-105 active:scale-95 disabled:opacity-50"
+                              style={{ background: C.primary, boxShadow: `0 3px 12px ${C.primaryGlow}` }}
+                            >
+                              <i className="ri-save-3-line text-sm"></i>
+                              <span>{profileSaving ? 'Đang lưu...' : 'Lưu Hồ Sơ'}</span>
+                            </button>
+                          </div>
+                          {profileSavedMsg && (
+                            <p className="text-[11px] font-bold text-emerald-500 text-center">
+                              ✓ {profileSavedMsg}
+                            </p>
+                          )}
+                        </form>
+
+                        {/* Quick Menu Actions */}
+                        <div className="pt-3 border-t flex flex-col gap-1.5" style={{ borderColor: C.border }}>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => { setTab('admin'); setProfileDropdown(false); }}
+                              className="w-full py-2 px-3 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition hover:opacity-90 cursor-pointer"
+                              style={{ background: C.tag, color: C.txt }}
+                            >
+                              <i className="ri-shield-user-line text-amber-500 text-sm"></i>
+                              <span>Quản Lý Admin</span>
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (user?._id || user?.email) {
+                                navigator.clipboard.writeText(user._id || user.email);
+                                alert('Đã sao chép ID / Email người dùng vào bộ nhớ tạm!');
+                              }
+                            }}
+                            className="w-full py-2 px-3 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition hover:opacity-90 cursor-pointer"
+                            style={{ background: C.tag, color: C.txt }}
+                          >
+                            <i className="ri-file-copy-line text-sm" style={{ color: C.primarySolid }}></i>
+                            <span>Sao Chép ID Người Dùng</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => { setProfileDropdown(false); logout(); }}
+                            className="w-full py-2 px-3 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition hover:bg-red-500/10 text-red-500 cursor-pointer mt-1"
+                            style={{ border: `1px solid rgba(239, 68, 68, 0.2)` }}
+                          >
+                            <i className="ri-logout-box-r-line text-sm"></i>
+                            <span>Đăng Xuất Tài Khoản</span>
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <button onClick={() => setLoginModal(true)}
@@ -2097,65 +2252,65 @@ export default function App() {
                             </div>
                           </div>
 
-                        {/* Controls */}
-                        {isSuperAdminAccount(u) && !isCurrentSuperAdmin ? (
-                          <span
-                            className="px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-not-allowed select-none shadow-xs"
-                            style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' }}
-                            title="Tài khoản Super Admin tối cao (Bảo vệ cố định)"
-                          >
-                            <i className="ri-shield-keyhole-fill text-sm"></i>
-                            <span>Super Admin (Bảo vệ)</span>
-                          </span>
-                        ) : (
-                          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                            <button
-                              onClick={() => {
-                                setAdminUserModal(u);
-                                setAdminName(u.name || '');
-                                setAdminEmail(u.email || '');
-                                setAdminPassword('');
-                                setAdminRole(u.role || 'user');
-                                setAdminErr('');
-                              }}
-                              title="Chỉnh sửa thông tin tài khoản"
-                              className="px-3 py-1.5 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1"
-                              style={{ background: C.surface, color: C.txt, border: `1px solid ${C.border}` }}
+                          {/* Controls */}
+                          {isSuperAdminAccount(u) && !isCurrentSuperAdmin ? (
+                            <span
+                              className="px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-not-allowed select-none shadow-xs"
+                              style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' }}
+                              title="Tài khoản Super Admin tối cao (Bảo vệ cố định)"
                             >
-                              <i className="ri-edit-line"></i> Sửa
-                            </button>
+                              <i className="ri-shield-keyhole-fill text-sm"></i>
+                              <span>Super Admin (Bảo vệ)</span>
+                            </span>
+                          ) : (
+                            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                              <button
+                                onClick={() => {
+                                  setAdminUserModal(u);
+                                  setAdminName(u.name || '');
+                                  setAdminEmail(u.email || '');
+                                  setAdminPassword('');
+                                  setAdminRole(u.role || 'user');
+                                  setAdminErr('');
+                                }}
+                                title="Chỉnh sửa thông tin tài khoản"
+                                className="px-3 py-1.5 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1"
+                                style={{ background: C.surface, color: C.txt, border: `1px solid ${C.border}` }}
+                              >
+                                <i className="ri-edit-line"></i> Sửa
+                              </button>
 
-                            {!isSuperAdminAccount(u) && (
-                              <>
-                                <button
-                                  onClick={() => handleToggleLockUser(u)}
-                                  title={u.isLocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản không cho đăng nhập'}
-                                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1"
-                                  style={{
-                                    background: u.isLocked ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                                    color: u.isLocked ? '#22c55e' : '#f59e0b',
-                                    border: `1.5px solid ${u.isLocked ? 'rgba(34, 197, 94, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
-                                  }}
-                                >
-                                  <i className={u.isLocked ? "ri-lock-unlock-line" : "ri-lock-2-line"}></i>
-                                  {u.isLocked ? 'Mở Khóa' : 'Khóa'}
-                                </button>
+                              {!isSuperAdminAccount(u) && (
+                                <>
+                                  <button
+                                    onClick={() => handleToggleLockUser(u)}
+                                    title={u.isLocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản không cho đăng nhập'}
+                                    className="px-3 py-1.5 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1"
+                                    style={{
+                                      background: u.isLocked ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                                      color: u.isLocked ? '#22c55e' : '#f59e0b',
+                                      border: `1.5px solid ${u.isLocked ? 'rgba(34, 197, 94, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+                                    }}
+                                  >
+                                    <i className={u.isLocked ? "ri-lock-unlock-line" : "ri-lock-2-line"}></i>
+                                    {u.isLocked ? 'Mở Khóa' : 'Khóa'}
+                                  </button>
 
-                                <button
-                                  onClick={() => handleDeleteUser(u)}
-                                  title="Xóa vĩnh viễn tài khoản khỏi cơ sở dữ liệu"
-                                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1 text-red-500"
-                                  style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}
-                                >
-                                  <i className="ri-delete-bin-line"></i> Xóa
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                                  <button
+                                    onClick={() => handleDeleteUser(u)}
+                                    title="Xóa vĩnh viễn tài khoản khỏi cơ sở dữ liệu"
+                                    className="px-3 py-1.5 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1 text-red-500"
+                                    style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}
+                                  >
+                                    <i className="ri-delete-bin-line"></i> Xóa
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
             ) : tab === 'home' ? (
@@ -2302,13 +2457,13 @@ export default function App() {
 
       </div>{/* ── END TOP ROW (sidebar + main) ── */}
 
-      {/* ── PROFILE & THEME CUSTOMIZATION MODAL ───────────── */}
-      {profileModal && (
-        <div className="fixed inset-0 flex items-end justify-center z-[60] px-4 pb-[96px] pt-4"
-          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(14px)' }}
-          onClick={e => { if (e.target === e.currentTarget) setProfileModal(false); }}>
-          <div className="w-full max-w-lg rounded-3xl p-7 shadow-2xl overflow-y-auto"
-            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, color: C.txt, maxHeight: 'calc(100vh - 120px)' }}>
+      {/* ── THEME CUSTOMIZATION MODAL (KHUNG CHỈNH SỬA GIAO DIỆN Ở GIỮA MÀN HÌNH) ───────────── */}
+      {themeModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-[60] p-4"
+          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(14px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setThemeModal(false); }}>
+          <div className="w-full max-w-lg rounded-3xl p-6 md:p-7 shadow-2xl overflow-y-auto"
+            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, color: C.txt, maxHeight: '90vh' }}>
 
             {/* Modal Header */}
             <div className="flex items-center justify-between mb-6 pb-4" style={{ borderBottom: `1.5px solid ${C.border}` }}>
@@ -2318,154 +2473,90 @@ export default function App() {
                 </div>
                 <div>
                   <h3 style={{ fontFamily: F.heading, fontSize: '22px', fontWeight: 700, color: C.txt, lineHeight: 1.2 }}>
-                    Chỉnh Sửa Hồ Sơ &amp; Giao Diện
+                    Chỉnh Sửa Giao Diện &amp; Phối Màu
                   </h3>
-                  <p className="text-xs" style={{ color: C.txtSub }}>Tùy biến tên, avatar và bảng màu theo ý thích</p>
+                  <p className="text-xs" style={{ color: C.txtSub }}>Tùy biến bảng màu và hiệu ứng giao diện theo sở thích</p>
                 </div>
               </div>
-              <button onClick={() => setProfileModal(false)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: C.tag, color: C.txtFad }}>
+              <button onClick={() => setThemeModal(false)} className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition hover:opacity-80" style={{ background: C.tag, color: C.txtFad }}>
                 <i className="ri-close-line"></i>
               </button>
             </div>
 
-            <form onSubmit={handleSaveProfileAndTheme} className="flex flex-col gap-6">
-
-              {/* SECTION 1: PROFILE EDIT */}
-              <div className="flex flex-col gap-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: C.primarySolid }}>
-                  <i className="ri-user-3-line text-sm"></i> Hồ Sơ Chủ Sở Hữu
-                </h4>
-
-                {/* Avatar Preview & File Input */}
-                <div className="flex items-center justify-between p-3.5 rounded-2xl" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={editAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
-                      alt="Preview"
-                      className="w-16 h-16 rounded-full object-cover shrink-0 shadow-md"
-                      style={{ border: `3px solid ${C.borderSel}` }}
-                    />
-                    <span className="text-sm font-bold" style={{ color: C.txt }}>Ảnh đại diện</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => avatarFileInputRef.current?.click()}
-                    className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl text-white shadow-sm hover:opacity-90 active:scale-95 transition cursor-pointer"
-                    style={{ background: C.primary }}
-                  >
-                    <i className="ri-folder-image-line text-sm"></i> Chọn từ máy
-                  </button>
-                  <input
-                    type="file"
-                    ref={avatarFileInputRef}
-                    onChange={handleAvatarFileUpload}
-                    accept="image/*"
-                    className="hidden"
-                  />
-                </div>
-
-
-
-                {/* Display Name Input */}
-                <div>
-                  <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Tên Hiển Thị</label>
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={e => setEditName(e.target.value)}
-                    placeholder="Nhập tên hiển thị của bạn..."
-                    className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ background: C.isDark ? '#0f172a' : C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
-                    required
-                  />
-                </div>
+            <form onSubmit={handleSaveTheme} className="flex flex-col gap-5">
+              {/* Category Filter Tabs */}
+              <div className="flex gap-1 p-1 rounded-2xl" style={{ background: C.isDark ? 'rgba(15, 23, 42, 0.7)' : C.tag, border: `1px solid ${C.border}` }}>
+                {[
+                  { key: 'mix', label: '✨ Mix Màu Dynamic', icon: 'ri-sparkles-line' },
+                  { key: 'pastel', label: '🌸 Pastel', icon: 'ri-contrast-drop-line' },
+                  { key: 'dark', label: '🌙 Tone Tối', icon: 'ri-moon-line' },
+                ].map(cat => {
+                  const active = themeCategory === cat.key;
+                  return (
+                    <button
+                      key={cat.key}
+                      type="button"
+                      onClick={() => setThemeCategory(cat.key)}
+                      className="flex-1 py-1.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                      style={active
+                        ? { background: C.primary, color: '#fff', boxShadow: `0 2px 10px ${C.primaryGlow}` }
+                        : { color: C.txtSub }}
+                    >
+                      <i className={cat.icon}></i>
+                      {cat.label}
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* SECTION 2: THEME COLOR SELECTION */}
-              <div className="flex flex-col gap-3 pt-4" style={{ borderTop: `1.5px solid ${C.border}` }}>
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: C.primarySolid }}>
-                    <i className="ri-palette-line text-sm"></i> Tùy Chỉnh Giao Diện &amp; Phối Màu
-                  </h4>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: C.tag, border: `1px solid ${C.border}`, color: C.txtSub }}>
-                    {Object.keys(THEMES).length} Giao diện
-                  </span>
-                </div>
-
-                {/* Category Filter Tabs */}
-                <div className="flex gap-1 p-1 rounded-2xl" style={{ background: C.isDark ? 'rgba(15, 23, 42, 0.7)' : C.tag, border: `1px solid ${C.border}` }}>
-                  {[
-                    { key: 'mix', label: '✨ Mix Màu Dynamic', icon: 'ri-sparkles-line' },
-                    { key: 'pastel', label: '🌸 Pastel', icon: 'ri-contrast-drop-line' },
-                    { key: 'dark', label: '🌙 Tone Tối', icon: 'ri-moon-line' },
-                  ].map(cat => {
-                    const active = themeCategory === cat.key;
+              {/* Theme Cards Grid */}
+              <div className="grid grid-cols-2 gap-2.5 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+                {Object.values(THEMES)
+                  .filter(t => t.category === themeCategory)
+                  .map(t => {
+                    const isSelected = themeKey === t.key;
                     return (
-                      <button
-                        key={cat.key}
-                        type="button"
-                        onClick={() => setThemeCategory(cat.key)}
-                        className="flex-1 py-1.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer"
-                        style={active
-                          ? { background: C.primary, color: '#fff', boxShadow: `0 2px 10px ${C.primaryGlow}` }
-                          : { color: C.txtSub }}
+                      <div
+                        key={t.key}
+                        onClick={() => setThemeKey(t.key)}
+                        className="flex items-center gap-2.5 p-2.5 rounded-2xl cursor-pointer transition-all border relative overflow-hidden group"
+                        style={{
+                          background: isSelected ? (t.tag || C.tag) : (C.isDark ? '#0f172a' : '#fff'),
+                          borderColor: isSelected ? (t.primarySolid || C.primarySolid) : C.border,
+                          boxShadow: isSelected ? `0 4px 16px ${t.primaryGlow || C.primaryGlow}` : 'none'
+                        }}
                       >
-                        <i className={cat.icon}></i>
-                        {cat.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Theme Cards Grid */}
-                <div className="grid grid-cols-2 gap-2.5 max-h-64 overflow-y-auto custom-scrollbar pr-1">
-                  {Object.values(THEMES)
-                    .filter(t => t.category === themeCategory)
-                    .map(t => {
-                      const isSelected = themeKey === t.key;
-                      return (
                         <div
-                          key={t.key}
-                          onClick={() => setThemeKey(t.key)}
-                          className="flex items-center gap-2.5 p-2.5 rounded-2xl cursor-pointer transition-all border relative overflow-hidden group"
-                          style={{
-                            background: isSelected ? (t.tag || C.tag) : (C.isDark ? '#0f172a' : '#fff'),
-                            borderColor: isSelected ? (t.primarySolid || C.primarySolid) : C.border,
-                            boxShadow: isSelected ? `0 4px 16px ${t.primaryGlow || C.primaryGlow}` : 'none'
-                          }}
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center text-base shadow-sm shrink-0 ${t.isAnimated ? 'theme-preview-swatch' : ''}`}
+                          style={{ background: t.isAnimated ? t.bg : t.primary, color: '#fff' }}
                         >
-                          <div
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center text-base shadow-sm shrink-0 ${t.isAnimated ? 'theme-preview-swatch' : ''}`}
-                            style={{ background: t.isAnimated ? t.bg : t.primary, color: '#fff' }}
-                          >
-                            {t.icon}
-                          </div>
-                          <div className="flex flex-col overflow-hidden flex-1 min-w-0">
-                            <span className="text-xs font-bold truncate" style={{ color: isSelected ? (t.primarySolid || C.primarySolid) : C.txt }}>
-                              {t.name}
+                          {t.icon}
+                        </div>
+                        <div className="flex flex-col overflow-hidden flex-1 min-w-0">
+                          <span className="text-xs font-bold truncate" style={{ color: isSelected ? (t.primarySolid || C.primarySolid) : C.txt }}>
+                            {t.name}
+                          </span>
+                          {t.isAnimated ? (
+                            <span className="text-[9px] font-bold text-emerald-500 dark:text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                              <i className="ri-pulse-fill text-[10px] animate-pulse"></i> Chuyển màu động
                             </span>
-                            {t.isAnimated ? (
-                              <span className="text-[9px] font-bold text-emerald-500 dark:text-emerald-400 flex items-center gap-0.5 mt-0.5">
-                                <i className="ri-pulse-fill text-[10px] animate-pulse"></i> Chuyển màu động
-                              </span>
-                            ) : (
-                              <span className="text-[10px]" style={{ color: C.txtFad }}>{isSelected ? '✓ Đang chọn' : 'Bấm để chọn'}</span>
-                            )}
-                          </div>
-                          {isSelected && (
-                            <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: t.primarySolid || C.primarySolid }}></div>
+                          ) : (
+                            <span className="text-[10px]" style={{ color: C.txtFad }}>{isSelected ? '✓ Đang chọn' : 'Bấm để chọn'}</span>
                           )}
                         </div>
-                      );
-                    })}
-                </div>
+                        {isSelected && (
+                          <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: t.primarySolid || C.primarySolid }}></div>
+                        )}
+                      </div>
+                    );
+                  })}
               </div>
 
               {/* Submit / Cancel Actions */}
               <div className="flex gap-3 pt-3 mt-2" style={{ borderTop: `1.5px solid ${C.border}` }}>
                 <button
                   type="button"
-                  onClick={() => setProfileModal(false)}
+                  onClick={() => setThemeModal(false)}
                   className="flex-1 py-3 px-5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-all duration-150 active:scale-95 hover:opacity-90"
                   style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
                 >
@@ -2473,8 +2564,8 @@ export default function App() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 px-5 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 cursor-pointer transition-all duration-150 active:scale-95 hover:opacity-90 shadow-md"
-                  style={{ background: C.primary, boxShadow: `0 4px 16px ${C.primaryGlow}` }}
+                  className="flex-1 py-3 px-5 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 cursor-pointer transition-all duration-150 active:scale-95 shadow-lg hover:scale-105"
+                  style={{ background: C.primary, boxShadow: `0 6px 20px ${C.primaryGlow}` }}
                 >
                   <i className="ri-check-line text-lg"></i>
                   Lưu Thay Đổi
