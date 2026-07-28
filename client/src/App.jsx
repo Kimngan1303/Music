@@ -1327,7 +1327,8 @@ export default function App() {
           </div>
           <button
             onClick={() => setPage('login')}
-            className="px-6 py-2.5 rounded-full text-sm font-semibold shadow-md transition-transform hover:scale-105 cursor-pointer"
+            title="Bấm để đăng nhập tài khoản nghe nhạc"
+            className="px-6 py-2.5 rounded-full text-sm font-semibold shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
             style={{ background: C.primary, color: '#fff', boxShadow: `0 4px 16px ${C.primaryGlow}` }}
           >
             Đăng nhập
@@ -1377,7 +1378,8 @@ export default function App() {
           {/* CTA button */}
           <button
             onClick={() => setPage('login')}
-            className="mt-4 px-10 py-4 rounded-2xl text-lg font-bold text-white flex items-center gap-3 shadow-2xl transition-all hover:scale-105 hover:shadow-3xl cursor-pointer"
+            title="Đăng nhập ngay để khám phá không gian nhạc cá nhân"
+            className="mt-4 px-10 py-4 rounded-2xl text-lg font-bold text-white flex items-center gap-3 shadow-2xl transition-all hover:scale-105 active:scale-95 hover:shadow-3xl cursor-pointer"
             style={{ background: C.primary, boxShadow: `0 8px 32px ${C.primaryGlow}` }}
           >
             <i className="ri-headphone-fill text-xl"></i>
@@ -1524,14 +1526,15 @@ export default function App() {
           <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto pr-2 custom-scrollbar">
             <p style={{ fontFamily: F.brand, fontSize: '11px', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.txtFad, padding: '0 12px', marginBottom: '4px' }}>Menu</p>
             {[
-              { key: 'home', icon: 'ri-home-heart-line', label: 'Trang chủ' },
-              { key: 'library', icon: 'ri-music-2-line', label: 'Thư viện' },
-              { key: 'favorites', icon: 'ri-heart-3-line', label: 'Yêu thích', badge: favs.length },
+              { key: 'home', icon: 'ri-home-heart-line', label: 'Trang chủ', tooltip: 'Mở trang chủ' },
+              { key: 'library', icon: 'ri-music-2-line', label: 'Thư viện', tooltip: 'Xem toàn bộ thư viện nhạc' },
+              { key: 'favorites', icon: 'ri-heart-3-line', label: 'Yêu thích', badge: favs.length, tooltip: 'Xem các bài hát đã yêu thích' },
             ].map(t => {
               const active = tab === t.key;
               return (
                 <button key={t.key} onClick={() => { setTab(t.key); setIsMobileMenuOpen(false); }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 text-left shrink-0"
+                  title={t.tooltip}
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 text-left shrink-0 cursor-pointer hover:opacity-80 active:scale-95"
                   style={active
                     ? { background: C.tag, color: C.txt, border: `1.5px solid ${C.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }
                     : { color: C.txtSub, border: '1.5px solid transparent' }
@@ -1548,8 +1551,8 @@ export default function App() {
 
             <div className="mt-4 mb-2 flex items-center justify-between px-3">
               <p style={{ fontFamily: F.brand, fontSize: '11px', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.txtFad }}>Danh sách phát</p>
-              <button onClick={() => setPlaylistModal(true)} title="Tạo Playlist"
-                className="w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+              <button onClick={() => setPlaylistModal(true)} title="Tạo danh sách phát mới"
+                className="w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer"
                 style={{ background: C.tag, color: C.txt, border: `1px solid ${C.border}` }}>
                 <i className="ri-add-line text-xs"></i>
               </button>
@@ -1560,7 +1563,8 @@ export default function App() {
               const active = tab === tabKey;
               return (
                 <button key={p._id} onClick={() => { setTab(tabKey); setIsMobileMenuOpen(false); }}
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 text-left shrink-0"
+                  title={`Mở danh sách phát: ${p.name}`}
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 text-left shrink-0 cursor-pointer hover:opacity-80 active:scale-95"
                   style={active
                     ? { background: C.tag, color: C.txt, border: `1.5px solid ${C.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }
                     : { color: C.txtSub, border: '1.5px solid transparent' }
@@ -1622,7 +1626,8 @@ export default function App() {
             <div className="flex items-center gap-1.5 md:gap-3 z-10 shrink-0">
               {/* Add button */}
               <button onClick={() => setAddModal(true)}
-                className="flex items-center gap-1 md:gap-2 text-[11px] md:text-sm font-bold px-2 py-1.5 md:px-4 md:py-2 rounded-full text-white shadow-md transition-all hover:scale-105"
+                title="Thêm bài hát mới từ YouTube hoặc Spotify"
+                className="flex items-center gap-1 md:gap-2 text-[11px] md:text-sm font-bold px-2 py-1.5 md:px-4 md:py-2 rounded-full text-white shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
                 style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
               >
                 <i className="ri-youtube-line text-sm md:text-base"></i> <span className="hidden md:inline">Thêm Nhạc</span>
@@ -1631,8 +1636,8 @@ export default function App() {
               {/* Profile & Theme Customization Button */}
               <button
                 onClick={() => setProfileModal(true)}
-                title="Tùy chỉnh Hồ Sơ & Màu Sắc Giao Diện"
-                className="flex items-center gap-1 md:gap-2 text-[11px] md:text-sm font-semibold px-2 py-1.5 md:px-4 md:py-2 rounded-full transition-all shadow-sm hover:scale-105"
+                title="Tùy chỉnh Hồ Sơ & Bảng Màu Giao Diện"
+                className="flex items-center gap-1 md:gap-2 text-[11px] md:text-sm font-semibold px-2 py-1.5 md:px-4 md:py-2 rounded-full transition-all shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
                 style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
               >
                 <i className="ri-palette-line text-sm md:text-base" style={{ color: C.primarySolid }}></i>
@@ -1645,7 +1650,7 @@ export default function App() {
                   onClick={() => setProfileModal(true)}
                   className="flex items-center gap-1 md:gap-2.5 pl-1.5 md:pl-3 cursor-pointer group ml-0 md:ml-1"
                   style={{ borderLeft: `1.5px solid ${C.border}` }}
-                  title="Bấm để chỉnh sửa Profile"
+                  title="Chỉnh sửa Hồ Sơ & Giao Diện cá nhân"
                 >
                   <img src={user.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
                     alt={user.name} className="w-7 h-7 md:w-9 md:h-9 rounded-full object-cover group-hover:scale-105 transition" style={{ border: `2px solid ${C.borderSel}` }}
@@ -1654,7 +1659,7 @@ export default function App() {
                     <span className="text-xs font-bold group-hover:underline" style={{ color: C.txt }}>{user.name}</span>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.primarySolid }}>{user.role === 'admin' ? 'Admin ✦' : (user.email === 'unnull@gmail.com' ? 'admin' : 'Member')}</span>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); logout(); }} title="Đăng xuất" className="p-1.5 md:p-2 rounded-full hover:scale-110 transition" style={{ color: C.txtFad }}>
+                  <button onClick={(e) => { e.stopPropagation(); logout(); }} title="Đăng xuất tài khoản" className="p-1.5 md:p-2 rounded-full hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: C.txtFad }}>
                     <i className="ri-logout-box-r-line text-base hover:text-red-500 transition"></i>
                   </button>
                 </div>
@@ -1721,8 +1726,8 @@ export default function App() {
                   {list.length > 0 && (
                     <button
                       onClick={random}
-                      title="Phát ngẫu nhiên danh sách này"
-                      className="text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center gap-1.5 cursor-pointer hover:scale-105"
+                      title="Phát ngẫu nhiên tất cả bài hát trong danh sách này"
+                      className="text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95"
                       style={{ background: C.tag, color: C.primarySolid, border: `1.5px solid ${C.border}` }}
                     >
                       <i className="ri-shuffle-line text-sm"></i>
@@ -1730,7 +1735,9 @@ export default function App() {
                     </button>
                   )}
                   {activePlaylist && (
-                    <button onClick={() => handleDeletePlaylist(activePlaylist._id)} className="ml-auto text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center"
+                    <button onClick={() => handleDeletePlaylist(activePlaylist._id)}
+                      title="Xóa vĩnh viễn danh sách phát này"
+                      className="ml-auto text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center cursor-pointer hover:scale-105 active:scale-95"
                       style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
                       <i className="ri-delete-bin-line mr-1"></i> Xóa Playlist
                     </button>
@@ -1748,7 +1755,8 @@ export default function App() {
                     const sel = track?.id === song.id;
                     return (
                       <div key={song.id} onClick={() => play(song, list)}
-                        className="flex items-center p-2 md:p-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-200 group gap-2 md:gap-3"
+                        title={`Bấm để phát: ${song.title} - ${song.artist}`}
+                        className="flex items-center p-2 md:p-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-200 group gap-2 md:gap-3 hover:opacity-95"
                         style={{
                           background: sel ? C.tag : C.surface,
                           border: `1.5px solid ${sel ? C.borderSel : 'transparent'}`,
@@ -1772,14 +1780,16 @@ export default function App() {
                         <span className="hidden sm:block text-xs text-right shrink-0 w-12" style={{ color: C.txtFad }}>{song.duration}</span>
 
                         <div className="flex justify-end items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
-                          <button onClick={() => setSongToAdd(song)} title="Thêm vào playlist"
-                            className="p-1.5 md:p-2 rounded-full transition opacity-100 md:opacity-0 md:group-hover:opacity-100 active:scale-95"
+                          <button onClick={() => setSongToAdd(song)} title="Thêm bài hát này vào danh sách phát"
+                            className="p-1.5 md:p-2 rounded-full transition opacity-100 md:opacity-0 md:group-hover:opacity-100 active:scale-95 cursor-pointer hover:scale-110"
                             style={{ color: C.txtFad }}
                             onMouseEnter={e => e.currentTarget.style.color = C.primarySolid}
                             onMouseLeave={e => e.currentTarget.style.color = C.txtFad}>
                             <i className="ri-play-list-add-line text-sm md:text-base"></i>
                           </button>
-                          <button onClick={() => toggleFav(song.id)} className="p-1.5 md:p-2 rounded-full transition active:scale-95"
+                          <button onClick={() => toggleFav(song.id)}
+                            title={favs.includes(song.id) ? "Bỏ yêu thích bài hát này" : "Thêm bài hát này vào yêu thích"}
+                            className="p-1.5 md:p-2 rounded-full transition active:scale-95 cursor-pointer hover:scale-110"
                             style={{ color: favs.includes(song.id) ? C.primarySolid : C.txtFad }}>
                             <i className={favs.includes(song.id) ? 'ri-heart-fill text-sm md:text-base' : 'ri-heart-line text-sm md:text-base'}></i>
                           </button>
@@ -1791,8 +1801,8 @@ export default function App() {
                                 if (window.confirm(`Xóa "${song.title}" khỏi thư viện?`)) deleteSong(song.id);
                               }
                             }}
-                            title={activePlaylist ? "Xóa khỏi playlist" : "Xóa bài hát"}
-                            className="p-1.5 md:p-2 rounded-full transition opacity-100 md:opacity-0 md:group-hover:opacity-100 active:scale-95"
+                            title={activePlaylist ? "Xóa bài hát khỏi playlist này" : "Xóa vĩnh viễn bài hát khỏi thư viện"}
+                            className="p-1.5 md:p-2 rounded-full transition opacity-100 md:opacity-0 md:group-hover:opacity-100 active:scale-95 cursor-pointer hover:scale-110"
                             style={{ color: C.txtFad }}
                             onMouseEnter={e => e.currentTarget.style.color = '#f43f5e'}
                             onMouseLeave={e => e.currentTarget.style.color = C.txtFad}
@@ -2356,24 +2366,25 @@ export default function App() {
               )}
             </button>
 
-            <button onClick={prevTrack} title="Bài trước" style={{ color: C.txtSub }}>
+            <button onClick={prevTrack} title="Phát bài hát phía trước" className="transition-transform hover:scale-110 active:scale-95 cursor-pointer" style={{ color: C.txtSub }}>
               <i className="ri-skip-back-fill text-lg md:text-2xl"></i>
             </button>
             <button onClick={togglePlay}
-              title={playing ? 'Tạm dừng' : 'Phát'}
-              className="w-9 h-9 md:w-12 md:h-12 rounded-full text-white text-sm md:text-xl flex items-center justify-center shadow-lg transition-transform hover:scale-105"
+              title={playing ? 'Tạm dừng nghe nhạc' : 'Bật phát nhạc'}
+              className="w-9 h-9 md:w-12 md:h-12 rounded-full text-white text-sm md:text-xl flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
               style={{ background: C.primary, boxShadow: `0 4px 18px ${C.primaryGlow}` }}>
               <i className={playing ? 'ri-pause-fill' : 'ri-play-fill'}></i>
             </button>
-            <button onClick={nextTrack} title="Bài tiếp" style={{ color: C.txtSub }}>
+            <button onClick={nextTrack} title="Phát bài hát tiếp theo" className="transition-transform hover:scale-110 active:scale-95 cursor-pointer" style={{ color: C.txtSub }}>
               <i className="ri-skip-forward-fill text-lg md:text-2xl"></i>
             </button>
-            <button onClick={() => track && toggleFav(track.id)} title="Yêu thích"
+            <button onClick={() => track && toggleFav(track.id)} title={track && favs.includes(track.id) ? 'Bỏ yêu thích bài hát đang phát' : 'Yêu thích bài hát đang phát'}
+              className="transition-transform hover:scale-110 active:scale-95 cursor-pointer"
               style={{ color: track && favs.includes(track.id) ? C.primarySolid : C.txtFad }}>
               <i className={track && favs.includes(track.id) ? 'ri-heart-fill text-lg' : 'ri-heart-line'}></i>
             </button>
-            <button onClick={cycleSleepTimer} title={sleepTimer ? `Hẹn giờ tắt: ${sleepTimer} phút (còn ${Math.ceil(sleepTimeLeft / 60)} phút)` : 'Hẹn giờ tắt nhạc'}
-              className="relative p-1 transition cursor-pointer"
+            <button onClick={cycleSleepTimer} title={sleepTimer ? `Hẹn giờ tắt: ${sleepTimer} phút (còn ${Math.ceil(sleepTimeLeft / 60)} phút)` : 'Đặt hẹn giờ tự động tắt nhạc'}
+              className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
               style={{ color: sleepTimer > 0 ? C.primarySolid : C.txtFad }}>
               <i className={sleepTimer > 0 ? 'ri-timer-fill text-lg' : 'ri-timer-line text-lg'}></i>
               {sleepTimer > 0 && (
@@ -2389,18 +2400,23 @@ export default function App() {
           <div className="flex items-center gap-2 md:gap-3 w-full order-1 md:order-2 px-2 md:px-0">
             <span className="text-[10px] md:text-[11px] font-mono w-7 md:w-9 text-right shrink-0" style={{ color: C.txtFad }}>{fmt(curTime)}</span>
             <input type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
-              className="flex-1" style={{ accentColor: C.primarySolid }} />
+              title={`Tua thời gian bài hát (${fmt(curTime)} / ${fmt(dur)})`}
+              className="flex-1 cursor-pointer" style={{ accentColor: C.primarySolid }} />
             <span className="text-[11px] font-mono w-9 shrink-0" style={{ color: C.txtFad }}>{fmt(dur)}</span>
           </div>
         </div>
 
         {/* Volume */}
         <div className="hidden md:flex items-center justify-end gap-3 w-64 shrink-0">
-          <button onClick={toggleMute} style={{ color: muted || vol === 0 ? '#f43f5e' : C.txtFad }}>
+          <button onClick={toggleMute}
+            title={muted || vol === 0 ? 'Bật lại âm thanh' : 'Tắt tiếng (Mute)'}
+            className="transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+            style={{ color: muted || vol === 0 ? '#f43f5e' : C.txtFad }}>
             <i className={`text-lg ${muted || vol === 0 ? 'ri-volume-mute-fill' : vol < 50 ? 'ri-volume-down-fill' : 'ri-volume-up-fill'}`}></i>
           </button>
           <input type="range" min="0" max="100" value={muted ? 0 : vol} onChange={changeVol}
-            className="w-24" style={{ accentColor: C.primarySolid }} />
+            title={`Âm lượng: ${muted ? 0 : vol}%`}
+            className="w-24 cursor-pointer" style={{ accentColor: C.primarySolid }} />
         </div>
       </footer>
     </div>
