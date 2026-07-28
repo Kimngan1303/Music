@@ -1152,14 +1152,29 @@ export default function App() {
     }
   };
 
-  // Automatically launch OS Picture-in-Picture window when user switches browser tab or minimizes window while playing
+  // Auto-Launch PiP when switching away from tab & Auto-Close PiP when switching back to tab
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (document.hidden && playing && track) {
+        // Tab is hidden / inactive -> Auto launch floating mini player window
         if ('documentPictureInPicture' in window && !pipWindow) {
           try { await togglePipWindow(); } catch (e) {}
         } else if (!pipWindow && !mobilePipActive) {
           try { await triggerMobilePip(); } catch (e) {}
+        }
+      } else if (!document.hidden) {
+        // Tab is visible / active again -> Auto close floating mini player window!
+        if (pipWindow) {
+          try {
+            pipWindow.close();
+            setPipWindow(null);
+          } catch (e) {}
+        }
+        if (document.pictureInPictureElement) {
+          try {
+            await document.exitPictureInPicture();
+            setMobilePipActive(false);
+          } catch (e) {}
         }
       }
     };
