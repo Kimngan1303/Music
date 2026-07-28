@@ -1845,42 +1845,32 @@ export default function App() {
                   <i className="ri-user-3-line text-sm"></i> Hồ Sơ Chủ Sở Hữu
                 </h4>
 
-                {/* Avatar Preview & URL / File Input */}
-                <div className="flex items-center gap-4 p-3.5 rounded-2xl" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
-                  <img
-                    src={editAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
-                    alt="Preview"
-                    className="w-16 h-16 rounded-full object-cover shrink-0 shadow-md"
-                    style={{ border: `3px solid ${C.borderSel}` }}
-                  />
-                  <div className="flex flex-col flex-1 gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold" style={{ color: C.txtSub }}>Ảnh đại diện</label>
-                      <button
-                        type="button"
-                        onClick={() => avatarFileInputRef.current?.click()}
-                        className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg text-white shadow-xs hover:opacity-90 transition cursor-pointer"
-                        style={{ background: C.primary }}
-                      >
-                        <i className="ri-folder-image-line"></i> Chọn từ máy
-                      </button>
-                      <input
-                        type="file"
-                        ref={avatarFileInputRef}
-                        onChange={handleAvatarFileUpload}
-                        accept="image/*"
-                        className="hidden"
-                      />
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Hoặc dán URL ảnh tại đây (https://...)"
-                      value={editAvatar}
-                      onChange={e => setEditAvatar(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl text-xs outline-none"
-                      style={{ background: C.isDark ? '#0f172a' : '#fff', border: `1px solid ${C.border}`, color: C.txt }}
+                {/* Avatar Preview & File Input */}
+                <div className="flex items-center justify-between p-3.5 rounded-2xl" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={editAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                      alt="Preview"
+                      className="w-16 h-16 rounded-full object-cover shrink-0 shadow-md"
+                      style={{ border: `3px solid ${C.borderSel}` }}
                     />
+                    <span className="text-sm font-bold" style={{ color: C.txt }}>Ảnh đại diện</span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => avatarFileInputRef.current?.click()}
+                    className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl text-white shadow-sm hover:opacity-90 active:scale-95 transition cursor-pointer"
+                    style={{ background: C.primary }}
+                  >
+                    <i className="ri-folder-image-line text-sm"></i> Chọn từ máy
+                  </button>
+                  <input
+                    type="file"
+                    ref={avatarFileInputRef}
+                    onChange={handleAvatarFileUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
                 </div>
 
 
