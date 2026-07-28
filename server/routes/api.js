@@ -84,10 +84,10 @@ router.get('/admin/users', async (req, res) => {
     );
     const users = await User.find().select('-password').sort({ createdAt: -1 });
     const formatted = users.map(u => {
-      const isOwnerAdmin = u.email === 'admin@gmail.com' || u.email === 'unnull@gmail.com' || u.role === 'admin';
+      const isSuperAdmin = u.email === 'admin@gmail.com' || u.email === 'unnull@gmail.com';
       return {
         ...u._doc,
-        role: isOwnerAdmin ? 'admin' : (u.role || 'user')
+        role: isSuperAdmin ? 'admin' : (u.role || 'user')
       };
     });
     res.json(formatted);
@@ -135,12 +135,25 @@ router.post('/admin/users', async (req, res) => {
 router.put('/admin/users/:id', async (req, res) => {
   try {
     const { name, email, password, role, isLocked, avatar } = req.body;
-    const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ message: 'Tài khoản không tồn tại' });
+    let user = await User.findById(req.params.id);
+    if (!user && email) {
+      user = await User.findOne({ email: email.trim().toLowerCase() });
+    }
+
+    if (!user) {
+      user = new User({
+        _id: req.params.id || 'user-' + Date.now(),
+        name: name || 'User',
+        email: email || 'user@gmail.com',
+        password: 'default_password',
+        role: role || 'user',
+        isLocked: isLocked || false
+      });
+    }
 
     if (name) user.name = name.trim();
     if (email) user.email = email.trim().toLowerCase();
-    if (role) user.role = role;
+    if (role !== undefined) user.role = role;
     if (isLocked !== undefined) user.isLocked = isLocked;
     if (avatar !== undefined) user.avatar = avatar;
 

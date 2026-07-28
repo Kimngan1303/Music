@@ -595,6 +595,7 @@ export default function App() {
   const [adminPassword, setAdminPassword] = useState('');
   const [adminRole, setAdminRole] = useState('user');
   const [adminErr, setAdminErr] = useState('');
+  const [adminSaving, setAdminSaving] = useState(false);
 
 
   const [query, setQuery] = useState('');
@@ -1412,6 +1413,7 @@ export default function App() {
   const handleSaveAdminUser = async (e) => {
     e.preventDefault();
     setAdminErr('');
+    setAdminSaving(true);
     try {
       if (adminUserModal?._id) {
         await axios.put(`/api/admin/users/${adminUserModal._id}`, {
@@ -1428,10 +1430,12 @@ export default function App() {
           role: adminRole
         });
       }
-      fetchAdminUsers();
+      await fetchAdminUsers();
       setAdminUserModal(null);
     } catch (err) {
       setAdminErr(err.response?.data?.message || err.message || 'Lỗi lưu tài khoản vào DB.');
+    } finally {
+      setAdminSaving(false);
     }
   };
 
@@ -3057,16 +3061,25 @@ export default function App() {
       {adminUserModal && (
         <div className="fixed inset-0 flex items-center justify-center z-[140] p-4"
           style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(14px)' }}
-          onClick={e => { if (e.target === e.currentTarget) setAdminUserModal(null); }}>
-          <div className="w-full max-w-md rounded-3xl p-8 shadow-2xl transition-all"
+          onClick={e => { if (e.target === e.currentTarget && !adminSaving) setAdminUserModal(null); }}>
+          <div className="w-full max-w-md rounded-3xl p-8 shadow-2xl transition-all relative overflow-hidden"
             style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+
+            {/* Flapping Bird Loading Overlay (Hình chim vỗ cánh đang xử lý) */}
+            {adminSaving && (
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center z-50 animate-in fade-in duration-200 text-white">
+                <div className="text-5xl animate-bounce mb-3">🕊️</div>
+                <span className="text-sm font-bold tracking-wide">Đang xử lý dữ liệu...</span>
+                <span className="text-[11px] text-white/70 mt-1">Vui lòng chờ trong giây lát</span>
+              </div>
+            )}
 
             <div className="flex items-center justify-between mb-6">
               <h3 className="flex items-center gap-2" style={{ fontFamily: F.heading, fontSize: '20px', fontWeight: 700, color: C.txt }}>
                 <i className="ri-user-settings-fill" style={{ color: C.primarySolid }}></i>
                 {adminUserModal._id ? 'Chỉnh Sửa Tài Khoản DB' : 'Thêm Tài Khoản Mới DB'}
               </h3>
-              <button onClick={() => setAdminUserModal(null)} className="w-8 h-8 rounded-full flex items-center justify-center transition hover:opacity-70 cursor-pointer" style={btn}>
+              <button type="button" disabled={adminSaving} onClick={() => setAdminUserModal(null)} className="w-8 h-8 rounded-full flex items-center justify-center transition hover:opacity-70 cursor-pointer" style={btn}>
                 <i className="ri-close-line text-lg"></i>
               </button>
             </div>
@@ -3079,6 +3092,7 @@ export default function App() {
                   className="w-full px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition"
                   style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
                   required
+                  disabled={adminSaving}
                 />
               </div>
 
@@ -3089,6 +3103,7 @@ export default function App() {
                   className="w-full px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition"
                   style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
                   required
+                  disabled={adminSaving}
                 />
               </div>
 
@@ -3101,6 +3116,7 @@ export default function App() {
                   className="w-full px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition"
                   style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
                   required={!adminUserModal._id}
+                  disabled={adminSaving}
                 />
               </div>
 
@@ -3108,7 +3124,9 @@ export default function App() {
                 <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Quyền Hạn (Role)</label>
                 <select value={adminRole} onChange={e => setAdminRole(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition cursor-pointer"
-                  style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}>
+                  style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                  disabled={adminSaving}
+                >
                   <option value="user">Member (Người dùng nghe nhạc)</option>
                   <option value="admin">Admin (Quản trị viên hệ thống)</option>
                 </select>
@@ -3117,14 +3135,23 @@ export default function App() {
               {adminErr && <p className="text-xs font-semibold text-red-500 mt-1">{adminErr}</p>}
 
               <div className="flex gap-3 mt-3">
-                <button type="button" onClick={() => setAdminUserModal(null)}
-                  className="w-28 shrink-0 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition active:scale-95" style={btn}>
+                <button type="button" disabled={adminSaving} onClick={() => setAdminUserModal(null)}
+                  className="w-28 shrink-0 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition active:scale-95 disabled:opacity-50" style={btn}>
                   Hủy
                 </button>
-                <button type="submit"
-                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 shadow-lg cursor-pointer transition active:scale-95"
+                <button type="submit" disabled={adminSaving}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 shadow-lg cursor-pointer transition active:scale-95 disabled:opacity-50"
                   style={{ background: C.primary, boxShadow: `0 6px 18px ${C.primaryGlow}` }}>
-                  <i className="ri-save-line"></i> Lưu vào DB
+                  {adminSaving ? (
+                    <>
+                      <span className="text-sm animate-bounce inline-block">🕊️</span>
+                      <span>Đang xử lý...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="ri-save-line"></i> Lưu vào DB
+                    </>
+                  )}
                 </button>
               </div>
             </form>
