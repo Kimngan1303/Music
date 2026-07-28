@@ -2596,8 +2596,8 @@ export default function App() {
 
             {/* User Name in center between search bar and buttons */}
             {user && (
-              <div className="hidden md:flex flex-1 items-center justify-center min-w-0 px-2 pointer-events-none">
-                <span className="text-2xl lg:text-3xl font-extrabold truncate" style={{ color: C.primarySolid, fontFamily: F.cursive, textShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
+              <div className="hidden md:flex flex-1 items-center justify-center min-w-0 px-2 pointer-events-none overflow-visible">
+                <span className="text-2xl lg:text-3xl font-extrabold whitespace-nowrap pr-4 py-1" style={{ color: C.primarySolid, fontFamily: F.cursive, textShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
                   {user.name}
                 </span>
               </div>
