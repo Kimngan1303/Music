@@ -2568,12 +2568,23 @@ export default function App() {
                 <div className="flex items-center gap-2.5 animate-in fade-in slide-in-from-left-3 duration-200 z-20 pointer-events-auto shrink-0">
                   {list.length > 0 && (
                     <button
-                      onClick={() => play(list[0], list)}
-                      title="Phát danh sách phát này"
+                      onClick={() => {
+                        const isCurrentListPlaying = track && list.some(s => s.id === track.id);
+                        if (isCurrentListPlaying) {
+                          togglePlay();
+                        } else {
+                          play(list[0], list);
+                        }
+                      }}
+                      title={track && list.some(s => s.id === track.id) && playing ? "Tạm dừng phát nhạc" : "Phát danh sách phát này"}
                       className="w-9 h-9 md:w-10 md:h-10 rounded-full text-white shadow-md flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0"
                       style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
                     >
-                      <PlayIcon className="w-4 h-4 md:w-5 md:h-5" />
+                      {track && list.some(s => s.id === track.id) && playing ? (
+                        buffering ? <i className="ri-loader-4-line text-lg md:text-xl animate-spin" /> : <PauseIcon className="w-4 h-4 md:w-5 md:h-5" />
+                      ) : (
+                        <PlayIcon className="w-4 h-4 md:w-5 md:h-5" />
+                      )}
                     </button>
                   )}
                   <span className="text-xs md:text-sm font-extrabold truncate max-w-[120px] lg:max-w-[180px]" style={{ color: C.txt, fontFamily: F.heading }}>
@@ -3366,12 +3377,23 @@ export default function App() {
                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-5">
                       {list.length > 0 && (
                         <button
-                          onClick={() => play(list[0], list)}
-                          title="Phát tất cả bài hát từ đầu"
+                          onClick={() => {
+                            const isCurrentListPlaying = track && list.some(s => s.id === track.id);
+                            if (isCurrentListPlaying) {
+                              togglePlay();
+                            } else {
+                              play(list[0], list);
+                            }
+                          }}
+                          title={track && list.some(s => s.id === track.id) && playing ? "Tạm dừng phát nhạc" : "Phát tất cả bài hát từ đầu"}
                           className="w-12 h-12 rounded-full text-white shadow-xl flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer"
                           style={{ background: C.primary, boxShadow: `0 6px 20px ${C.primaryGlow}` }}
                         >
-                          <PlayIcon className="w-6 h-6" />
+                          {track && list.some(s => s.id === track.id) && playing ? (
+                            buffering ? <i className="ri-loader-4-line text-2xl animate-spin" /> : <PauseIcon className="w-6 h-6" />
+                          ) : (
+                            <PlayIcon className="w-6 h-6" />
+                          )}
                         </button>
                       )}
 
@@ -3485,7 +3507,11 @@ export default function App() {
                           if (isSelectMode) {
                             toggleSelectSong(song.id);
                           } else {
-                            play(song, list);
+                            if (sel) {
+                              togglePlay();
+                            } else {
+                              play(song, list);
+                            }
                           }
                         }}
                         title={isSelectMode ? `Bấm để ${isSelected ? 'bỏ chọn' : 'chọn'} ${song.title}` : `Bấm để phát: ${song.title} - ${song.artist}`}
