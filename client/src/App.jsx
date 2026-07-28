@@ -673,8 +673,9 @@ export default function App() {
   // Scroll Position State for Sticky Header Navigation
   const [mainScrollTop, setMainScrollTop] = useState(0);
 
-  // System OS Picture-in-Picture Window State
+  // System OS Picture-in-Picture Window State & Height Tracking
   const [pipWindow, setPipWindow] = useState(null);
+  const [pipHeight, setPipHeight] = useState(380);
 
   // Reload songs and favs when user logs in or out
   useEffect(() => {
@@ -1005,13 +1006,15 @@ export default function App() {
           height: initialSize.height,
         });
 
-        // Listen for resize event to save user's custom window size into localStorage
+        // Listen for resize event to track window height and save user's custom window size into localStorage
         pipWin.addEventListener('resize', () => {
+          setPipHeight(pipWin.innerHeight);
           try {
             const newSize = { width: pipWin.innerWidth, height: pipWin.innerHeight };
             localStorage.setItem('aura_pip_size', JSON.stringify(newSize));
           } catch (e) {}
         });
+        setPipHeight(pipWin.innerHeight || initialSize.height);
 
         // Copy active document stylesheets into PiP window
         [...document.styleSheets].forEach((styleSheet) => {
@@ -3992,119 +3995,218 @@ export default function App() {
         </div>
       )}
 
-      {/* ── FLOATING MINI PLAYER WIDGET (ONLY OS SYSTEM LEVEL DOCUMENT PICTURE-IN-PICTURE) ─────────────────── */}
+      {/* ── FLOATING MINI PLAYER WIDGET (ADAPTIVE LAYOUT BASED ON WINDOW HEIGHT) ─────────────────── */}
       {pipWindow && track && createPortal(
-        <div
-          className="w-full h-full flex flex-col justify-between overflow-hidden text-white select-none rounded-2xl"
-          style={{
-            background: C.isDark ? '#121214' : '#1e1e24',
-            color: '#ffffff',
-            fontFamily: F.body
-          }}
-        >
-          {/* Top Bar: Brand Logo & Title (Single Line, Clean Branding) */}
-          <div className="flex items-center justify-between px-3.5 py-2.5 bg-black/60 border-b border-white/10 text-xs shrink-0">
-            <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden min-w-0">
-              <div className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0" style={{ background: C.primary }}>
-                <i className={`ri-disc-fill text-xs text-white ${playing ? 'spin-slow' : ''}`}></i>
-              </div>
-              <span className="text-base font-extrabold tracking-wide shrink-0" style={{ color: C.primarySolid, fontFamily: F.cursive, lineHeight: 1 }}>
-                LittleLove
-              </span>
-              <span className="text-[9px] font-bold uppercase tracking-wider truncate" style={{ color: C.txtFad, fontFamily: F.brand }}>
-                Unnull Music Space
-              </span>
-            </div>
-          </div>
+        (() => {
+          const isCompact = pipHeight < 240;
 
-          {/* Middle: Album Cover Art (Hover to view controls matching Theme Colors) */}
-          <div className="relative w-full flex-1 bg-black group overflow-hidden select-none min-h-[180px]">
-            <img
-              src={track.thumbnail}
-              alt={track.title}
-              className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
-            />
-
-            {/* Hover Overlay Controls matching Theme Colors */}
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-[3px] flex flex-col justify-between p-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
-
-              {/* Controls Bar Centered Over Cover Art */}
-              <div className="flex-1 flex items-center justify-center gap-2 md:gap-3 text-white">
-                
-                {/* Volume / Mute */}
-                <button onClick={toggleMute} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer" title="Âm thanh">
-                  <i className={muted || vol === 0 ? "ri-volume-mute-line text-base" : "ri-volume-up-line text-base"}></i>
-                </button>
-
-                {/* Shuffle */}
-                <button onClick={toggleShuffle} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: isShuffle ? C.primarySolid : 'rgba(255,255,255,0.8)' }} title="Phát ngẫu nhiên">
-                  <i className="ri-shuffle-line text-base"></i>
-                </button>
-
-                {/* Prev */}
-                <button onClick={prevTrack} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer" title="Bài trước">
-                  <i className="ri-skip-back-fill text-xl"></i>
-                </button>
-
-                {/* Large Center Play / Pause Button with Theme Color */}
-                <button
-                  onClick={togglePlay}
-                  className="w-12 h-12 rounded-full text-white flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0 shadow-xl"
-                  style={{ background: C.primary, boxShadow: `0 4px 18px ${C.primaryGlow}` }}
-                  title={playing ? "Tạm dừng" : "Phát nhạc"}
-                >
-                  <i className={playing ? "ri-pause-fill text-2xl" : "ri-play-fill text-2xl pl-0.5"}></i>
-                </button>
-
-                {/* Next Track */}
-                <button onClick={nextTrack} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer" title="Bài tiếp">
-                  <i className="ri-skip-forward-fill text-xl"></i>
-                </button>
-
-                {/* Repeat */}
-                <button onClick={toggleRepeat} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: repeatMode !== 'off' ? C.primarySolid : 'rgba(255,255,255,0.8)' }} title="Lặp lại">
-                  <i className="ri-repeat-line text-base"></i>
-                </button>
-
-                {/* Favorite */}
-                <button onClick={() => toggleFav(track.id)} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.8)' }} title="Yêu thích">
-                  <i className={favs.includes(track.id) ? "ri-heart-fill text-base" : "ri-heart-line text-base"}></i>
-                </button>
-
-              </div>
-
-              {/* Bottom Progress Bar inside Image with Theme Accent */}
-              <div className="w-full flex flex-col gap-1">
-                <div className="flex items-center justify-between text-[10px] font-mono text-white/90 px-0.5">
-                  <span>{fmt(curTime)}</span>
-                  <span>{fmt(dur)}</span>
-                </div>
-                <input
-                  type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
-                  className="w-full h-1 cursor-pointer bg-white/30 rounded-lg"
-                  style={{ accentColor: C.primarySolid }}
+          if (isCompact) {
+            // ── COMPACT CONTROLLER VIEW (Kéo nhỏ như Ảnh 2 -> Tự động hiện rõ bộ nút điều khiển 🔊 🔀 ⏮ ⏸ ⏭ 🔁 🤍)
+            return (
+              <div
+                className="w-full h-full flex flex-col justify-between overflow-hidden text-white select-none relative"
+                style={{ background: C.isDark ? '#121214' : '#1e1e24', fontFamily: F.body }}
+              >
+                {/* Background Blurred Album Cover */}
+                <img
+                  src={track.thumbnail}
+                  alt={track.title}
+                  className="absolute inset-0 w-full h-full object-cover opacity-35 blur-md scale-110 pointer-events-none"
                 />
+
+                {/* Top Header Logo */}
+                <div className="relative z-10 flex items-center justify-between px-3 py-1.5 bg-black/60 border-b border-white/10 text-xs shrink-0">
+                  <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden min-w-0">
+                    <div className="w-4 h-4 rounded flex items-center justify-center shrink-0" style={{ background: C.primary }}>
+                      <i className={`ri-disc-fill text-[10px] text-white ${playing ? 'spin-slow' : ''}`}></i>
+                    </div>
+                    <span className="text-xs font-extrabold tracking-wide truncate" style={{ color: C.primarySolid, fontFamily: F.cursive, lineHeight: 1 }}>
+                      LittleLove
+                    </span>
+                    <span className="text-[8px] font-bold uppercase tracking-wider truncate text-white/50" style={{ fontFamily: F.brand }}>
+                      Music Space
+                    </span>
+                  </div>
+                </div>
+
+                {/* Center Dedicated Media Control Console (ALWAYS VISIBLE) */}
+                <div className="relative z-10 flex-1 flex flex-col justify-between p-2.5 gap-1 min-h-0 bg-black/40 backdrop-blur-[2px]">
+                  
+                  {/* Title & Artist */}
+                  <div className="text-center min-w-0 shrink-0">
+                    <h4 className="text-xs font-extrabold truncate text-white leading-tight">{track.title}</h4>
+                    <p className="text-[10px] text-white/70 truncate">{track.artist}</p>
+                  </div>
+
+                  {/* Main Action Buttons Row */}
+                  <div className="flex items-center justify-center gap-2 md:gap-3 text-white my-auto">
+                    
+                    {/* Volume / Mute */}
+                    <button onClick={toggleMute} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer shrink-0" title="Âm thanh">
+                      <i className={muted || vol === 0 ? "ri-volume-mute-line text-sm" : "ri-volume-up-line text-sm"}></i>
+                    </button>
+
+                    {/* Shuffle */}
+                    <button onClick={toggleShuffle} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer shrink-0" style={{ color: isShuffle ? C.primarySolid : 'rgba(255,255,255,0.7)' }} title="Phát ngẫu nhiên">
+                      <i className="ri-shuffle-line text-sm"></i>
+                    </button>
+
+                    {/* Prev */}
+                    <button onClick={prevTrack} className="p-1 hover:scale-110 active:scale-95 transition text-white/90 hover:text-white cursor-pointer shrink-0" title="Bài trước">
+                      <i className="ri-skip-back-fill text-base"></i>
+                    </button>
+
+                    {/* Large Center Play / Pause Button with Theme Color */}
+                    <button
+                      onClick={togglePlay}
+                      className="w-9 h-9 rounded-full text-white flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0 shadow-lg"
+                      style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
+                      title={playing ? "Tạm dừng" : "Phát nhạc"}
+                    >
+                      <i className={playing ? "ri-pause-fill text-lg" : "ri-play-fill text-lg pl-0.5"}></i>
+                    </button>
+
+                    {/* Next Track */}
+                    <button onClick={nextTrack} className="p-1 hover:scale-110 active:scale-95 transition text-white/90 hover:text-white cursor-pointer shrink-0" title="Bài tiếp">
+                      <i className="ri-skip-forward-fill text-base"></i>
+                    </button>
+
+                    {/* Repeat */}
+                    <button onClick={toggleRepeat} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer shrink-0" style={{ color: repeatMode !== 'off' ? C.primarySolid : 'rgba(255,255,255,0.7)' }} title="Lặp lại">
+                      <i className="ri-repeat-line text-sm"></i>
+                    </button>
+
+                    {/* Favorite */}
+                    <button onClick={() => toggleFav(track.id)} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer shrink-0" style={{ color: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.7)' }} title="Yêu thích">
+                      <i className={favs.includes(track.id) ? "ri-heart-fill text-sm" : "ri-heart-line text-sm"}></i>
+                    </button>
+
+                  </div>
+
+                  {/* Bottom Timeline Bar */}
+                  <div className="w-full flex flex-col gap-0.5 shrink-0">
+                    <div className="flex items-center justify-between text-[9px] font-mono text-white/80 px-0.5">
+                      <span>{fmt(curTime)}</span>
+                      <span>{fmt(dur)}</span>
+                    </div>
+                    <input
+                      type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
+                      className="w-full h-1 cursor-pointer bg-white/30 rounded-lg"
+                      style={{ accentColor: C.primarySolid }}
+                    />
+                  </div>
+
+                </div>
+              </div>
+            );
+          }
+
+          // ── NORMAL VIEW (Kéo to như Ảnh 1 -> Hiện ảnh bìa sắc nét đầy đủ, hover mới hiện controls)
+          return (
+            <div
+              className="w-full h-full flex flex-col justify-between overflow-hidden text-white select-none rounded-2xl"
+              style={{
+                background: C.isDark ? '#121214' : '#1e1e24',
+                color: '#ffffff',
+                fontFamily: F.body
+              }}
+            >
+              {/* Top Bar: Brand Logo & Title */}
+              <div className="flex items-center justify-between px-3.5 py-2.5 bg-black/60 border-b border-white/10 text-xs shrink-0">
+                <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden min-w-0">
+                  <div className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0" style={{ background: C.primary }}>
+                    <i className={`ri-disc-fill text-xs text-white ${playing ? 'spin-slow' : ''}`}></i>
+                  </div>
+                  <span className="text-base font-extrabold tracking-wide shrink-0" style={{ color: C.primarySolid, fontFamily: F.cursive, lineHeight: 1 }}>
+                    LittleLove
+                  </span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider truncate" style={{ color: C.txtFad, fontFamily: F.brand }}>
+                    Unnull Music Space
+                  </span>
+                </div>
               </div>
 
-            </div>
-          </div>
+              {/* Middle: Album Cover Art */}
+              <div className="relative w-full flex-1 bg-black group overflow-hidden select-none min-h-[180px]">
+                <img
+                  src={track.thumbnail}
+                  alt={track.title}
+                  className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+                />
 
-          {/* Bottom Track Title & Artist */}
-          <div className="p-3.5 bg-[#18181c] flex items-center justify-between gap-3 border-t border-white/5 shrink-0">
-            <div className="min-w-0 flex-1 text-left">
-              <h4 className="text-sm font-extrabold truncate text-white leading-tight">{track.title}</h4>
-              <p className="text-xs text-white/60 truncate mt-0.5">{track.artist}</p>
+                {/* Hover Overlay Controls matching Theme Colors */}
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-[3px] flex flex-col justify-between p-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+
+                  {/* Controls Bar Centered Over Cover Art */}
+                  <div className="flex-1 flex items-center justify-center gap-2 md:gap-3 text-white">
+                    <button onClick={toggleMute} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer" title="Âm thanh">
+                      <i className={muted || vol === 0 ? "ri-volume-mute-line text-base" : "ri-volume-up-line text-base"}></i>
+                    </button>
+
+                    <button onClick={toggleShuffle} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: isShuffle ? C.primarySolid : 'rgba(255,255,255,0.8)' }} title="Phát ngẫu nhiên">
+                      <i className="ri-shuffle-line text-base"></i>
+                    </button>
+
+                    <button onClick={prevTrack} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer" title="Bài trước">
+                      <i className="ri-skip-back-fill text-xl"></i>
+                    </button>
+
+                    <button
+                      onClick={togglePlay}
+                      className="w-12 h-12 rounded-full text-white flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0 shadow-xl"
+                      style={{ background: C.primary, boxShadow: `0 4px 18px ${C.primaryGlow}` }}
+                      title={playing ? "Tạm dừng" : "Phát nhạc"}
+                    >
+                      <i className={playing ? "ri-pause-fill text-2xl" : "ri-play-fill text-2xl pl-0.5"}></i>
+                    </button>
+
+                    <button onClick={nextTrack} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer" title="Bài tiếp">
+                      <i className="ri-skip-forward-fill text-xl"></i>
+                    </button>
+
+                    <button onClick={toggleRepeat} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: repeatMode !== 'off' ? C.primarySolid : 'rgba(255,255,255,0.8)' }} title="Lặp lại">
+                      <i className="ri-repeat-line text-base"></i>
+                    </button>
+
+                    <button onClick={() => toggleFav(track.id)} className="p-1 hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.8)' }} title="Yêu thích">
+                      <i className={favs.includes(track.id) ? "ri-heart-fill text-base" : "ri-heart-line text-base"}></i>
+                    </button>
+                  </div>
+
+                  {/* Bottom Progress Bar inside Image */}
+                  <div className="w-full flex flex-col gap-1">
+                    <div className="flex items-center justify-between text-[10px] font-mono text-white/90 px-0.5">
+                      <span>{fmt(curTime)}</span>
+                      <span>{fmt(dur)}</span>
+                    </div>
+                    <input
+                      type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
+                      className="w-full h-1 cursor-pointer bg-white/30 rounded-lg"
+                      style={{ accentColor: C.primarySolid }}
+                    />
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Bottom Track Title & Artist */}
+              <div className="p-3.5 bg-[#18181c] flex items-center justify-between gap-3 border-t border-white/5 shrink-0">
+                <div className="min-w-0 flex-1 text-left">
+                  <h4 className="text-sm font-extrabold truncate text-white leading-tight">{track.title}</h4>
+                  <p className="text-xs text-white/60 truncate mt-0.5">{track.artist}</p>
+                </div>
+                <button
+                  onClick={() => toggleFav(track.id)}
+                  className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center transition cursor-pointer shrink-0 hover:scale-105"
+                  style={{ color: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.8)', borderColor: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.2)' }}
+                  title={favs.includes(track.id) ? "Đã thích" : "Thêm vào thư viện"}
+                >
+                  <i className={favs.includes(track.id) ? "ri-heart-fill text-sm" : "ri-add-line text-base"}></i>
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => toggleFav(track.id)}
-              className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center transition cursor-pointer shrink-0 hover:scale-105"
-              style={{ color: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.8)', borderColor: favs.includes(track.id) ? C.primarySolid : 'rgba(255,255,255,0.2)' }}
-              title={favs.includes(track.id) ? "Đã thích" : "Thêm vào thư viện"}
-            >
-              <i className={favs.includes(track.id) ? "ri-heart-fill text-sm" : "ri-add-line text-base"}></i>
-            </button>
-          </div>
-        </div>,
+          );
+        })(),
         pipWindow.document.body
       )}
     </div>
