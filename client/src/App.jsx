@@ -3734,10 +3734,7 @@ export default function App() {
                   </p>
                 </div>
                 {addErr && <p className="text-xs font-semibold text-red-500">{addErr}</p>}
-                <div className="p-3 rounded-xl text-xs" style={{ background: C.tag, border: `1px solid ${C.border}`, color: C.txtSub }}>
-                  <i className="ri-information-line mr-1"></i>
-                  Spotify player sẽ hiện trực tiếp — cần tài khoản Spotify để phát toàn bộ.
-                </div>
+
                 <div className="flex gap-3 mt-1">
                   <button type="button" onClick={() => { setAddModal(false); setAddErr(''); }}
                     className="w-28 shrink-0 py-2.5 rounded-xl text-sm font-bold" style={btn}>
