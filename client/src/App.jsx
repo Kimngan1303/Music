@@ -1857,6 +1857,23 @@ export default function App() {
     }
   }, [tab, isAdmin]);
 
+  // ── STATS TAB: fetch & auto-refresh every 10s ──
+  const [statsData, setStatsData] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const fetchStats = () => {
+    setStatsLoading(true);
+    axios.get('/api/admin/stats')
+      .then(res => { setStatsData(res.data); setStatsLoading(false); })
+      .catch(() => setStatsLoading(false));
+  };
+  useEffect(() => {
+    if (tab === 'stats' && isAdmin) {
+      fetchStats();
+      const si = setInterval(fetchStats, 10000);
+      return () => clearInterval(si);
+    }
+  }, [tab, isAdmin]);
+
   const handleSaveAdminUser = async (e) => {
     e.preventDefault();
     setAdminErr('');
@@ -2194,6 +2211,13 @@ export default function App() {
                 sub: 'Quản trị hệ thống & DB',
                 color: 'linear-gradient(135deg, #ef4444, #f59e0b)',
                 tooltip: 'Mở trang quản lý tài khoản & phân quyền người dùng'
+              }, {
+                key: 'stats',
+                icon: 'ri-bar-chart-2-fill',
+                label: 'Thống Kê',
+                sub: 'Báo cáo & phân tích',
+                color: 'linear-gradient(135deg, #06b6d4, #6366f1)',
+                tooltip: 'Xem thống kê toàn hệ thống'
               }] : [])
             ].map(t => {
               const active = tab === t.key;
@@ -2657,7 +2681,170 @@ export default function App() {
           {/* Scrollable content */}
           <div className="flex-1 p-4 pt-8 md:p-7 md:pt-7 overflow-y-auto" onScroll={e => setMainScrollTop(e.currentTarget.scrollTop)}>
 
-            {tab === 'admin' && isAdmin ? (
+            {tab === 'stats' && isAdmin ? (
+              /* ── STATISTICS DASHBOARD ─────────────────── */
+              <div className="flex flex-col gap-6 max-w-6xl mx-auto pb-10">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold flex items-center gap-2.5" style={{ fontFamily: F.heading, color: C.txt }}>
+                      <i className="ri-bar-chart-2-fill" style={{ color: '#06b6d4' }} />
+                      Thống Kê Hệ Thống
+                    </h2>
+                    <p className="text-xs mt-1" style={{ color: C.txtSub }}>
+                      Dữ liệu tự động cập nhật mỗi 10 giây · {statsData ? new Date(statsData.generatedAt).toLocaleTimeString('vi-VN') : '—'}
+                    </p>
+                  </div>
+                  <button onClick={fetchStats} disabled={statsLoading}
+                    className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition hover:scale-105 active:scale-95 cursor-pointer"
+                    style={{ background: 'rgba(6,182,212,0.15)', color: '#06b6d4', border: '1px solid rgba(6,182,212,0.3)' }}>
+                    <i className={`ri-refresh-line ${statsLoading ? 'animate-spin' : ''}`} />
+                    Làm mới
+                  </button>
+                </div>
+
+                {statsLoading && !statsData ? (
+                  <div className="flex items-center justify-center py-20">
+                    <i className="ri-loader-4-line text-4xl animate-spin" style={{ color: '#06b6d4' }} />
+                  </div>
+                ) : statsData ? (<>
+
+                  {/* ── USERS STATS CARDS ── */}
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: C.txtSub }}>👤 Người Dùng</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                      {[
+                        { label: 'Tổng cộng', value: statsData.users.total, icon: 'ri-team-fill', color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
+                        { label: 'Đang Online', value: statsData.users.online, icon: 'ri-wifi-fill', color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
+                        { label: 'Bị Khóa', value: statsData.users.locked, icon: 'ri-lock-fill', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
+                        { label: 'Mới Hôm Nay', value: statsData.users.newToday, icon: 'ri-user-add-fill', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+                        { label: 'Mới 7 Ngày', value: statsData.users.newWeek, icon: 'ri-calendar-fill', color: '#06b6d4', bg: 'rgba(6,182,212,0.12)' },
+                        { label: 'Mới Tháng Này', value: statsData.users.newMonth, icon: 'ri-calendar-2-fill', color: '#a855f7', bg: 'rgba(168,85,247,0.12)' },
+                      ].map(card => (
+                        <div key={card.label} className="p-4 rounded-2xl flex flex-col gap-2 shadow-sm" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center text-base" style={{ background: card.bg, color: card.color }}>
+                            <i className={card.icon} />
+                          </div>
+                          <span className="text-2xl font-black" style={{ color: C.txt }}>{card.value}</span>
+                          <span className="text-[10px] font-semibold leading-tight" style={{ color: C.txtSub }}>{card.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── SONGS & PLAYLISTS CARDS ── */}
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: C.txtSub }}>🎵 Bài Hát & Playlist</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[
+                        { label: 'Tổng Bài Hát', value: statsData.songs.total, icon: 'ri-music-2-fill', color: '#a855f7', bg: 'rgba(168,85,247,0.12)' },
+                        { label: 'Mới Hôm Nay', value: statsData.songs.newToday, icon: 'ri-music-fill', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+                        { label: 'Mới 7 Ngày', value: statsData.songs.newWeek, icon: 'ri-rhythm-fill', color: '#06b6d4', bg: 'rgba(6,182,212,0.12)' },
+                        { label: 'Tổng Playlist', value: statsData.playlists.total, icon: 'ri-play-list-fill', color: '#ec4899', bg: 'rgba(236,72,153,0.12)' },
+                      ].map(card => (
+                        <div key={card.label} className="p-4 rounded-2xl flex flex-col gap-2 shadow-sm" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center text-base" style={{ background: card.bg, color: card.color }}>
+                            <i className={card.icon} />
+                          </div>
+                          <span className="text-2xl font-black" style={{ color: C.txt }}>{card.value}</span>
+                          <span className="text-[10px] font-semibold leading-tight" style={{ color: C.txtSub }}>{card.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── 3-COLUMN TABLES ── */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                    {/* Top bài hát được yêu thích nhất */}
+                    <div className="p-5 rounded-2xl flex flex-col gap-3" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                      <p className="text-xs font-bold uppercase tracking-widest" style={{ color: C.txtSub }}>❤️ Bài Hát Yêu Thích Nhất</p>
+                      {statsData.topFavSongs.length === 0 ? (
+                        <p className="text-xs" style={{ color: C.txtSub }}>Chưa có dữ liệu</p>
+                      ) : statsData.topFavSongs.map((s, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <span className="text-xs font-black w-5 text-center" style={{ color: C.txtSub }}>#{i + 1}</span>
+                          <img src={s.thumbnail} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold truncate" style={{ color: C.txt }}>{s.title}</p>
+                            <p className="text-[10px] truncate" style={{ color: C.txtSub }}>{s.artist}</p>
+                          </div>
+                          <span className="text-xs font-black shrink-0" style={{ color: '#ec4899' }}>❤️ {s.count}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Top người dùng tích cực */}
+                    <div className="p-5 rounded-2xl flex flex-col gap-3" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                      <p className="text-xs font-bold uppercase tracking-widest" style={{ color: C.txtSub }}>🏆 Người Dùng Tích Cực Nhất</p>
+                      {statsData.topUsers.length === 0 ? (
+                        <p className="text-xs" style={{ color: C.txtSub }}>Chưa có dữ liệu</p>
+                      ) : statsData.topUsers.map((u, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <span className="text-xs font-black w-5 text-center" style={{ color: C.txtSub }}>#{i + 1}</span>
+                          <div className="relative shrink-0">
+                            <img src={u.avatar} alt="" className="w-9 h-9 rounded-lg object-cover" />
+                            <span style={{
+                              position: 'absolute', bottom: -2, right: -2, width: 8, height: 8,
+                              borderRadius: '50%', background: u.isOnline ? '#22c55e' : '#6b7280',
+                              boxShadow: u.isOnline ? '0 0 4px #22c55e' : 'none', border: '1.5px solid #000'
+                            }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold truncate" style={{ color: C.txt }}>{u.name}</p>
+                            <p className="text-[10px] truncate" style={{ color: C.txtSub }}>{u.email}</p>
+                          </div>
+                          <span className="text-xs font-black shrink-0" style={{ color: '#f59e0b' }}>❤️ {u.favCount}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Top nghệ sĩ */}
+                    <div className="p-5 rounded-2xl flex flex-col gap-3" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                      <p className="text-xs font-bold uppercase tracking-widest" style={{ color: C.txtSub }}>🎤 Nghệ Sĩ Nhiều Bài Nhất</p>
+                      {statsData.topArtists.length === 0 ? (
+                        <p className="text-xs" style={{ color: C.txtSub }}>Chưa có dữ liệu</p>
+                      ) : statsData.topArtists.map((a, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <span className="text-xs font-black w-5 text-center" style={{ color: C.txtSub }}>#{i + 1}</span>
+                          <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0" style={{ background: 'rgba(168,85,247,0.15)', color: '#a855f7' }}>
+                            <i className="ri-user-voice-fill" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold truncate" style={{ color: C.txt }}>{a.name}</p>
+                          </div>
+                          <span className="text-xs font-black shrink-0" style={{ color: '#a855f7' }}>{a.count} bài</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── Bài hát mới nhất ── */}
+                  <div className="p-5 rounded-2xl" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                    <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: C.txtSub }}>🆕 Bài Hát Mới Thêm Gần Đây</p>
+                    <div className="flex flex-col gap-2">
+                      {statsData.recentSongs.length === 0 ? (
+                        <p className="text-xs" style={{ color: C.txtSub }}>Chưa có bài hát nào</p>
+                      ) : statsData.recentSongs.map((s, i) => (
+                        <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl" style={{ background: C.surface }}>
+                          <img src={s.thumbnail} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold truncate" style={{ color: C.txt }}>{s.title}</p>
+                            <p className="text-[10px] truncate" style={{ color: C.txtSub }}>{s.artist}</p>
+                          </div>
+                          <span className="text-[10px] shrink-0" style={{ color: C.txtSub }}>
+                            {s.createdAt ? new Date(s.createdAt).toLocaleDateString('vi-VN') : '—'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </>) : (
+                  <p className="text-sm text-center py-10" style={{ color: C.txtSub }}>Không tải được dữ liệu thống kê.</p>
+                )}
+              </div>
+            ) : tab === 'admin' && isAdmin ? (
               /* ── ADMIN MANAGEMENT VIEW ─────────────────── */
               <div className="flex flex-col gap-6 max-w-6xl mx-auto pb-10">
                 {/* Page Header */}

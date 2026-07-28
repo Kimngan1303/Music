@@ -143,6 +143,102 @@ router.get('/admin/users', async (req, res) => {
   }
 });
 
+// --- ADMIN STATISTICS ROUTE ---
+router.get('/admin/stats', async (req, res) => {
+  try {
+    const now = new Date();
+    const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
+    const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - 6); startOfWeek.setHours(0, 0, 0, 0);
+    const startOfMonth = new Date(now); startOfMonth.setDate(1); startOfMonth.setHours(0, 0, 0, 0);
+    const onlineThreshold = new Date(now.getTime() - 15 * 1000); // 15s
+
+    const [
+      totalUsers,
+      onlineUsers,
+      lockedUsers,
+      newUsersToday,
+      newUsersWeek,
+      newUsersMonth,
+      totalSongs,
+      newSongsToday,
+      newSongsWeek,
+      totalPlaylists,
+      allUsers,
+      allSongs
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ lastSeen: { $gte: onlineThreshold } }),
+      User.countDocuments({ isLocked: true }),
+      User.countDocuments({ createdAt: { $gte: startOfToday } }),
+      User.countDocuments({ createdAt: { $gte: startOfWeek } }),
+      User.countDocuments({ createdAt: { $gte: startOfMonth } }),
+      Music.countDocuments(),
+      Music.countDocuments({ createdAt: { $gte: startOfToday } }),
+      Music.countDocuments({ createdAt: { $gte: startOfWeek } }),
+      Playlist.countDocuments(),
+      User.find().select('name avatar email favorites lastSeen createdAt role isLocked').sort({ createdAt: -1 }),
+      Music.find().select('title artist thumbnail duration createdAt addedBy').sort({ createdAt: -1 }).limit(100)
+    ]);
+
+    // Top 5 most favorited songs (count how many users have each song in favorites)
+    const favCounts = {};
+    allUsers.forEach(u => {
+      (u.favorites || []).forEach(songId => {
+        favCounts[songId] = (favCounts[songId] || 0) + 1;
+      });
+    });
+    const topFavSongIds = Object.entries(favCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([id, count]) => ({ id, count }));
+    const topFavSongs = topFavSongIds.map(({ id, count }) => {
+      const song = allSongs.find(s => String(s._id) === String(id));
+      return song ? { title: song.title, artist: song.artist, thumbnail: song.thumbnail, count } : null;
+    }).filter(Boolean);
+
+    // Top 5 most active users (by favorites count)
+    const topUsers = [...allUsers]
+      .sort((a, b) => (b.favorites?.length || 0) - (a.favorites?.length || 0))
+      .slice(0, 5)
+      .map(u => ({
+        name: u.name,
+        avatar: u.avatar,
+        email: u.email,
+        favCount: u.favorites?.length || 0,
+        isOnline: u.lastSeen && new Date(u.lastSeen) >= onlineThreshold,
+        role: u.role
+      }));
+
+    // Top artists by song count
+    const artistCounts = {};
+    allSongs.forEach(s => {
+      if (s.artist) artistCounts[s.artist] = (artistCounts[s.artist] || 0) + 1;
+    });
+    const topArtists = Object.entries(artistCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, count]) => ({ name, count }));
+
+    // Recently added songs (last 5)
+    const recentSongs = allSongs.slice(0, 5).map(s => ({
+      title: s.title, artist: s.artist, thumbnail: s.thumbnail, createdAt: s.createdAt
+    }));
+
+    res.json({
+      users: { total: totalUsers, online: onlineUsers, locked: lockedUsers, newToday: newUsersToday, newWeek: newUsersWeek, newMonth: newUsersMonth },
+      songs: { total: totalSongs, newToday: newSongsToday, newWeek: newSongsWeek },
+      playlists: { total: totalPlaylists },
+      topFavSongs,
+      topUsers,
+      topArtists,
+      recentSongs,
+      generatedAt: now
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.post('/admin/users', async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
