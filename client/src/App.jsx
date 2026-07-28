@@ -677,6 +677,11 @@ export default function App() {
   const [pipWindow, setPipWindow] = useState(null);
   const [pipHeight, setPipHeight] = useState(380);
 
+  // Mobile iOS / Android Video Picture-in-Picture State & Refs
+  const mobileCanvasRef = useRef(null);
+  const mobileVideoRef = useRef(null);
+  const [mobilePipActive, setMobilePipActive] = useState(false);
+
   // Reload songs and favs when user logs in or out
   useEffect(() => {
     const uid = user?._id || 'guest';
@@ -1061,29 +1066,95 @@ export default function App() {
     }
   };
 
+  // Update canvas artwork & text for Mobile Video Picture-in-Picture
+  const updateMobileCanvas = () => {
+    const canvas = mobileCanvasRef.current;
+    if (!canvas || !track) return;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = C.isDark ? '#121214' : '#1e1e24';
+    ctx.fillRect(0, 0, 480, 480);
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      ctx.drawImage(img, 40, 30, 400, 360);
+      const grad = ctx.createLinearGradient(0, 300, 0, 480);
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.95)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 300, 480, 180);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillText(track.title || '', 40, 420);
+      ctx.fillStyle = C.primarySolid || '#f43f5e';
+      ctx.font = '16px sans-serif';
+      ctx.fillText(track.artist || 'Aura Music', 40, 450);
+    };
+    img.src = track.thumbnail || '/default-cover.png';
+  };
+
+  // Trigger Mobile System Video Picture-in-Picture (for iPhone iOS / iPad / Android)
+  const triggerMobilePip = async () => {
+    if (!mobileVideoRef.current || !document.pictureInPictureEnabled) return;
+    try {
+      if (document.pictureInPictureElement) return;
+      updateMobileCanvas();
+      if (mobileCanvasRef.current && mobileVideoRef.current) {
+        if (!mobileVideoRef.current.srcObject) {
+          const stream = mobileCanvasRef.current.captureStream(15);
+          mobileVideoRef.current.srcObject = stream;
+        }
+        await mobileVideoRef.current.play().catch(() => {});
+        await mobileVideoRef.current.requestPictureInPicture();
+        setMobilePipActive(true);
+      }
+    } catch (e) {
+      console.log('Mobile PiP Error:', e);
+    }
+  };
+
   // Automatically launch OS Picture-in-Picture window when user switches browser tab or minimizes window while playing
   useEffect(() => {
     const handleVisibilityChange = async () => {
-      if (document.hidden && playing && track && !pipWindow) {
-        try {
-          await togglePipWindow();
-        } catch (e) {}
+      if (document.hidden && playing && track) {
+        if ('documentPictureInPicture' in window && !pipWindow) {
+          try { await togglePipWindow(); } catch (e) {}
+        } else if (!pipWindow && !mobilePipActive) {
+          try { await triggerMobilePip(); } catch (e) {}
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [playing, track, pipWindow]);
+  }, [playing, track, pipWindow, mobilePipActive]);
 
-  // MediaSession API Integration for OS & Browser Media Controls
+  // MediaSession API Integration for Mobile iOS & Android Lockscreen / Control Center Media Controls
   useEffect(() => {
     if ('mediaSession' in navigator && track) {
       try {
         navigator.mediaSession.metadata = new MediaMetadata({
           title: track.title,
           artist: track.artist || 'Aura Music',
-          album: 'Aura Music',
-          artwork: track.thumbnail ? [{ src: track.thumbnail, sizes: '512x512', type: 'image/png' }] : []
+          album: 'LittleLove Music',
+          artwork: track.thumbnail ? [
+            { src: track.thumbnail, sizes: '512x512', type: 'image/png' },
+            { src: track.thumbnail, sizes: '256x256', type: 'image/png' },
+            { src: track.thumbnail, sizes: '128x128', type: 'image/png' },
+          ] : []
         });
+
+        navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
+
+        if (dur && !isNaN(dur) && curTime !== undefined) {
+          try {
+            navigator.mediaSession.setPositionState({
+              duration: Math.max(0, dur),
+              playbackRate: 1,
+              position: Math.min(Math.max(0, curTime), dur)
+            });
+          } catch (e) {}
+        }
 
         navigator.mediaSession.setActionHandler('play', () => togglePlay());
         navigator.mediaSession.setActionHandler('pause', () => togglePlay());
@@ -1093,7 +1164,7 @@ export default function App() {
         console.error('MediaSession error:', e);
       }
     }
-  }, [track, playing]);
+  }, [track, playing, curTime, dur]);
 
   // Handle local avatar image upload from computer
   const handleAvatarFileUpload = (e) => {
@@ -3994,6 +4065,18 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* ── HIDDEN CANVAS & VIDEO FOR MOBILE iOS / ANDROID NATIVE SYSTEM PIP ─────────────────── */}
+      <canvas ref={mobileCanvasRef} width="480" height="480" className="hidden" />
+      <video
+        ref={mobileVideoRef}
+        className="hidden"
+        muted
+        playsInline
+        webkit-playsinline="true"
+        autoPictureInPicture
+        onLeavePictureInPicture={() => setMobilePipActive(false)}
+      />
 
       {/* ── FLOATING MINI PLAYER WIDGET (ADAPTIVE LAYOUT BASED ON WINDOW HEIGHT) ─────────────────── */}
       {pipWindow && track && createPortal(
