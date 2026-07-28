@@ -2609,7 +2609,16 @@ export default function App() {
                   {/* Playlist Cover Art Image / 2x2 Grid */}
                   <div className="shrink-0 relative group z-10">
                     {(() => {
-                      const thumbs = list.slice(0, 4).map(s => s.thumbnail).filter(Boolean);
+                      if (activePlaylist && activePlaylist.cover) {
+                        return (
+                          <img
+                            src={activePlaylist.cover}
+                            alt={activePlaylist.name}
+                            className="w-36 h-36 md:w-44 md:h-44 rounded-2xl md:rounded-3xl object-cover shadow-2xl shrink-0 border"
+                            style={{ border: `2.5px solid ${C.borderSel || C.border}` }}
+                          />
+                        );
+                      }
                       if (tab === 'favorites') {
                         return (
                           <div className="w-36 h-36 md:w-44 md:h-44 rounded-2xl md:rounded-3xl shadow-2xl flex flex-col items-center justify-center text-white shrink-0"
@@ -2619,6 +2628,7 @@ export default function App() {
                           </div>
                         );
                       }
+                      const thumbs = list.slice(0, 4).map(s => s.thumbnail).filter(Boolean);
                       if (thumbs.length >= 4) {
                         return (
                           <div className="w-36 h-36 md:w-44 md:h-44 rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl grid grid-cols-2 shrink-0 border"
