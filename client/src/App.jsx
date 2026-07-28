@@ -3059,113 +3059,6 @@ export default function App() {
                     <i className={`ri-chevron-down-s-line text-sm transition-transform duration-200 ${profileDropdown ? 'rotate-180' : ''}`} style={{ color: C.txtFad }}></i>
                   </div>
 
-                  {/* 🔔 Notification Bell Button & Dropdown Panel (Chuông thông báo giao diện) */}
-                  <div className="relative z-50 ml-1.5 md:ml-2">
-                    <button
-                      onClick={() => setShowNotifMenu(!showNotifMenu)}
-                      className={`relative p-2 rounded-full transition-all cursor-pointer hover:scale-110 active:scale-95 flex items-center justify-center ${unreadNotifsCount > 0 ? 'bell-ring-anim' : ''}`}
-                      style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
-                      title="Thông báo mở khóa giao diện & mùa lễ"
-                    >
-                      <i className={`text-base md:text-lg ${unreadNotifsCount > 0 ? 'ri-notification-3-fill text-amber-500' : 'ri-notification-3-line'}`}></i>
-                      {unreadNotifsCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center border border-white shadow-md">
-                          {unreadNotifsCount}
-                        </span>
-                      )}
-                    </button>
-
-                    {/* Dropdown Bảng Thông Báo ngay bên dưới Nút Chuông */}
-                    {showNotifMenu && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-40"
-                          onClick={() => setShowNotifMenu(false)}
-                        />
-                        <div
-                          className="absolute right-0 top-full mt-2.5 z-50 w-80 md:w-96 rounded-3xl p-4 shadow-2xl overflow-hidden transition-all duration-200"
-                          style={{
-                            background: C.isDark ? '#0f172a' : '#ffffff',
-                            border: `1.5px solid ${C.border}`,
-                            color: C.txt,
-                            boxShadow: '0 20px 50px rgba(0,0,0,0.35)'
-                          }}
-                        >
-                          <div className="flex items-center justify-between pb-3 mb-3 border-b" style={{ borderColor: C.border }}>
-                            <div className="flex items-center gap-2">
-                              <i className="ri-notification-badge-fill text-amber-500 text-lg"></i>
-                              <span className="font-bold text-sm">Thông Báo Giao Diện</span>
-                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500">
-                                {systemNotifs.length}
-                              </span>
-                            </div>
-                            {unreadNotifsCount > 0 && (
-                              <button
-                                onClick={markAllNotifsRead}
-                                className="text-[11px] font-semibold text-blue-500 hover:underline cursor-pointer"
-                              >
-                                Đánh dấu đã đọc
-                              </button>
-                            )}
-                          </div>
-
-                          <div className="flex flex-col gap-2.5 max-h-80 overflow-y-auto custom-scrollbar pr-1">
-                            {systemNotifs.length === 0 ? (
-                              <div className="py-8 text-center text-xs" style={{ color: C.txtFad }}>
-                                Không có thông báo nào mới.
-                              </div>
-                            ) : systemNotifs.map(notif => {
-                              const isRead = readNotifIds.includes(notif.id);
-                              const isCurrentTheme = themeKey === notif.themeKey;
-                              return (
-                                <div
-                                  key={notif.id}
-                                  onClick={() => {
-                                    setThemeKey(notif.themeKey);
-                                    markNotifRead(notif.id);
-                                    setShowNotifMenu(false);
-                                  }}
-                                  className={`p-3 rounded-2xl border transition-all cursor-pointer flex gap-3 items-start relative group hover:scale-[1.02] ${!isRead ? 'bg-amber-500/5' : ''}`}
-                                  style={{
-                                    borderColor: isCurrentTheme ? C.primarySolid : C.border,
-                                    background: isCurrentTheme ? C.tag : (C.isDark ? 'rgba(30,41,59,0.6)' : '#f8fafc')
-                                  }}
-                                >
-                                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-sm"
-                                    style={{ background: THEMES[notif.themeKey]?.bg || C.primary, color: '#fff' }}>
-                                    {notif.icon}
-                                  </div>
-                                  <div className="flex flex-col flex-1 min-w-0">
-                                    <div className="flex items-center justify-between gap-1 mb-0.5">
-                                      <span className="text-xs font-bold truncate" style={{ color: isCurrentTheme ? C.primarySolid : C.txt }}>
-                                        {notif.title}
-                                      </span>
-                                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full shrink-0"
-                                        style={{ background: notif.tagBg, color: notif.tagColor }}>
-                                        {notif.tag}
-                                      </span>
-                                    </div>
-                                    <p className="text-[11px] leading-snug line-clamp-2" style={{ color: C.txtSub }}>
-                                      {notif.message}
-                                    </p>
-                                    <div className="mt-1.5 flex items-center justify-between text-[10px]">
-                                      <span className="font-bold text-emerald-500 flex items-center gap-1">
-                                        {isCurrentTheme ? '✓ Đang kích hoạt' : '👉 Bấm để áp dụng ngay'}
-                                      </span>
-                                      {!isRead && (
-                                        <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-
                   {/* Dropdown Bảng Sửa Hồ Sơ Cá Nhân ngay bên dưới Avatar */}
                   {profileDropdown && (
                     <>
@@ -3389,6 +3282,113 @@ export default function App() {
                   <i className="ri-lock-line"></i> <span className="hidden md:inline">Đăng Nhập</span>
                 </button>
               )}
+
+              {/* 🔔 Notification Bell Button & Dropdown Panel (Đặt ngang hàng ở cuối hàng) */}
+              <div className="relative z-50">
+                <button
+                  onClick={() => setShowNotifMenu(!showNotifMenu)}
+                  className={`relative p-2 rounded-full transition-all cursor-pointer hover:scale-110 active:scale-95 flex items-center justify-center ${unreadNotifsCount > 0 ? 'bell-ring-anim' : ''}`}
+                  style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                  title="Thông báo mở khóa giao diện & mùa lễ"
+                >
+                  <i className={`text-base md:text-lg ${unreadNotifsCount > 0 ? 'ri-notification-3-fill text-amber-500' : 'ri-notification-3-line'}`}></i>
+                  {unreadNotifsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center border border-white shadow-md">
+                      {unreadNotifsCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Dropdown Bảng Thông Báo ngay bên dưới Nút Chuông */}
+                {showNotifMenu && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowNotifMenu(false)}
+                    />
+                    <div
+                      className="absolute right-0 top-full mt-2.5 z-50 w-80 md:w-96 rounded-3xl p-4 shadow-2xl overflow-hidden transition-all duration-200"
+                      style={{
+                        background: C.isDark ? '#0f172a' : '#ffffff',
+                        border: `1.5px solid ${C.border}`,
+                        color: C.txt,
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.35)'
+                      }}
+                    >
+                      <div className="flex items-center justify-between pb-3 mb-3 border-b" style={{ borderColor: C.border }}>
+                        <div className="flex items-center gap-2">
+                          <i className="ri-notification-badge-fill text-amber-500 text-lg"></i>
+                          <span className="font-bold text-sm">Thông Báo Giao Diện</span>
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500">
+                            {systemNotifs.length}
+                          </span>
+                        </div>
+                        {unreadNotifsCount > 0 && (
+                          <button
+                            onClick={markAllNotifsRead}
+                            className="text-[11px] font-semibold text-blue-500 hover:underline cursor-pointer"
+                          >
+                            Đánh dấu đã đọc
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-2.5 max-h-80 overflow-y-auto custom-scrollbar pr-1">
+                        {systemNotifs.length === 0 ? (
+                          <div className="py-8 text-center text-xs" style={{ color: C.txtFad }}>
+                            Không có thông báo nào mới.
+                          </div>
+                        ) : systemNotifs.map(notif => {
+                          const isRead = readNotifIds.includes(notif.id);
+                          const isCurrentTheme = themeKey === notif.themeKey;
+                          return (
+                            <div
+                              key={notif.id}
+                              onClick={() => {
+                                setThemeKey(notif.themeKey);
+                                markNotifRead(notif.id);
+                                setShowNotifMenu(false);
+                              }}
+                              className={`p-3 rounded-2xl border transition-all cursor-pointer flex gap-3 items-start relative group hover:scale-[1.02] ${!isRead ? 'bg-amber-500/5' : ''}`}
+                              style={{
+                                borderColor: isCurrentTheme ? C.primarySolid : C.border,
+                                background: isCurrentTheme ? C.tag : (C.isDark ? 'rgba(30,41,59,0.6)' : '#f8fafc')
+                              }}
+                            >
+                              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-sm"
+                                style={{ background: THEMES[notif.themeKey]?.bg || C.primary, color: '#fff' }}>
+                                {notif.icon}
+                              </div>
+                              <div className="flex flex-col flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1 mb-0.5">
+                                  <span className="text-xs font-bold truncate" style={{ color: isCurrentTheme ? C.primarySolid : C.txt }}>
+                                    {notif.title}
+                                  </span>
+                                  <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full shrink-0"
+                                    style={{ background: notif.tagBg, color: notif.tagColor }}>
+                                    {notif.tag}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] leading-snug line-clamp-2" style={{ color: C.txtSub }}>
+                                  {notif.message}
+                                </p>
+                                <div className="mt-1.5 flex items-center justify-between text-[10px]">
+                                  <span className="font-bold text-emerald-500 flex items-center gap-1">
+                                    {isCurrentTheme ? '✓ Đang kích hoạt' : '👉 Bấm để áp dụng ngay'}
+                                  </span>
+                                  {!isRead && (
+                                    <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </header>
 
