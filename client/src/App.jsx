@@ -2086,7 +2086,7 @@ export default function App() {
               </button>
 
               {/* Search */}
-              <div className="relative w-full max-w-[140px] sm:max-w-[180px] md:w-72 z-10">
+              <div className="relative w-full max-w-[140px] sm:max-w-[180px] md:w-60 z-10">
                 <i className="ri-search-line absolute left-3 top-2 text-xs md:text-sm md:left-3.5 md:top-2.5" style={{ color: C.txtFad }}></i>
                 <input type="text" placeholder="Tìm kiếm..."
                   value={query} onChange={e => setQuery(e.target.value)}
@@ -2094,33 +2094,34 @@ export default function App() {
                   style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
                 />
               </div>
-            </div>
 
-            {/* Floating Sticky Play Button + Playlist Name when scrolled down */}
-            {mainScrollTop > 140 && (activePlaylist || tab === 'favorites' || tab === 'library') ? (
-              <div className="hidden md:flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200 z-20 pointer-events-auto">
-                {list.length > 0 && (
-                  <button
-                    onClick={() => play(list[0], list)}
-                    title="Phát danh sách phát này"
-                    className="w-10 h-10 rounded-full text-white shadow-md flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0"
-                    style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
-                  >
-                    <i className="ri-play-fill text-xl ml-0.5"></i>
-                  </button>
-                )}
-                <span className="text-sm md:text-xl font-extrabold truncate max-w-[200px] lg:max-w-[340px]" style={{ color: C.txt, fontFamily: F.heading }}>
-                  {tab === 'favorites' ? 'Bài Hát Đã Thích' : activePlaylist ? activePlaylist.name : 'Thư Viện Nhạc'}
-                </span>
-              </div>
-            ) : (
-              user && (
-                <div className="hidden md:flex absolute left-[45%] top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none items-center justify-center">
-                  <span className="text-3xl lg:text-4xl font-extrabold" style={{ color: C.primarySolid, fontFamily: F.cursive, textShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
-                    {user.name}
+              {/* Floating Sticky Play Button + Playlist Name (Chỉ hiện khi lướt xuống hết banner > 280px) */}
+              {mainScrollTop > 280 && (activePlaylist || tab === 'favorites' || tab === 'library') && (
+                <div className="flex items-center gap-2.5 animate-in fade-in slide-in-from-left-3 duration-200 z-20 pointer-events-auto shrink-0">
+                  {list.length > 0 && (
+                    <button
+                      onClick={() => play(list[0], list)}
+                      title="Phát danh sách phát này"
+                      className="w-9 h-9 md:w-10 md:h-10 rounded-full text-white shadow-md flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0"
+                      style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
+                    >
+                      <i className="ri-play-fill text-lg md:text-xl ml-0.5"></i>
+                    </button>
+                  )}
+                  <span className="text-xs md:text-sm font-extrabold truncate max-w-[120px] lg:max-w-[180px]" style={{ color: C.txt, fontFamily: F.heading }}>
+                    {tab === 'favorites' ? 'Bài Hát Đã Thích' : activePlaylist ? activePlaylist.name : 'Thư Viện Nhạc'}
                   </span>
                 </div>
-              )
+              )}
+            </div>
+
+            {/* User Name in center - Always retained */}
+            {user && (
+              <div className="hidden md:flex absolute left-[48%] top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none items-center justify-center">
+                <span className="text-3xl lg:text-4xl font-extrabold" style={{ color: C.primarySolid, fontFamily: F.cursive, textShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
+                  {user.name}
+                </span>
+              </div>
             )}
 
             <div className="flex items-center gap-1.5 md:gap-3 z-10 shrink-0">
