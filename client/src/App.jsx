@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
 import BubbleCanvas from './components/BubbleCanvas';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+
 
 // ─── Typography ──────────────────────────────────────────
 const F = {
@@ -2709,132 +2711,105 @@ export default function App() {
                   </div>
                 ) : statsData ? (<>
 
-                  {/* ── USERS STATS CARDS ── */}
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: C.txtSub }}>👤 Người Dùng</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                      {[
-                        { label: 'Tổng cộng', value: statsData.users.total, icon: 'ri-team-fill', color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
-                        { label: 'Đang Online', value: statsData.users.online, icon: 'ri-wifi-fill', color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
-                        { label: 'Bị Khóa', value: statsData.users.locked, icon: 'ri-lock-fill', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
-                        { label: 'Mới Hôm Nay', value: statsData.users.newToday, icon: 'ri-user-add-fill', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-                        { label: 'Mới 7 Ngày', value: statsData.users.newWeek, icon: 'ri-calendar-fill', color: '#06b6d4', bg: 'rgba(6,182,212,0.12)' },
-                        { label: 'Mới Tháng Này', value: statsData.users.newMonth, icon: 'ri-calendar-2-fill', color: '#a855f7', bg: 'rgba(168,85,247,0.12)' },
-                      ].map(card => (
-                        <div key={card.label} className="p-4 rounded-2xl flex flex-col gap-2 shadow-sm" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center text-base" style={{ background: card.bg, color: card.color }}>
-                            <i className={card.icon} />
-                          </div>
-                          <span className="text-2xl font-black" style={{ color: C.txt }}>{card.value}</span>
-                          <span className="text-[10px] font-semibold leading-tight" style={{ color: C.txtSub }}>{card.label}</span>
+                  {/* ── SUMMARY CARDS ── */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
+                    {[
+                      { label: 'Tổng Người Dùng', value: statsData.users.total, icon: 'ri-team-fill', color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
+                      { label: 'Tổng Bài Hát', value: statsData.songs.total, icon: 'ri-music-2-fill', color: '#a855f7', bg: 'rgba(168,85,247,0.12)' },
+                      { label: 'Tổng Playlist', value: statsData.playlists.total, icon: 'ri-play-list-fill', color: '#ec4899', bg: 'rgba(236,72,153,0.12)' },
+                    ].map(card => (
+                      <div key={card.label} className="p-5 rounded-2xl flex items-center gap-4 shadow-sm" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl" style={{ background: card.bg, color: card.color }}>
+                          <i className={card.icon} />
                         </div>
-                      ))}
+                        <div className="flex flex-col">
+                          <span className="text-3xl font-black leading-none" style={{ color: C.txt }}>{card.value}</span>
+                          <span className="text-xs font-semibold mt-1" style={{ color: C.txtSub }}>{card.label}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* ── DAILY ACTIVE USERS CHART ── */}
+                  <div className="p-5 rounded-2xl shadow-sm" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                    <div className="flex items-center gap-2 mb-6">
+                      <i className="ri-line-chart-line text-lg" style={{ color: '#06b6d4' }} />
+                      <h3 className="text-base font-bold" style={{ color: C.txt }}>Lượng Người Dùng Hoạt Động Theo Ngày (30 ngày)</h3>
+                    </div>
+                    <div className="h-72 w-full">
+                      {statsData.dailyActiveUsersChart?.length === 0 ? (
+                        <div className="h-full flex items-center justify-center">
+                          <p className="text-sm" style={{ color: C.txtSub }}>Chưa có dữ liệu hoạt động</p>
+                        </div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={statsData.dailyActiveUsersChart} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
+                            <XAxis 
+                              dataKey="date" 
+                              stroke={C.txtSub} 
+                              fontSize={11}
+                              tickLine={false}
+                              axisLine={false}
+                              tickFormatter={(val) => {
+                                const d = new Date(val);
+                                return `${d.getDate()}/${d.getMonth()+1}`;
+                              }}
+                            />
+                            <YAxis 
+                              stroke={C.txtSub} 
+                              fontSize={11}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <RechartsTooltip 
+                              contentStyle={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: '12px', color: C.txt }}
+                              itemStyle={{ color: '#06b6d4', fontWeight: 'bold' }}
+                              labelStyle={{ color: C.txtSub, marginBottom: '4px' }}
+                            />
+                            <Area type="monotone" dataKey="count" name="Người dùng" stroke="#06b6d4" strokeWidth={3} fillOpacity={1} fill="url(#colorActive)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      )}
                     </div>
                   </div>
 
-                  {/* ── SONGS & PLAYLISTS CARDS ── */}
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: C.txtSub }}>🎵 Bài Hát & Playlist</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {[
-                        { label: 'Tổng Bài Hát', value: statsData.songs.total, icon: 'ri-music-2-fill', color: '#a855f7', bg: 'rgba(168,85,247,0.12)' },
-                        { label: 'Mới Hôm Nay', value: statsData.songs.newToday, icon: 'ri-music-fill', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-                        { label: 'Mới 7 Ngày', value: statsData.songs.newWeek, icon: 'ri-rhythm-fill', color: '#06b6d4', bg: 'rgba(6,182,212,0.12)' },
-                        { label: 'Tổng Playlist', value: statsData.playlists.total, icon: 'ri-play-list-fill', color: '#ec4899', bg: 'rgba(236,72,153,0.12)' },
-                      ].map(card => (
-                        <div key={card.label} className="p-4 rounded-2xl flex flex-col gap-2 shadow-sm" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center text-base" style={{ background: card.bg, color: card.color }}>
-                            <i className={card.icon} />
-                          </div>
-                          <span className="text-2xl font-black" style={{ color: C.txt }}>{card.value}</span>
-                          <span className="text-[10px] font-semibold leading-tight" style={{ color: C.txtSub }}>{card.label}</span>
-                        </div>
-                      ))}
+                  {/* ── TOP ACTIVE USERS ── */}
+                  <div className="p-5 rounded-2xl shadow-sm" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                    <div className="flex items-center gap-2 mb-6">
+                      <i className="ri-timer-flash-fill text-lg" style={{ color: '#f59e0b' }} />
+                      <h3 className="text-base font-bold" style={{ color: C.txt }}>Top Người Dùng Hoạt Động (Thời Gian Sử Dụng)</h3>
                     </div>
-                  </div>
-
-                  {/* ── 3-COLUMN TABLES ── */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-                    {/* Top bài hát được yêu thích nhất */}
-                    <div className="p-5 rounded-2xl flex flex-col gap-3" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
-                      <p className="text-xs font-bold uppercase tracking-widest" style={{ color: C.txtSub }}>❤️ Bài Hát Yêu Thích Nhất</p>
-                      {statsData.topFavSongs.length === 0 ? (
-                        <p className="text-xs" style={{ color: C.txtSub }}>Chưa có dữ liệu</p>
-                      ) : statsData.topFavSongs.map((s, i) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <span className="text-xs font-black w-5 text-center" style={{ color: C.txtSub }}>#{i + 1}</span>
-                          <img src={s.thumbnail} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold truncate" style={{ color: C.txt }}>{s.title}</p>
-                            <p className="text-[10px] truncate" style={{ color: C.txtSub }}>{s.artist}</p>
+                    <div className="flex flex-col gap-3">
+                      {statsData.topActiveUsers?.length === 0 ? (
+                        <p className="text-sm" style={{ color: C.txtSub }}>Chưa có dữ liệu thời gian</p>
+                      ) : statsData.topActiveUsers.map((u, i) => (
+                        <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl gap-4 transition hover:opacity-95" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+                          <div className="flex items-center gap-4">
+                            <span className="text-lg font-black w-6 text-center" style={{ color: i < 3 ? '#f59e0b' : C.txtSub }}>#{i + 1}</span>
+                            <img src={u.avatar} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold" style={{ color: C.txt }}>{u.name}</span>
+                              <span className="text-[10px]" style={{ color: C.txtSub }}>{u.email}</span>
+                            </div>
                           </div>
-                          <span className="text-xs font-black shrink-0" style={{ color: '#ec4899' }}>❤️ {s.count}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Top người dùng tích cực */}
-                    <div className="p-5 rounded-2xl flex flex-col gap-3" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
-                      <p className="text-xs font-bold uppercase tracking-widest" style={{ color: C.txtSub }}>🏆 Người Dùng Tích Cực Nhất</p>
-                      {statsData.topUsers.length === 0 ? (
-                        <p className="text-xs" style={{ color: C.txtSub }}>Chưa có dữ liệu</p>
-                      ) : statsData.topUsers.map((u, i) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <span className="text-xs font-black w-5 text-center" style={{ color: C.txtSub }}>#{i + 1}</span>
-                          <div className="relative shrink-0">
-                            <img src={u.avatar} alt="" className="w-9 h-9 rounded-lg object-cover" />
-                            <span style={{
-                              position: 'absolute', bottom: -2, right: -2, width: 8, height: 8,
-                              borderRadius: '50%', background: u.isOnline ? '#22c55e' : '#6b7280',
-                              boxShadow: u.isOnline ? '0 0 4px #22c55e' : 'none', border: '1.5px solid #000'
-                            }} />
+                          <div className="flex items-center gap-2 shrink-0">
+                            <i className="ri-time-line" style={{ color: '#f59e0b' }}></i>
+                            <span className="text-sm font-bold" style={{ color: C.txt }}>
+                              {u.totalActiveTime < 60 
+                                ? `${u.totalActiveTime} giây` 
+                                : u.totalActiveTime < 3600
+                                  ? `${Math.floor(u.totalActiveTime / 60)} phút ${u.totalActiveTime % 60} giây`
+                                  : `${Math.floor(u.totalActiveTime / 3600)} giờ ${Math.floor((u.totalActiveTime % 3600) / 60)} phút`
+                              }
+                            </span>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold truncate" style={{ color: C.txt }}>{u.name}</p>
-                            <p className="text-[10px] truncate" style={{ color: C.txtSub }}>{u.email}</p>
-                          </div>
-                          <span className="text-xs font-black shrink-0" style={{ color: '#f59e0b' }}>❤️ {u.favCount}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Top nghệ sĩ */}
-                    <div className="p-5 rounded-2xl flex flex-col gap-3" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
-                      <p className="text-xs font-bold uppercase tracking-widest" style={{ color: C.txtSub }}>🎤 Nghệ Sĩ Nhiều Bài Nhất</p>
-                      {statsData.topArtists.length === 0 ? (
-                        <p className="text-xs" style={{ color: C.txtSub }}>Chưa có dữ liệu</p>
-                      ) : statsData.topArtists.map((a, i) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <span className="text-xs font-black w-5 text-center" style={{ color: C.txtSub }}>#{i + 1}</span>
-                          <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0" style={{ background: 'rgba(168,85,247,0.15)', color: '#a855f7' }}>
-                            <i className="ri-user-voice-fill" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold truncate" style={{ color: C.txt }}>{a.name}</p>
-                          </div>
-                          <span className="text-xs font-black shrink-0" style={{ color: '#a855f7' }}>{a.count} bài</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* ── Bài hát mới nhất ── */}
-                  <div className="p-5 rounded-2xl" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
-                    <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: C.txtSub }}>🆕 Bài Hát Mới Thêm Gần Đây</p>
-                    <div className="flex flex-col gap-2">
-                      {statsData.recentSongs.length === 0 ? (
-                        <p className="text-xs" style={{ color: C.txtSub }}>Chưa có bài hát nào</p>
-                      ) : statsData.recentSongs.map((s, i) => (
-                        <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl" style={{ background: C.surface }}>
-                          <img src={s.thumbnail} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold truncate" style={{ color: C.txt }}>{s.title}</p>
-                            <p className="text-[10px] truncate" style={{ color: C.txtSub }}>{s.artist}</p>
-                          </div>
-                          <span className="text-[10px] shrink-0" style={{ color: C.txtSub }}>
-                            {s.createdAt ? new Date(s.createdAt).toLocaleDateString('vi-VN') : '—'}
-                          </span>
                         </div>
                       ))}
                     </div>

@@ -9,6 +9,7 @@ const Music = require('../models/Music');
 const Playlist = require('../models/Playlist');
 const Favorite = require('../models/Favorite');
 const RecentlyPlayed = require('../models/RecentlyPlayed');
+const DailyStat = require('../models/DailyStat');
 const auth = require('../middleware/auth');
 
 // --- AUTH ROUTES ---
@@ -110,10 +111,21 @@ router.get('/auth/me', auth, async (req, res) => {
   }
 });
 
-// Dedicated heartbeat endpoint - called every 30s by active clients only
+// Dedicated heartbeat endpoint - called every 5s by active clients only
 router.post('/auth/heartbeat', auth, async (req, res) => {
   try {
-    await User.findByIdAndUpdate(req.user.id, { lastSeen: new Date() });
+    const today = new Date().toISOString().split('T')[0];
+    await Promise.all([
+      User.findByIdAndUpdate(req.user.id, { 
+        lastSeen: new Date(),
+        $inc: { totalActiveTime: 5 } // Increment by 5 seconds
+      }),
+      DailyStat.findOneAndUpdate(
+        { date: today },
+        { $addToSet: { activeUsers: req.user.id } },
+        { upsert: true }
+      )
+    ]);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -147,91 +159,43 @@ router.get('/admin/users', async (req, res) => {
 router.get('/admin/stats', async (req, res) => {
   try {
     const now = new Date();
-    const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
-    const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - 6); startOfWeek.setHours(0, 0, 0, 0);
-    const startOfMonth = new Date(now); startOfMonth.setDate(1); startOfMonth.setHours(0, 0, 0, 0);
-    const onlineThreshold = new Date(now.getTime() - 15 * 1000); // 15s
 
     const [
       totalUsers,
-      onlineUsers,
-      lockedUsers,
-      newUsersToday,
-      newUsersWeek,
-      newUsersMonth,
       totalSongs,
-      newSongsToday,
-      newSongsWeek,
       totalPlaylists,
       allUsers,
-      allSongs
+      thirtyDaysStats
     ] = await Promise.all([
       User.countDocuments(),
-      User.countDocuments({ lastSeen: { $gte: onlineThreshold } }),
-      User.countDocuments({ isLocked: true }),
-      User.countDocuments({ createdAt: { $gte: startOfToday } }),
-      User.countDocuments({ createdAt: { $gte: startOfWeek } }),
-      User.countDocuments({ createdAt: { $gte: startOfMonth } }),
       Music.countDocuments(),
-      Music.countDocuments({ createdAt: { $gte: startOfToday } }),
-      Music.countDocuments({ createdAt: { $gte: startOfWeek } }),
       Playlist.countDocuments(),
-      User.find().select('name avatar email favorites lastSeen createdAt role isLocked').sort({ createdAt: -1 }),
-      Music.find().select('title artist thumbnail duration createdAt addedBy').sort({ createdAt: -1 }).limit(100)
+      User.find().select('name avatar email totalActiveTime role').sort({ totalActiveTime: -1 }).limit(10),
+      DailyStat.find().sort({ date: -1 }).limit(30)
     ]);
 
-    // Top 5 most favorited songs (count how many users have each song in favorites)
-    const favCounts = {};
-    allUsers.forEach(u => {
-      (u.favorites || []).forEach(songId => {
-        favCounts[songId] = (favCounts[songId] || 0) + 1;
-      });
-    });
-    const topFavSongIds = Object.entries(favCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([id, count]) => ({ id, count }));
-    const topFavSongs = topFavSongIds.map(({ id, count }) => {
-      const song = allSongs.find(s => String(s._id) === String(id));
-      return song ? { title: song.title, artist: song.artist, thumbnail: song.thumbnail, count } : null;
-    }).filter(Boolean);
+    // Top 10 users by totalActiveTime
+    const topActiveUsers = allUsers.map(u => ({
+      _id: u._id,
+      name: u.name,
+      avatar: u.avatar,
+      email: u.email,
+      totalActiveTime: u.totalActiveTime || 0,
+      role: u.role
+    }));
 
-    // Top 5 most active users (by favorites count)
-    const topUsers = [...allUsers]
-      .sort((a, b) => (b.favorites?.length || 0) - (a.favorites?.length || 0))
-      .slice(0, 5)
-      .map(u => ({
-        name: u.name,
-        avatar: u.avatar,
-        email: u.email,
-        favCount: u.favorites?.length || 0,
-        isOnline: u.lastSeen && new Date(u.lastSeen) >= onlineThreshold,
-        role: u.role
-      }));
-
-    // Top artists by song count
-    const artistCounts = {};
-    allSongs.forEach(s => {
-      if (s.artist) artistCounts[s.artist] = (artistCounts[s.artist] || 0) + 1;
-    });
-    const topArtists = Object.entries(artistCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([name, count]) => ({ name, count }));
-
-    // Recently added songs (last 5)
-    const recentSongs = allSongs.slice(0, 5).map(s => ({
-      title: s.title, artist: s.artist, thumbnail: s.thumbnail, createdAt: s.createdAt
+    // Chart data for daily active users
+    const dailyActiveUsersChart = thirtyDaysStats.reverse().map(stat => ({
+      date: stat.date,
+      count: stat.activeUsers.length
     }));
 
     res.json({
-      users: { total: totalUsers, online: onlineUsers, locked: lockedUsers, newToday: newUsersToday, newWeek: newUsersWeek, newMonth: newUsersMonth },
-      songs: { total: totalSongs, newToday: newSongsToday, newWeek: newSongsWeek },
+      users: { total: totalUsers },
+      songs: { total: totalSongs },
       playlists: { total: totalPlaylists },
-      topFavSongs,
-      topUsers,
-      topArtists,
-      recentSongs,
+      topActiveUsers,
+      dailyActiveUsersChart,
       generatedAt: now
     });
   } catch (err) {

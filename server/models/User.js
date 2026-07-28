@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
   isLocked: { type: Boolean, default: false },
   lastSeen: { type: Date, default: null },
+  totalActiveTime: { type: Number, default: 0 },
   favorites: [{ type: String }],
   createdAt: { type: Date, default: Date.now }
 });
