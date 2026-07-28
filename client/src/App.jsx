@@ -556,6 +556,50 @@ const THEMES = {
   }
 };
 
+const getHolidayThemeStatus = (tKey, isAdminUser) => {
+  const now = new Date();
+  const m = now.getMonth(); // 0 = Jan, 11 = Dec
+  const d = now.getDate();
+
+  let isDateActive = true;
+  let periodText = '';
+  let holidayLabel = '';
+
+  if (tKey === 'christmas') {
+    isDateActive = (m === 11 && d >= 15);
+    periodText = '15/12 - 31/12';
+    holidayLabel = 'Giáng Sinh';
+  } else if (tKey === 'tet_holiday') {
+    isDateActive = ((m === 0 && d >= 15) || m === 1);
+    periodText = '15/01 - 28/02';
+    holidayLabel = 'Tết Nguyên Đán';
+  } else if (tKey === 'mid_autumn') {
+    isDateActive = (m === 8);
+    periodText = 'Tháng 9';
+    holidayLabel = 'Trung Thu';
+  } else if (tKey === 'halloween') {
+    isDateActive = (m === 9 && d >= 15);
+    periodText = '15/10 - 31/10';
+    holidayLabel = 'Halloween';
+  } else if (tKey === 'autumn_season') {
+    isDateActive = (m >= 8 && m <= 10);
+    periodText = 'Tháng 9 - 11';
+    holidayLabel = 'Mùa Thu';
+  } else if (tKey === 'summer_season') {
+    isDateActive = (m >= 5 && m <= 7);
+    periodText = 'Tháng 6 - 8';
+    holidayLabel = 'Mùa Hè';
+  }
+
+  const isLocked = !isDateActive && !isAdminUser;
+  return {
+    isDateActive,
+    isLocked,
+    periodText,
+    holidayLabel
+  };
+};
+
 
 
 // ─── Cyber Music Fish Component (Chú cá đeo tai nghe phát nhạc) ───
@@ -864,6 +908,7 @@ export default function App() {
 
   // Profile Dropdown & Theme Modal States
   const [themeModal, setThemeModal] = useState(false);
+  const [lockedThemeNotice, setLockedThemeNotice] = useState('');
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSavedMsg, setProfileSavedMsg] = useState('');
@@ -3844,11 +3889,19 @@ export default function App() {
                   .filter(t => t.category === themeCategory)
                   .map(t => {
                     const isSelected = themeKey === t.key;
+                    const status = getHolidayThemeStatus(t.key, isAdmin);
                     return (
                       <div
                         key={t.key}
-                        onClick={() => setThemeKey(t.key)}
-                        className="flex items-center gap-2.5 p-2.5 rounded-2xl cursor-pointer transition-all border relative overflow-hidden group"
+                        onClick={() => {
+                          if (status.isLocked) {
+                            setLockedThemeNotice(`🔒 Giao diện "${t.name}" đang tạm khóa! Tự động mở vào đúng dịp ${status.holidayLabel} (${status.periodText}).`);
+                          } else {
+                            setLockedThemeNotice('');
+                            setThemeKey(t.key);
+                          }
+                        }}
+                        className={`flex items-center gap-2.5 p-2.5 rounded-2xl cursor-pointer transition-all border relative overflow-hidden group ${status.isLocked ? 'opacity-65 grayscale-[20%]' : ''}`}
                         style={{
                           background: isSelected ? (t.tag || C.tag) : (C.isDark ? '#0f172a' : '#fff'),
                           borderColor: isSelected ? (t.primarySolid || C.primarySolid) : C.border,
@@ -3856,16 +3909,29 @@ export default function App() {
                         }}
                       >
                         <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center text-base shadow-sm shrink-0 ${t.isAnimated ? 'theme-preview-swatch' : ''}`}
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center text-base shadow-sm shrink-0 relative ${t.isAnimated ? 'theme-preview-swatch' : ''}`}
                           style={{ background: t.isAnimated ? t.bg : t.primary, color: '#fff' }}
                         >
                           {t.icon}
+                          {status.isLocked && (
+                            <div className="absolute -top-1 -right-1 bg-black/80 text-amber-400 rounded-full w-4 h-4 text-[9px] flex items-center justify-center border border-amber-400/50 shadow-xs">
+                              🔒
+                            </div>
+                          )}
                         </div>
                         <div className="flex flex-col overflow-hidden flex-1 min-w-0">
                           <span className="text-xs font-bold truncate" style={{ color: isSelected ? (t.primarySolid || C.primarySolid) : C.txt }}>
                             {t.name}
                           </span>
-                          {t.isAnimated ? (
+                          {status.isLocked ? (
+                            <span className="text-[9px] font-bold text-amber-500/90 dark:text-amber-400 flex items-center gap-0.5 mt-0.5 truncate">
+                              🔒 Mở dịp {status.periodText}
+                            </span>
+                          ) : t.category === 'seasonal' && !status.isDateActive && isAdmin ? (
+                            <span className="text-[9px] font-bold text-blue-500 dark:text-blue-400 flex items-center gap-0.5 mt-0.5 truncate">
+                              🔑 Admin (Dịp {status.periodText})
+                            </span>
+                          ) : t.isAnimated ? (
                             <span className="text-[9px] font-bold text-emerald-500 dark:text-emerald-400 flex items-center gap-0.5 mt-0.5">
                               <i className="ri-pulse-fill text-[10px] animate-pulse"></i> Chuyển màu động
                             </span>
@@ -3880,6 +3946,12 @@ export default function App() {
                     );
                   })}
               </div>
+
+              {lockedThemeNotice && (
+                <div className="p-3 rounded-2xl text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-500 animate-in fade-in duration-200 text-center">
+                  {lockedThemeNotice}
+                </div>
+              )}
 
               {/* Submit / Cancel Actions */}
               <div className="flex gap-3 pt-3 mt-2" style={{ borderTop: `1.5px solid ${C.border}` }}>
