@@ -78,6 +78,19 @@ const deleteSong = async (req, res) => {
   }
 };
 
+const deleteBatchSongs = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Danh sách ID không hợp lệ.' });
+    }
+    await Music.deleteMany({ id: { $in: ids } });
+    res.json({ message: 'Batch songs removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const addPlaylist = async (req, res) => {
   try {
     const { playlistUrl, addedBy, inLibrary } = req.body;
@@ -243,4 +256,4 @@ const addSpotifyPlaylist = async (req, res) => {
   }
 };
 
-module.exports = { getSongs, parseYouTubeUrl, addSong, deleteSong, searchYouTube, addPlaylist, addSpotifyPlaylist };
+module.exports = { getSongs, parseYouTubeUrl, addSong, deleteSong, deleteBatchSongs, searchYouTube, addPlaylist, addSpotifyPlaylist };

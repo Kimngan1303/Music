@@ -664,6 +664,11 @@ export default function App() {
   const [pwdSaving, setPwdSaving] = useState(false);
   const [pwdMsg, setPwdMsg] = useState({ text: '', type: '' });
 
+  // Batch Select States
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedSongIds, setSelectedSongIds] = useState([]);
+  const [confirmBatchDeleteModal, setConfirmBatchDeleteModal] = useState(false);
+
   // Reload songs and favs when user logs in or out
   useEffect(() => {
     const uid = user?._id || 'guest';
@@ -869,6 +874,79 @@ export default function App() {
     } finally {
       setPwdSaving(false);
     }
+  };
+
+  // Batch Select Helper Functions
+  const toggleSelectSong = (songId) => {
+    setSelectedSongIds(prev =>
+      prev.includes(songId) ? prev.filter(id => id !== songId) : [...prev, songId]
+    );
+  };
+
+  const handleToggleSelectAll = (currentList) => {
+    const currentIds = currentList.map(s => s.id);
+    const isAllSelected = currentIds.length > 0 && currentIds.every(id => selectedSongIds.includes(id));
+    if (isAllSelected) {
+      setSelectedSongIds(prev => prev.filter(id => !currentIds.includes(id)));
+    } else {
+      setSelectedSongIds(prev => Array.from(new Set([...prev, ...currentIds])));
+    }
+  };
+
+  const handleBatchFavorite = () => {
+    if (selectedSongIds.length === 0) return;
+    setFavs(prev => {
+      const allSelectedAreFavs = selectedSongIds.every(id => prev.includes(id));
+      let updated;
+      if (allSelectedAreFavs) {
+        updated = prev.filter(id => !selectedSongIds.includes(id));
+      } else {
+        updated = Array.from(new Set([...prev, ...selectedSongIds]));
+      }
+
+      const uid = user?._id || 'guest';
+      localStorage.setItem(favsKey(uid), JSON.stringify(updated));
+
+      const token = user?.token || localStorage.getItem('aura_token');
+      if (token) {
+        axios.put('/api/auth/profile', { favorites: updated }, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(err => console.error("Failed to sync favorites", err));
+      }
+      return updated;
+    });
+  };
+
+  const handleConfirmBatchDelete = async () => {
+    if (selectedSongIds.length === 0) return;
+    const idsToDelete = [...selectedSongIds];
+
+    if (activePlaylist) {
+      // Remove batch from current active playlist
+      try {
+        const remainingSongIds = (activePlaylist.songs || []).filter(id => !idsToDelete.includes(id));
+        await axios.put(`/api/playlists/${activePlaylist._id}/songs`, { songs: remainingSongIds });
+        setPlaylists(prev => prev.map(p => p._id === activePlaylist._id ? { ...p, songs: remainingSongIds } : p));
+      } catch (err) {
+        console.error("Batch delete from playlist error:", err);
+      }
+    } else {
+      // Delete batch from main library
+      setSongs(prev => prev.filter(s => !idsToDelete.includes(s.id)));
+      const uid = user?._id || 'guest';
+      const updatedSongs = songs.filter(s => !idsToDelete.includes(s.id));
+      localStorage.setItem(songsKey(uid), JSON.stringify(updatedSongs));
+
+      try {
+        await axios.post('/api/music/batch-delete', { ids: idsToDelete });
+      } catch (err) {
+        console.error("Batch delete API error:", err);
+      }
+    }
+
+    setSelectedSongIds([]);
+    setIsSelectMode(false);
+    setConfirmBatchDeleteModal(false);
   };
 
   // Handle local avatar image upload from computer
@@ -2502,15 +2580,33 @@ export default function App() {
                     {list.length} bài
                   </span>
                   {list.length > 0 && (
-                    <button
-                      onClick={random}
-                      title="Phát ngẫu nhiên tất cả bài hát trong danh sách này"
-                      className="text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95"
-                      style={{ background: C.tag, color: C.primarySolid, border: `1.5px solid ${C.border}` }}
-                    >
-                      <i className="ri-shuffle-line text-sm"></i>
-                      <span>Phát ngẫu nhiên</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={random}
+                        title="Phát ngẫu nhiên tất cả bài hát trong danh sách này"
+                        className="text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95"
+                        style={{ background: C.tag, color: C.primarySolid, border: `1.5px solid ${C.border}` }}
+                      >
+                        <i className="ri-shuffle-line text-sm"></i>
+                        <span>Phát ngẫu nhiên</span>
+                      </button>
+
+                      {/* Select Mode Toggle Button */}
+                      <button
+                        onClick={() => {
+                          setIsSelectMode(!isSelectMode);
+                          if (isSelectMode) setSelectedSongIds([]);
+                        }}
+                        title={isSelectMode ? "Thoát chế độ chọn nhiều bài hát" : "Bật chế độ chọn nhiều bài hát để xóa hoặc yêu thích hàng loạt"}
+                        className="text-xs px-3.5 py-1.5 rounded-full font-bold transition flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95"
+                        style={isSelectMode
+                          ? { background: C.primary, color: '#fff', boxShadow: `0 3px 12px ${C.primaryGlow}` }
+                          : { background: C.tag, color: C.txt, border: `1.5px solid ${C.border}` }}
+                      >
+                        <i className={isSelectMode ? "ri-close-line text-sm" : "ri-checkbox-multiple-line text-sm"}></i>
+                        <span>{isSelectMode ? "Thoát Chọn" : "Chọn Bài Hát"}</span>
+                      </button>
+                    </>
                   )}
                   {activePlaylist && (
                     <button onClick={() => confirmDeletePlaylist(activePlaylist._id, activePlaylist.name)}
@@ -2522,6 +2618,67 @@ export default function App() {
                   )}
                 </div>
 
+                {/* ── BATCH ACTION BAR (Khi bật chế độ chọn bài hát) ─────────────────── */}
+                {isSelectMode && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 mb-4 rounded-2xl shadow-lg border animate-in fade-in slide-in-from-top-2 duration-200"
+                    style={{ background: C.surface, borderColor: C.borderSel, boxShadow: `0 8px 30px ${C.primaryGlow}` }}>
+                    
+                    <div className="flex items-center gap-2.5">
+                      {/* Checkbox Select All */}
+                      <button
+                        onClick={() => handleToggleSelectAll(list)}
+                        className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer transition hover:opacity-80"
+                        style={{ background: C.tag, color: C.txt, border: `1px solid ${C.border}` }}
+                      >
+                        <div className={`w-4 h-4 rounded flex items-center justify-center border transition ${list.length > 0 && list.every(s => selectedSongIds.includes(s.id)) ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-400'}`}>
+                          {list.length > 0 && list.every(s => selectedSongIds.includes(s.id)) && <i className="ri-check-line text-xs font-black"></i>}
+                        </div>
+                        <span>{list.length > 0 && list.every(s => selectedSongIds.includes(s.id)) ? 'Bỏ Chọn Tất Cả' : 'Chọn Tất Cả'}</span>
+                      </button>
+
+                      <span className="text-xs font-extrabold px-3 py-1.5 rounded-xl" style={{ background: C.tag, color: C.primarySolid }}>
+                        Đã chọn {selectedSongIds.length} / {list.length} bài
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* Batch Favorite */}
+                      <button
+                        onClick={handleBatchFavorite}
+                        disabled={selectedSongIds.length === 0}
+                        title="Thêm hoặc bỏ tất cả bài hát đã chọn khỏi Yêu Thích"
+                        className="text-xs px-3.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                        style={{ background: C.tag, color: C.primarySolid, border: `1.5px solid ${C.border}` }}
+                      >
+                        <i className="ri-heart-fill text-sm" style={{ color: C.primarySolid }}></i>
+                        <span>Yêu Thích ({selectedSongIds.length})</span>
+                      </button>
+
+                      {/* Batch Delete */}
+                      <button
+                        onClick={() => setConfirmBatchDeleteModal(true)}
+                        disabled={selectedSongIds.length === 0}
+                        title="Xóa tất cả bài hát đã chọn"
+                        className="text-xs px-3.5 py-1.5 rounded-xl font-bold text-white transition flex items-center gap-1.5 cursor-pointer shadow-md hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                        style={{ background: '#ef4444', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)' }}
+                      >
+                        <i className="ri-delete-bin-line text-sm"></i>
+                        <span>Xóa Hàng Loạt ({selectedSongIds.length})</span>
+                      </button>
+
+                      {/* Cancel */}
+                      <button
+                        onClick={() => { setIsSelectMode(false); setSelectedSongIds([]); }}
+                        className="p-1.5 rounded-xl text-xs font-bold transition hover:opacity-80 cursor-pointer"
+                        style={{ color: C.txtFad }}
+                        title="Đóng chế độ chọn"
+                      >
+                        <i className="ri-close-line text-lg"></i>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* ── Song list ───────────────────────── */}
                 <div className="flex flex-col gap-2">
                   {list.length === 0 ? (
@@ -2531,28 +2688,49 @@ export default function App() {
                     </div>
                   ) : list.map((song, i) => {
                     const sel = track?.id === song.id;
+                    const isSelected = selectedSongIds.includes(song.id);
                     return (
-                      <div key={song.id} onClick={() => play(song, list)}
-                        title={`Bấm để phát: ${song.title} - ${song.artist}`}
+                      <div key={song.id}
+                        onClick={() => {
+                          if (isSelectMode) {
+                            toggleSelectSong(song.id);
+                          } else {
+                            play(song, list);
+                          }
+                        }}
+                        title={isSelectMode ? `Bấm để ${isSelected ? 'bỏ chọn' : 'chọn'} ${song.title}` : `Bấm để phát: ${song.title} - ${song.artist}`}
                         className="flex items-center p-2 md:p-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-200 group gap-2 md:gap-3 hover:opacity-95"
                         style={{
-                          background: sel ? C.tag : C.surface,
-                          border: `1.5px solid ${sel ? C.borderSel : 'transparent'}`,
-                          boxShadow: sel ? '0 4px 18px rgba(0,0,0,0.06)' : 'none',
+                          background: isSelected ? C.tag : (sel ? C.tag : C.surface),
+                          border: `1.5px solid ${isSelected ? C.primarySolid : (sel ? C.borderSel : 'transparent')}`,
+                          boxShadow: sel || isSelected ? '0 4px 18px rgba(0,0,0,0.06)' : 'none',
                         }}
                       >
-                        <span className="hidden md:flex justify-center items-center text-sm font-bold w-8 shrink-0" style={{ color: C.txtFad }}>
-                          {sel && playing
-                            ? <i className="ri-volume-up-fill animate-pulse" style={{ color: C.primarySolid }}></i>
-                            : i + 1
-                          }
-                        </span>
+                        {/* If select mode is active, show checkbox on left instead of track number */}
+                        {isSelectMode ? (
+                          <div
+                            onClick={(e) => { e.stopPropagation(); toggleSelectSong(song.id); }}
+                            className="w-8 shrink-0 flex items-center justify-center cursor-pointer"
+                          >
+                            <div className={`w-5 h-5 rounded-lg flex items-center justify-center border-2 transition ${isSelected ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs' : 'border-gray-400 bg-transparent'}`}>
+                              {isSelected && <i className="ri-check-line text-xs font-black"></i>}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="hidden md:flex justify-center items-center text-sm font-bold w-8 shrink-0" style={{ color: C.txtFad }}>
+                            {sel && playing
+                              ? <i className="ri-volume-up-fill animate-pulse" style={{ color: C.primarySolid }}></i>
+                              : i + 1
+                            }
+                          </span>
+                        )}
+
                         <img src={song.thumbnail} alt={song.title}
                           className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl object-cover shrink-0"
                           style={{ border: `2px solid ${sel ? C.border : 'transparent'}` }}
                         />
                         <div className="flex flex-col flex-1 min-w-0 pr-1 md:pr-2">
-                          <span className="text-xs md:text-sm font-bold truncate" style={{ color: sel ? C.primarySolid : C.txt }}>{song.title}</span>
+                          <span className="text-xs md:text-sm font-bold truncate" style={{ color: sel || isSelected ? C.primarySolid : C.txt }}>{song.title}</span>
                           <span className="text-[10px] md:text-xs truncate" style={{ color: C.txtSub }}>{song.artist}</span>
                         </div>
                         <span className="hidden sm:block text-xs text-right shrink-0 w-12" style={{ color: C.txtFad }}>{song.duration}</span>
@@ -3473,6 +3651,46 @@ export default function App() {
               >
                 <i className="ri-delete-bin-line text-sm"></i>
                 Xóa vĩnh viễn
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── BATCH DELETE CONFIRMATION MODAL ───────────────────────── */}
+      {confirmBatchDeleteModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-[70] p-4"
+          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(14px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setConfirmBatchDeleteModal(false); }}>
+          <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, color: C.txt }}>
+            
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 bg-red-500/15 text-red-500 text-2xl shadow-sm">
+              <i className="ri-delete-bin-fill"></i>
+            </div>
+            
+            <h3 className="text-lg font-bold text-center mb-1" style={{ color: C.txt }}>
+              Xóa Hàng Loạt ({selectedSongIds.length} bài hát)
+            </h3>
+            <p className="text-xs text-center mb-5" style={{ color: C.txtSub }}>
+              {activePlaylist ? `Bạn có chắc chắn muốn xóa ${selectedSongIds.length} bài hát đã chọn khỏi Playlist "${activePlaylist.name}"?` : `Bạn có chắc chắn muốn xóa ${selectedSongIds.length} bài hát đã chọn khỏi thư viện nhạc?`}
+            </p>
+
+            <div className="flex gap-2.5">
+              <button
+                type="button"
+                onClick={() => setConfirmBatchDeleteModal(false)}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold cursor-pointer transition hover:opacity-80"
+                style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmBatchDelete}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white cursor-pointer transition hover:scale-105 active:scale-95 shadow-md"
+                style={{ background: '#ef4444', boxShadow: '0 4px 14px rgba(239, 68, 68, 0.35)' }}
+              >
+                Xóa ngay
               </button>
             </div>
           </div>
