@@ -10,7 +10,7 @@ const loginUser = async (req, res) => {
     }
 
     const cleanInput = email.trim().toLowerCase();
-    const inputName = cleanInput.split('@')[0];
+    const fullEmail = cleanInput.includes('@') ? cleanInput : `${cleanInput}@gmail.com`;
 
     // List of hardcoded accounts (from .env)
     const hardcodedAccounts = [
@@ -54,21 +54,21 @@ const loginUser = async (req, res) => {
     const matchedConfig = hardcodedAccounts.find(
       acc => (
         acc.email.toLowerCase() === cleanInput ||
+        acc.email.toLowerCase() === fullEmail ||
         (acc.username && acc.username.toLowerCase() === cleanInput) ||
         acc.email.split('@')[0].toLowerCase() === cleanInput ||
-        acc.id.toLowerCase() === cleanInput ||
-        acc.id.toLowerCase() === `user-${cleanInput}`
+        acc.id.toLowerCase() === cleanInput
       )
     );
 
-    // 1. Try finding existing user in MongoDB database
+    // 1. Try finding existing user in MongoDB database by actual email or username
     let dbUser = null;
     try {
       dbUser = await User.findOne({
         $or: [
           { email: new RegExp(`^${cleanInput}$`, 'i') },
-          { email: new RegExp(`^${cleanInput}@gmail\\.com$`, 'i') },
-          { _id: matchedConfig?.id || `user-${inputName}` }
+          { email: new RegExp(`^${fullEmail}$`, 'i') },
+          { username: new RegExp(`^${cleanInput}$`, 'i') }
         ]
       });
     } catch (e) {
