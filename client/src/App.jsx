@@ -2547,7 +2547,7 @@ export default function App() {
               paddingBottom: '10px'
             }}>
 
-            <div className="flex items-center gap-2 md:gap-3 flex-1 md:flex-none">
+            <div className="flex items-center gap-2 md:gap-3 shrink-0">
               {/* Mobile Hamburger Menu */}
               <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden p-1 -ml-1 text-lg rounded-lg" style={{ color: C.txt }}>
                 <i className="ri-menu-line"></i>
@@ -2594,10 +2594,10 @@ export default function App() {
               )}
             </div>
 
-            {/* User Name in center - Always retained */}
+            {/* User Name in center between search bar and buttons */}
             {user && (
-              <div className="hidden md:flex absolute left-[48%] top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none items-center justify-center">
-                <span className="text-3xl lg:text-4xl font-extrabold" style={{ color: C.primarySolid, fontFamily: F.cursive, textShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
+              <div className="hidden md:flex flex-1 items-center justify-center min-w-0 px-2 pointer-events-none">
+                <span className="text-2xl lg:text-3xl font-extrabold truncate" style={{ color: C.primarySolid, fontFamily: F.cursive, textShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
                   {user.name}
                 </span>
               </div>
