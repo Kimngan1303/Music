@@ -3986,6 +3986,14 @@ export default function App() {
               <div className="grid grid-cols-2 gap-2.5 max-h-72 overflow-y-auto custom-scrollbar pr-1">
                 {Object.values(THEMES)
                   .filter(t => t.category === themeCategory)
+                  .sort((a, b) => {
+                    if (themeCategory === 'mix') {
+                      const mA = DYNAMIC_UNLOCK_MILESTONES[a.key]?.reqMinutes || 0;
+                      const mB = DYNAMIC_UNLOCK_MILESTONES[b.key]?.reqMinutes || 0;
+                      return mA - mB;
+                    }
+                    return 0;
+                  })
                   .map(t => {
                     const isSelected = themeKey === t.key;
                     const status = getThemeLockStatus(t, user?.totalActiveTime || 0, isAdmin);
