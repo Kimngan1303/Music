@@ -576,6 +576,7 @@ export default function App() {
 
   const [track, setTrack] = useState(null);
   const [playing, setPlaying] = useState(false);
+  const [buffering, setBuffering] = useState(false);
   const [tab, setTab] = useState('home');
   const [favs, setFavs] = useState(() => {
     try {
@@ -1302,20 +1303,32 @@ export default function App() {
         height: '1', width: '1', videoId: '',
         playerVars: { autoplay: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, playsinline: 1 },
         events: {
-          onReady: () => yt.current.setVolume(80),
+          onReady: () => {
+            try {
+              yt.current?.setVolume?.(80);
+              yt.current?.setPlaybackQuality?.('small');
+            } catch { }
+          },
           onStateChange: e => {
             if (!window.YT) return;
-            if (e.data === window.YT.PlayerState.PLAYING) {
+            if (e.data === window.YT.PlayerState.BUFFERING) {
+              setBuffering(true);
+            }
+            else if (e.data === window.YT.PlayerState.PLAYING) {
               setPlaying(true);
+              setBuffering(false);
               try {
+                yt.current?.setPlaybackQuality?.('small');
                 yt.current?.unMute?.();
                 yt.current?.setVolume?.(vol || 80);
               } catch (err) { }
             }
             else if (e.data === window.YT.PlayerState.PAUSED) {
               setPlaying(false);
+              setBuffering(false);
             }
             else if (e.data === window.YT.PlayerState.ENDED) {
+              setBuffering(false);
               if (repeatRef.current === 'one') {
                 yt.current?.seekTo?.(0, true);
                 yt.current?.playVideo?.();
@@ -1330,18 +1343,39 @@ export default function App() {
     if (window.YT?.Player) init(); else window.onYouTubeIframeAPIReady = init;
   }, []);
 
-  // Progress timer
+  // Ref to track preloaded next track metadata
+  const preloadedTrackIdRef = useRef(null);
+
+  // Progress timer + Smart 30s Next Track Preloader + Auto Network Recovery
   useEffect(() => {
-    if (!playing) return;
+    if (!playing && !buffering) return;
     const t = setInterval(() => {
       try {
-        setCurTime(yt.current?.getCurrentTime?.() || 0);
+        const ct = yt.current?.getCurrentTime?.() || 0;
+        setCurTime(ct);
         const d = yt.current?.getDuration?.() || 0;
         if (d > 0) setDur(d);
+
+        // Preload next track metadata/thumbnail when remaining time <= 30s or > 80% played
+        if (d > 0 && (d - ct <= 30 || ct / d > 0.8)) {
+          const q = getCurrentTrackList();
+          if (q && q.length > 0) {
+            const currentIndex = q.findIndex(s => s.id === track?.id);
+            const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % q.length;
+            const nextSong = q[nextIndex];
+            if (nextSong && nextSong.id !== preloadedTrackIdRef.current) {
+              preloadedTrackIdRef.current = nextSong.id;
+              if (nextSong.thumbnail) {
+                const img = new Image();
+                img.src = nextSong.thumbnail;
+              }
+            }
+          }
+        }
       } catch { }
     }, 500);
     return () => clearInterval(t);
-  }, [playing]);
+  }, [playing, buffering, track?.id]);
 
   // Setup fallback loop listener for iOS background
   useEffect(() => {
@@ -3887,7 +3921,15 @@ export default function App() {
                 )}
               </div>
               <div className="flex flex-col overflow-hidden">
-                <span className="text-[11px] md:text-sm font-bold truncate" style={{ color: C.txt }}>{track.title}</span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[11px] md:text-sm font-bold truncate" style={{ color: C.txt }}>{track.title}</span>
+                  {buffering && (
+                    <span className="shrink-0 px-1.5 py-0.5 text-[8px] font-extrabold rounded-md text-amber-300 bg-amber-500/20 border border-amber-500/30 flex items-center gap-1 animate-pulse whitespace-nowrap">
+                      <i className="ri-loader-4-line animate-spin text-[10px]"></i>
+                      Mạng yếu...
+                    </span>
+                  )}
+                </div>
                 <span className="text-[9px] md:text-xs truncate" style={{ color: C.txtSub }}>{track.artist}</span>
               </div>
             </>
@@ -3947,11 +3989,11 @@ export default function App() {
               </button>
             </Tooltip>
 
-            <Tooltip text={playing ? 'Tạm dừng' : 'Bật phát nhạc'}>
+            <Tooltip text={buffering ? 'Đang tải dữ liệu...' : playing ? 'Tạm dừng' : 'Bật phát nhạc'}>
               <button onClick={togglePlay}
                 className="w-8 h-8 md:w-10 md:h-10 rounded-full text-white flex items-center justify-center shadow-md transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
                 style={{ background: C.primary, boxShadow: `0 3px 12px ${C.primaryGlow}` }}>
-                {playing ? <PauseIcon className="w-4 h-4 md:w-5 md:h-5" /> : <PlayIcon className="w-4 h-4 md:w-5 md:h-5" />}
+                {buffering ? <i className="ri-loader-4-line text-base md:text-lg animate-spin" /> : playing ? <PauseIcon className="w-4 h-4 md:w-5 md:h-5" /> : <PlayIcon className="w-4 h-4 md:w-5 md:h-5" />}
               </button>
             </Tooltip>
 
@@ -4523,9 +4565,9 @@ export default function App() {
                       onClick={togglePlay}
                       className="w-9 h-9 rounded-full text-white flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0 shadow-lg"
                       style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
-                      title={playing ? "Tạm dừng" : "Phát nhạc"}
+                      title={buffering ? "Đang tải dữ liệu..." : playing ? "Tạm dừng" : "Phát nhạc"}
                     >
-                      {playing ? <PauseIcon className="w-4 h-4 md:w-5 md:h-5" /> : <PlayIcon className="w-4 h-4 md:w-5 md:h-5" />}
+                      {buffering ? <i className="ri-loader-4-line text-lg animate-spin" /> : playing ? <PauseIcon className="w-4 h-4 md:w-5 md:h-5" /> : <PlayIcon className="w-4 h-4 md:w-5 md:h-5" />}
                     </button>
 
                     {/* Next Track */}
@@ -4623,9 +4665,9 @@ export default function App() {
                       onClick={togglePlay}
                       className="w-11 h-11 rounded-full text-white flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0 shadow-xl pointer-events-auto"
                       style={{ background: C.primary, boxShadow: `0 4px 18px ${C.primaryGlow}` }}
-                      title={playing ? "Tạm dừng" : "Phát nhạc"}
+                      title={buffering ? "Đang tải dữ liệu..." : playing ? "Tạm dừng" : "Phát nhạc"}
                     >
-                      {playing ? <PauseIcon className="w-5 h-5 md:w-6 md:h-6" /> : <PlayIcon className="w-5 h-5 md:w-6 md:h-6" />}
+                      {buffering ? <i className="ri-loader-4-line text-xl animate-spin" /> : playing ? <PauseIcon className="w-5 h-5 md:w-6 md:h-6" /> : <PlayIcon className="w-5 h-5 md:w-6 md:h-6" />}
                     </button>
 
                     <button onClick={nextTrack} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer pointer-events-auto" title="Bài tiếp">
