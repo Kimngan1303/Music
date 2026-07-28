@@ -140,6 +140,14 @@ router.put('/admin/users/:id', async (req, res) => {
       user = await User.findOne({ email: email.trim().toLowerCase() });
     }
 
+    const isTargetSuperAdmin = (user && (user.email === 'admin@gmail.com' || user.email === 'unnull@gmail.com' || req.params.id === 'admin-owner' || req.params.id === 'user-unnull')) || (email === 'admin@gmail.com' || email === 'unnull@gmail.com');
+
+    // Reject locking or demoting super admin accounts
+    if (isTargetSuperAdmin) {
+      if (isLocked) return res.status(403).json({ message: 'Không thể khóa tài khoản Super Admin tối cao.' });
+      if (role && role !== 'admin') return res.status(403).json({ message: 'Không thể hạ quyền tài khoản Super Admin tối cao.' });
+    }
+
     if (!user) {
       user = new User({
         _id: req.params.id || 'user-' + Date.now(),
@@ -151,14 +159,14 @@ router.put('/admin/users/:id', async (req, res) => {
       });
     }
 
-    const isSuperAdmin = (user.email === 'admin@gmail.com' || user.email === 'unnull@gmail.com' || req.params.id === 'admin-owner' || req.params.id === 'user-unnull');
-
     if (name) user.name = name.trim();
     if (email) user.email = email.trim().toLowerCase();
     if (role !== undefined) {
-      user.role = isSuperAdmin ? 'admin' : role;
+      user.role = isTargetSuperAdmin ? 'admin' : role;
     }
-    if (isLocked !== undefined) user.isLocked = isLocked;
+    if (isLocked !== undefined && !isTargetSuperAdmin) {
+      user.isLocked = isLocked;
+    }
     if (avatar !== undefined) user.avatar = avatar;
 
     if (password && password.trim()) {
@@ -183,6 +191,10 @@ router.put('/admin/users/:id', async (req, res) => {
 
 router.delete('/admin/users/:id', async (req, res) => {
   try {
+    const user = await User.findById(req.params.id);
+    if (user && (user.email === 'admin@gmail.com' || user.email === 'unnull@gmail.com' || req.params.id === 'admin-owner' || req.params.id === 'user-unnull')) {
+      return res.status(403).json({ message: 'Không thể xóa tài khoản Super Admin tối cao.' });
+    }
     await User.findByIdAndDelete(req.params.id);
     res.json({ message: 'Đã xóa tài khoản thành công.' });
   } catch (err) {

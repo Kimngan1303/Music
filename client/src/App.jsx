@@ -1394,7 +1394,9 @@ export default function App() {
   };
 
   // ── ADMIN USER MANAGEMENT HANDLERS ───────────────────
-  const isAdmin = Boolean(user && (user.role === 'admin' || user.email === 'admin@gmail.com' || user.email === 'unnull@gmail.com' || user.name?.toLowerCase() === 'tyn'));
+  const isSuperAdminAccount = (acc) => Boolean(acc && (acc.email === 'admin@gmail.com' || acc.email === 'unnull@gmail.com' || acc._id === 'admin-owner' || acc._id === 'user-unnull' || acc.name?.toLowerCase() === 'tyn'));
+  const isCurrentSuperAdmin = isSuperAdminAccount(user);
+  const isAdmin = Boolean(user && (user.role === 'admin' || isCurrentSuperAdmin));
 
   const fetchAdminUsers = () => {
     axios.get('/api/admin/users').then(res => {
@@ -2096,46 +2098,61 @@ export default function App() {
                           </div>
 
                         {/* Controls */}
-                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                          <button
-                            onClick={() => {
-                              setAdminUserModal(u);
-                              setAdminName(u.name || '');
-                              setAdminEmail(u.email || '');
-                              setAdminPassword('');
-                              setAdminRole(u.role || 'user');
-                              setAdminErr('');
-                            }}
-                            title="Chỉnh sửa thông tin tài khoản"
-                            className="px-3 py-1.5 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1"
-                            style={{ background: C.surface, color: C.txt, border: `1px solid ${C.border}` }}
+                        {isSuperAdminAccount(u) && !isCurrentSuperAdmin ? (
+                          <span
+                            className="px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-not-allowed select-none shadow-xs"
+                            style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' }}
+                            title="Tài khoản Super Admin tối cao (Bảo vệ cố định)"
                           >
-                            <i className="ri-edit-line"></i> Sửa
-                          </button>
+                            <i className="ri-shield-keyhole-fill text-sm"></i>
+                            <span>Super Admin (Bảo vệ)</span>
+                          </span>
+                        ) : (
+                          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                            <button
+                              onClick={() => {
+                                setAdminUserModal(u);
+                                setAdminName(u.name || '');
+                                setAdminEmail(u.email || '');
+                                setAdminPassword('');
+                                setAdminRole(u.role || 'user');
+                                setAdminErr('');
+                              }}
+                              title="Chỉnh sửa thông tin tài khoản"
+                              className="px-3 py-1.5 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1"
+                              style={{ background: C.surface, color: C.txt, border: `1px solid ${C.border}` }}
+                            >
+                              <i className="ri-edit-line"></i> Sửa
+                            </button>
 
-                          <button
-                            onClick={() => handleToggleLockUser(u)}
-                            title={u.isLocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản không cho đăng nhập'}
-                            className="px-3 py-1.5 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1"
-                            style={{
-                              background: u.isLocked ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                              color: u.isLocked ? '#22c55e' : '#f59e0b',
-                              border: `1.5px solid ${u.isLocked ? 'rgba(34, 197, 94, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
-                            }}
-                          >
-                            <i className={u.isLocked ? "ri-lock-unlock-line" : "ri-lock-2-line"}></i>
-                            {u.isLocked ? 'Mở Khóa' : 'Khóa'}
-                          </button>
+                            {!isSuperAdminAccount(u) && (
+                              <>
+                                <button
+                                  onClick={() => handleToggleLockUser(u)}
+                                  title={u.isLocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản không cho đăng nhập'}
+                                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1"
+                                  style={{
+                                    background: u.isLocked ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                                    color: u.isLocked ? '#22c55e' : '#f59e0b',
+                                    border: `1.5px solid ${u.isLocked ? 'rgba(34, 197, 94, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+                                  }}
+                                >
+                                  <i className={u.isLocked ? "ri-lock-unlock-line" : "ri-lock-2-line"}></i>
+                                  {u.isLocked ? 'Mở Khóa' : 'Khóa'}
+                                </button>
 
-                          <button
-                            onClick={() => handleDeleteUser(u)}
-                            title="Xóa vĩnh viễn tài khoản khỏi cơ sở dữ liệu"
-                            className="px-3 py-1.5 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1 text-red-500"
-                            style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}
-                          >
-                            <i className="ri-delete-bin-line"></i> Xóa
-                          </button>
-                        </div>
+                                <button
+                                  onClick={() => handleDeleteUser(u)}
+                                  title="Xóa vĩnh viễn tài khoản khỏi cơ sở dữ liệu"
+                                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1 text-red-500"
+                                  style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}
+                                >
+                                  <i className="ri-delete-bin-line"></i> Xóa
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
