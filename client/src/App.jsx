@@ -1096,17 +1096,55 @@ export default function App() {
 
   // Trigger Mobile System Video Picture-in-Picture (for iPhone iOS / iPad / Android)
   const triggerMobilePip = async () => {
-    if (!mobileVideoRef.current || !document.pictureInPictureEnabled) return;
     try {
-      if (document.pictureInPictureElement) return;
-      updateMobileCanvas();
-      if (mobileCanvasRef.current && mobileVideoRef.current) {
-        if (!mobileVideoRef.current.srcObject) {
-          const stream = mobileCanvasRef.current.captureStream(15);
-          mobileVideoRef.current.srcObject = stream;
+      // Find active video element (YouTube iframe or HTML5 video or canvas video ref)
+      let videoEl = null;
+
+      // 1. Try to find video inside YouTube player iframe
+      const iframe = document.querySelector('#yt-player iframe');
+      if (iframe) {
+        try {
+          const iframeVideo = iframe.contentWindow?.document?.querySelector('video');
+          if (iframeVideo) videoEl = iframeVideo;
+        } catch (e) {}
+      }
+
+      // 2. Try any video element on page
+      if (!videoEl) {
+        videoEl = document.querySelector('video');
+      }
+
+      // 3. Fallback to custom canvas video ref
+      if (!videoEl && mobileVideoRef.current) {
+        updateMobileCanvas();
+        if (mobileCanvasRef.current) {
+          try {
+            if (!mobileVideoRef.current.srcObject) {
+              const stream = mobileCanvasRef.current.captureStream(15);
+              mobileVideoRef.current.srcObject = stream;
+            }
+            await mobileVideoRef.current.play().catch(() => {});
+          } catch (e) {}
         }
-        await mobileVideoRef.current.play().catch(() => {});
-        await mobileVideoRef.current.requestPictureInPicture();
+        videoEl = mobileVideoRef.current;
+      }
+
+      if (!videoEl) return;
+
+      // Apple iOS Safari Native Picture-in-Picture API for iPhone / iPad
+      if (videoEl.webkitSetPresentationMode) {
+        const isCurrentlyPip = videoEl.webkitPresentationMode === 'picture-in-picture';
+        videoEl.webkitSetPresentationMode(isCurrentlyPip ? 'inline' : 'picture-in-picture');
+        setMobilePipActive(!isCurrentlyPip);
+        return;
+      }
+
+      // Standard W3C HTML5 Picture-in-Picture API
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+        setMobilePipActive(false);
+      } else if (videoEl.requestPictureInPicture) {
+        await videoEl.requestPictureInPicture();
         setMobilePipActive(true);
       }
     } catch (e) {
