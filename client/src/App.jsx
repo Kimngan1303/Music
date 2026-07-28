@@ -1001,10 +1001,24 @@ export default function App() {
       }
     } else {
       // Delete batch from main library
-      setSongs(prev => prev.filter(s => !idsToDelete.includes(s.id)));
+      const remainingSongs = songs.filter(s => !idsToDelete.includes(s.id));
+      setSongs(remainingSongs);
       const uid = user?._id || 'guest';
-      const updatedSongs = songs.filter(s => !idsToDelete.includes(s.id));
-      localStorage.setItem(songsKey(uid), JSON.stringify(updatedSongs));
+      localStorage.setItem(songsKey(uid), JSON.stringify(remainingSongs));
+
+      setFavs(prevFavs => {
+        const updatedFavs = prevFavs.filter(id => !idsToDelete.includes(id));
+        if (user) {
+          localStorage.setItem(favsKey(user._id), JSON.stringify(updatedFavs));
+          const token = user.token || localStorage.getItem('aura_token');
+          if (token) {
+            axios.put('/api/auth/profile', { favorites: updatedFavs }, {
+              headers: { Authorization: `Bearer ${token}` }
+            }).catch(() => {});
+          }
+        }
+        return updatedFavs;
+      });
 
       try {
         await axios.post('/api/music/batch-delete', { ids: idsToDelete });
@@ -1828,12 +1842,47 @@ export default function App() {
 
   const executeDeletePlaylist = async id => {
     try {
+      const targetPlaylist = playlists.find(p => p._id === id);
+      const targetSongIds = targetPlaylist?.songs || [];
+
       await axios.delete(`/api/playlists/${id}`);
-      setPlaylists(p => {
-        const up = p.filter(x => x._id !== id);
-        localStorage.setItem(playlistsKey(user._id), JSON.stringify(up));
-        return up;
+      const updatedPlaylists = playlists.filter(x => x._id !== id);
+      setPlaylists(updatedPlaylists);
+      if (user) {
+        localStorage.setItem(playlistsKey(user._id), JSON.stringify(updatedPlaylists));
+      }
+
+      // Check for songs that belonged ONLY to this deleted playlist and are not in library
+      const remainingPlaylistSongIds = new Set(updatedPlaylists.flatMap(p => p.songs || []));
+      const songsToRemove = targetSongIds.filter(sId => {
+        const songObj = songs.find(s => s.id === sId);
+        return songObj && songObj.inLibrary === false && !remainingPlaylistSongIds.has(sId);
       });
+
+      let updatedSongs = songs;
+      if (songsToRemove.length > 0) {
+        updatedSongs = songs.filter(s => !songsToRemove.includes(s.id));
+        setSongs(updatedSongs);
+        if (user) {
+          localStorage.setItem(songsKey(user._id), JSON.stringify(updatedSongs));
+        }
+      }
+
+      // Sync & clean up favorites list to remove any song IDs that no longer exist
+      setFavs(prevFavs => {
+        const updatedFavs = prevFavs.filter(favId => updatedSongs.some(s => s.id === favId));
+        if (user) {
+          localStorage.setItem(favsKey(user._id), JSON.stringify(updatedFavs));
+          const token = user.token || localStorage.getItem('aura_token');
+          if (token) {
+            axios.put('/api/auth/profile', { favorites: updatedFavs }, {
+              headers: { Authorization: `Bearer ${token}` }
+            }).catch(() => {});
+          }
+        }
+        return updatedFavs;
+      });
+
       if (tab === `playlist_${id}`) setTab('home');
     } catch (err) { console.error(err); }
   };
@@ -2316,7 +2365,7 @@ export default function App() {
                 key: 'favorites',
                 icon: 'ri-heart-fill',
                 label: 'Yêu thích',
-                sub: `Playlist • ${favs.length} bài`,
+                sub: `Playlist • ${songs.filter(s => favs.includes(s.id)).length} bài`,
                 color: 'linear-gradient(135deg, #450af5, #8e2de2)',
                 tooltip: 'Xem các bài hát đã yêu thích'
               },
