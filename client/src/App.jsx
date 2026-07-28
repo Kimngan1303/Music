@@ -996,6 +996,10 @@ export default function App() {
     }
   });
 
+  const isSuperAdminAccount = (acc) => Boolean(acc && (acc.email === 'admin@gmail.com' || acc.email === 'unnull@gmail.com' || acc._id === 'admin-owner' || acc._id === 'user-unnull' || acc.name?.toLowerCase() === 'tyn'));
+  const isCurrentSuperAdmin = isSuperAdminAccount(user);
+  const isAdmin = Boolean(user && (user.role === 'admin' || isCurrentSuperAdmin));
+
 
   // Page routing: 'landing' | 'login' | 'app'
   // Always start at landing page on fresh visit
@@ -2379,9 +2383,6 @@ export default function App() {
   };
 
   // ── ADMIN USER MANAGEMENT HANDLERS ───────────────────
-  const isSuperAdminAccount = (acc) => Boolean(acc && (acc.email === 'admin@gmail.com' || acc.email === 'unnull@gmail.com' || acc._id === 'admin-owner' || acc._id === 'user-unnull' || acc.name?.toLowerCase() === 'tyn'));
-  const isCurrentSuperAdmin = isSuperAdminAccount(user);
-  const isAdmin = Boolean(user && (user.role === 'admin' || isCurrentSuperAdmin));
 
   const fetchAdminUsers = () => {
     axios.get('/api/admin/users').then(res => {
