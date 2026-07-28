@@ -583,6 +583,9 @@ export default function App() {
   const [editPlaylistCover, setEditPlaylistCover] = useState('');
   const playlistCoverInputRef = useRef(null);
 
+  // Custom Theme-Matched Confirm Delete Modal State
+  const [confirmModal, setConfirmModal] = useState(null); // { title, message, onConfirm }
+
 
   const [query, setQuery] = useState('');
   const [curTime, setCurTime] = useState(0);
@@ -1306,8 +1309,7 @@ export default function App() {
     }
   };
 
-  const handleDeletePlaylist = async id => {
-    if (!window.confirm('Bạn có chắc muốn xóa danh sách phát này không?')) return;
+  const executeDeletePlaylist = async id => {
     try {
       await axios.delete(`/api/playlists/${id}`);
       setPlaylists(p => {
@@ -1317,6 +1319,22 @@ export default function App() {
       });
       if (tab === `playlist_${id}`) setTab('home');
     } catch (err) { console.error(err); }
+  };
+
+  const confirmDeletePlaylist = (id, name) => {
+    setConfirmModal({
+      title: 'Xóa Danh Sách Phát',
+      message: `Bạn có chắc chắn muốn xóa danh sách phát "${name}" không? Tất cả các thiết lập của danh sách phát này sẽ bị xóa.`,
+      onConfirm: () => executeDeletePlaylist(id)
+    });
+  };
+
+  const confirmDeleteSong = (song) => {
+    setConfirmModal({
+      title: 'Xóa Bài Hát',
+      message: `Bạn có chắc chắn muốn xóa bài hát "${song.title}" khỏi thư viện không?`,
+      onConfirm: () => deleteSong(song.id)
+    });
   };
 
   // Toggle Pin Playlist (Ghim lên đầu)
@@ -1913,7 +1931,7 @@ export default function App() {
                     </button>
                   )}
                   {activePlaylist && (
-                    <button onClick={() => handleDeletePlaylist(activePlaylist._id)}
+                    <button onClick={() => confirmDeletePlaylist(activePlaylist._id, activePlaylist.name)}
                       title="Xóa vĩnh viễn danh sách phát này"
                       className="ml-auto text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center cursor-pointer hover:scale-105 active:scale-95"
                       style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
@@ -1976,7 +1994,7 @@ export default function App() {
                               if (activePlaylist) {
                                 handleRemoveFromPlaylist(activePlaylist._id, song.id);
                               } else {
-                                if (window.confirm(`Xóa "${song.title}" khỏi thư viện?`)) deleteSong(song.id);
+                                confirmDeleteSong(song);
                               }
                             }}
                             title={activePlaylist ? "Xóa bài hát khỏi playlist này" : "Xóa vĩnh viễn bài hát khỏi thư viện"}
@@ -2676,9 +2694,9 @@ export default function App() {
           {/* 4. Delete playlist */}
           <button
             onClick={() => {
-              const targetId = contextMenu.playlist._id;
+              const target = contextMenu.playlist;
               setContextMenu(null);
-              handleDeletePlaylist(targetId);
+              confirmDeletePlaylist(target._id, target.name);
             }}
             className="w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-colors text-left text-red-500 cursor-pointer"
             onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
@@ -2767,6 +2785,68 @@ export default function App() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── CUSTOM THEME-MATCHED CONFIRM DELETE MODAL ─────────────────── */}
+      {confirmModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-[150] p-4"
+          style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(16px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setConfirmModal(null); }}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl p-7 shadow-2xl text-center flex flex-col items-center gap-4 transition-all"
+            style={{
+              background: C.isDark ? '#1e293b' : '#fffcf9',
+              border: `1.5px solid ${C.border}`,
+              boxShadow: '0 25px 60px rgba(0,0,0,0.3)'
+            }}
+          >
+            {/* Warning Trash Icon Badge */}
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center text-red-500 shadow-md"
+              style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.25)' }}
+            >
+              <i className="ri-delete-bin-6-line text-2xl"></i>
+            </div>
+
+            {/* Title & Message */}
+            <div className="flex flex-col gap-1.5">
+              <h3 className="text-lg font-bold" style={{ fontFamily: F.heading, color: C.txt }}>
+                {confirmModal.title || 'Xác nhận xóa'}
+              </h3>
+              <p className="text-xs leading-relaxed font-medium" style={{ color: C.txtSub }}>
+                {confirmModal.message}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3 w-full mt-2">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer"
+                style={btn}
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={() => {
+                  const action = confirmModal.onConfirm;
+                  setConfirmModal(null);
+                  if (action) action();
+                }}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white shadow-lg transition active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                style={{
+                  background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                  boxShadow: '0 6px 18px rgba(239, 68, 68, 0.35)'
+                }}
+              >
+                <i className="ri-delete-bin-line text-sm"></i>
+                Xóa vĩnh viễn
+              </button>
+            </div>
           </div>
         </div>
       )}
