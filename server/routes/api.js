@@ -68,7 +68,95 @@ router.get('/auth/me', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json({ _id: user._id, name: user.name, email: user.email, avatar: user.avatar, favorites: user.favorites || [] });
+    const userRole = user.role || (user.email === 'admin@gmail.com' ? 'admin' : 'user');
+    res.json({ _id: user._id, name: user.name, email: user.email, avatar: user.avatar, role: userRole, isLocked: user.isLocked || false, favorites: user.favorites || [] });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// --- ADMIN USER MANAGEMENT ROUTES ---
+router.get('/admin/users', async (req, res) => {
+  try {
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.post('/admin/users', async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+    if (!name || !email || !password) return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin.' });
+
+    const cleanEmail = email.trim().toLowerCase();
+    const existing = await User.findOne({ email: cleanEmail });
+    if (existing) return res.status(400).json({ message: 'Email đã tồn tại trên hệ thống.' });
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = new User({
+      _id: 'user-' + Date.now(),
+      name: name.trim(),
+      email: cleanEmail,
+      password: hashedPassword,
+      role: role || 'user',
+      isLocked: false
+    });
+
+    await newUser.save();
+    res.status(201).json({
+      _id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      isLocked: newUser.isLocked,
+      avatar: newUser.avatar,
+      createdAt: newUser.createdAt
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.put('/admin/users/:id', async (req, res) => {
+  try {
+    const { name, email, password, role, isLocked, avatar } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'Tài khoản không tồn tại' });
+
+    if (name) user.name = name.trim();
+    if (email) user.email = email.trim().toLowerCase();
+    if (role) user.role = role;
+    if (isLocked !== undefined) user.isLocked = isLocked;
+    if (avatar !== undefined) user.avatar = avatar;
+
+    if (password && password.trim()) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+    }
+
+    await user.save();
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      isLocked: user.isLocked,
+      avatar: user.avatar,
+      createdAt: user.createdAt
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.delete('/admin/users/:id', async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Đã xóa tài khoản thành công.' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

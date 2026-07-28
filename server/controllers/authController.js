@@ -67,18 +67,25 @@ const loginUser = async (req, res) => {
             },
             $setOnInsert: {
               name: matched.name,
-              avatar: matched.avatar 
+              avatar: matched.avatar,
+              role: matched.role || 'user',
+              isLocked: false
             }
           },
           { upsert: true, new: true }
         );
+
+        if (dbUser.isLocked) {
+          return res.status(403).json({ message: 'Tài khoản của bạn đã bị khóa bởi Quản trị viên.' });
+        }
       } catch (err) {
         console.error('Lỗi lưu user vào db:', err);
         dbUser = matched;
       }
 
+      const userRole = dbUser.role || matched.role || 'user';
       const token = jwt.sign(
-        { id: matched.id, email: matched.email, role: matched.role },
+        { id: matched.id, email: matched.email, role: userRole },
         process.env.JWT_SECRET || 'aura_music_secret_jwt_key_2026',
         { expiresIn: '30d' }
       );
@@ -88,7 +95,8 @@ const loginUser = async (req, res) => {
         email:  dbUser.email || matched.email,
         avatar: dbUser.avatar || matched.avatar,
         favorites: dbUser.favorites || [],
-        role:   matched.role,
+        role:   userRole,
+        isLocked: dbUser.isLocked || false,
         token
       });
     }
@@ -104,10 +112,14 @@ const loginUser = async (req, res) => {
         ]
       });
       if (user) {
+        if (user.isLocked) {
+          return res.status(403).json({ message: 'Tài khoản của bạn đã bị khóa bởi Quản trị viên.' });
+        }
         const isMatch = await bcrypt.compare(password, user.password);
         if (isMatch) {
+          const userRole = user.role || (user.email === 'admin@gmail.com' ? 'admin' : 'user');
           const token = jwt.sign(
-            { id: user._id, email: user.email },
+            { id: user._id, email: user.email, role: userRole },
             process.env.JWT_SECRET || 'aura_music_secret_jwt_key_2026',
             { expiresIn: '30d' }
           );
@@ -117,6 +129,8 @@ const loginUser = async (req, res) => {
             email:  user.email,
             avatar: user.avatar,
             favorites: user.favorites || [],
+            role:   userRole,
+            isLocked: user.isLocked || false,
             token
           });
         }

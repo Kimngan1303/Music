@@ -586,6 +586,16 @@ export default function App() {
   // Custom Theme-Matched Confirm Delete Modal State
   const [confirmModal, setConfirmModal] = useState(null); // { title, message, onConfirm }
 
+  // Admin Account Management State
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [adminSearch, setAdminSearch] = useState('');
+  const [adminUserModal, setAdminUserModal] = useState(null); // null, {}, or user object being edited
+  const [adminName, setAdminName] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminRole, setAdminRole] = useState('user');
+  const [adminErr, setAdminErr] = useState('');
+
 
   const [query, setQuery] = useState('');
   const [curTime, setCurTime] = useState(0);
@@ -1382,6 +1392,73 @@ export default function App() {
     setEditPlaylistModal(null);
   };
 
+  // ── ADMIN USER MANAGEMENT HANDLERS ───────────────────
+  const isAdmin = Boolean(user && (user.role === 'admin' || user.email === 'admin@gmail.com'));
+
+  const fetchAdminUsers = () => {
+    axios.get('/api/admin/users').then(res => {
+      if (Array.isArray(res.data)) {
+        setAdminUsers(res.data);
+      }
+    }).catch(console.error);
+  };
+
+  useEffect(() => {
+    if (tab === 'admin' && isAdmin) {
+      fetchAdminUsers();
+    }
+  }, [tab, isAdmin]);
+
+  const handleSaveAdminUser = async (e) => {
+    e.preventDefault();
+    setAdminErr('');
+    try {
+      if (adminUserModal?._id) {
+        await axios.put(`/api/admin/users/${adminUserModal._id}`, {
+          name: adminName,
+          email: adminEmail,
+          password: adminPassword,
+          role: adminRole
+        });
+      } else {
+        await axios.post('/api/admin/users', {
+          name: adminName,
+          email: adminEmail,
+          password: adminPassword,
+          role: adminRole
+        });
+      }
+      fetchAdminUsers();
+      setAdminUserModal(null);
+    } catch (err) {
+      setAdminErr(err.response?.data?.message || err.message || 'Lỗi lưu tài khoản vào DB.');
+    }
+  };
+
+  const handleToggleLockUser = async (u) => {
+    try {
+      await axios.put(`/api/admin/users/${u._id}`, { isLocked: !u.isLocked });
+      fetchAdminUsers();
+    } catch (err) {
+      alert('Lỗi khóa tài khoản: ' + err.message);
+    }
+  };
+
+  const handleDeleteUser = (u) => {
+    setConfirmModal({
+      title: 'Xóa Tài Khoản',
+      message: `Bạn có chắc chắn muốn xóa tài khoản "${u.name}" (${u.email}) khỏi cơ sở dữ liệu không?`,
+      onConfirm: async () => {
+        try {
+          await axios.delete(`/api/admin/users/${u._id}`);
+          fetchAdminUsers();
+        } catch (err) {
+          alert('Lỗi xóa tài khoản: ' + err.message);
+        }
+      }
+    });
+  };
+
   const handleAddToPlaylist = async (playlistId, songId, songIds = null) => {
     try {
       const payload = songIds ? { songIds } : { songId };
@@ -1659,6 +1736,14 @@ export default function App() {
                 color: 'linear-gradient(135deg, #450af5, #8e2de2)',
                 tooltip: 'Xem các bài hát đã yêu thích'
               },
+              ...(isAdmin ? [{
+                key: 'admin',
+                icon: 'ri-shield-user-fill',
+                label: 'Quản lý Account',
+                sub: 'Quản trị hệ thống & DB',
+                color: 'linear-gradient(135deg, #ef4444, #f59e0b)',
+                tooltip: 'Mở trang quản lý tài khoản & phân quyền người dùng'
+              }] : [])
             ].map(t => {
               const active = tab === t.key;
               const isHovered = hoverTab === t.key;
@@ -1885,7 +1970,169 @@ export default function App() {
           {/* Scrollable content */}
           <div className="flex-1 p-4 pt-8 md:p-7 md:pt-7 overflow-y-auto">
 
-            {tab === 'home' ? (
+            {tab === 'admin' && isAdmin ? (
+              /* ── ADMIN MANAGEMENT VIEW ─────────────────── */
+              <div className="flex flex-col gap-6 max-w-6xl mx-auto pb-10">
+                {/* Page Header */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-bold flex items-center gap-2.5" style={{ fontFamily: F.heading, color: C.txt }}>
+                      <i className="ri-shield-user-fill" style={{ color: C.primarySolid }}></i>
+                      Quản Lý Tài Khoản Người Dùng (Admin)
+                    </h2>
+                    <p className="text-xs mt-1" style={{ color: C.txtSub }}>
+                      Thêm, sửa, xóa, phân quyền và khóa tài khoản trực tiếp vào cơ sở dữ liệu MongoDB.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setAdminUserModal({});
+                      setAdminName('');
+                      setAdminEmail('');
+                      setAdminPassword('');
+                      setAdminRole('user');
+                      setAdminErr('');
+                    }}
+                    title="Bấm để thêm tài khoản mới vào cơ sở dữ liệu"
+                    className="px-5 py-2.5 rounded-2xl text-xs font-bold text-white shadow-lg flex items-center gap-2 transition hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                    style={{ background: C.primary, boxShadow: `0 6px 18px ${C.primaryGlow}` }}
+                  >
+                    <i className="ri-user-add-fill text-sm"></i>
+                    <span>Thêm Tài Khoản Mới</span>
+                  </button>
+                </div>
+
+                {/* Stats Bar */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-2xl flex items-center gap-4 shadow-sm" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl text-blue-500 bg-blue-500/10">
+                      <i className="ri-user-3-line"></i>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xl font-bold" style={{ color: C.txt }}>{adminUsers.length}</span>
+                      <span className="text-xs" style={{ color: C.txtFad }}>Tổng số tài khoản DB</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl flex items-center gap-4 shadow-sm" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl text-amber-500 bg-amber-500/10">
+                      <i className="ri-vip-crown-line"></i>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xl font-bold" style={{ color: C.txt }}>{adminUsers.filter(u => u.role === 'admin').length}</span>
+                      <span className="text-xs" style={{ color: C.txtFad }}>Quản trị viên (Admin)</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl flex items-center gap-4 shadow-sm" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl text-red-500 bg-red-500/10">
+                      <i className="ri-lock-2-line"></i>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xl font-bold text-red-500">{adminUsers.filter(u => u.isLocked).length}</span>
+                      <span className="text-xs" style={{ color: C.txtFad }}>Tài khoản đang khóa</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative">
+                  <i className="ri-search-line absolute left-4 top-1/2 -translate-y-1/2 text-sm" style={{ color: C.txtFad }}></i>
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm tài khoản theo tên hoặc email..."
+                    value={adminSearch}
+                    onChange={e => setAdminSearch(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl text-xs font-semibold outline-none transition"
+                    style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                  />
+                </div>
+
+                {/* Users List */}
+                <div className="flex flex-col gap-3">
+                  {adminUsers.length === 0 ? (
+                    <div className="text-center py-16">
+                      <div className="text-4xl mb-3">🛡️</div>
+                      <p className="text-sm font-semibold" style={{ color: C.txtFad }}>Đang tải danh sách tài khoản từ DB...</p>
+                    </div>
+                  ) : adminUsers
+                    .filter(u => !adminSearch || u.name?.toLowerCase().includes(adminSearch.toLowerCase()) || u.email?.toLowerCase().includes(adminSearch.toLowerCase()))
+                    .map(u => (
+                      <div
+                        key={u._id}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl gap-4 transition hover:opacity-95"
+                        style={{ background: C.tag, border: `1px solid ${u.isLocked ? '#ef4444' : C.border}` }}
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <img
+                            src={u.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                            alt={u.name}
+                            className="w-12 h-12 rounded-xl object-cover shrink-0 shadow-xs"
+                            style={{ border: `2px solid ${C.border}` }}
+                          />
+                          <div className="flex flex-col min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold truncate" style={{ color: C.txt }}>{u.name}</span>
+                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${u.role === 'admin' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+                                {u.role === 'admin' ? 'Admin ✦' : 'Member'}
+                              </span>
+                              {u.isLocked && (
+                                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-red-500/20 text-red-500 border border-red-500/30">
+                                  🔒 ĐÃ KHÓA
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs truncate font-mono mt-0.5" style={{ color: C.txtSub }}>{u.email}</span>
+                          </div>
+                        </div>
+
+                        {/* Controls */}
+                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                          <button
+                            onClick={() => {
+                              setAdminUserModal(u);
+                              setAdminName(u.name || '');
+                              setAdminEmail(u.email || '');
+                              setAdminPassword('');
+                              setAdminRole(u.role || 'user');
+                              setAdminErr('');
+                            }}
+                            title="Chỉnh sửa thông tin tài khoản"
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1"
+                            style={{ background: C.surface, color: C.txt, border: `1px solid ${C.border}` }}
+                          >
+                            <i className="ri-edit-line"></i> Sửa
+                          </button>
+
+                          <button
+                            onClick={() => handleToggleLockUser(u)}
+                            title={u.isLocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản không cho đăng nhập'}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1"
+                            style={{
+                              background: u.isLocked ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                              color: u.isLocked ? '#22c55e' : '#f59e0b',
+                              border: `1.5px solid ${u.isLocked ? 'rgba(34, 197, 94, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+                            }}
+                          >
+                            <i className={u.isLocked ? "ri-lock-unlock-line" : "ri-lock-2-line"}></i>
+                            {u.isLocked ? 'Mở Khóa' : 'Khóa'}
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteUser(u)}
+                            title="Xóa vĩnh viễn tài khoản khỏi cơ sở dữ liệu"
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1 text-red-500"
+                            style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}
+                          >
+                            <i className="ri-delete-bin-line"></i> Xóa
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            ) : tab === 'home' ? (
               /* ── Hero Banner ─────────────────────── */
               <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden rounded-3xl p-6 md:p-8 mt-4 md:mt-0 shadow-sm min-h-[400px]"
                 style={{ background: C.surface, border: `1.5px solid ${C.border}`, boxShadow: '0 8px 40px rgba(0,0,0,0.06)' }}
@@ -2794,6 +3041,85 @@ export default function App() {
                   className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg cursor-pointer transition active:scale-95"
                   style={{ background: C.primary, boxShadow: `0 6px 18px ${C.primaryGlow}` }}>
                   <i className="ri-save-line"></i> Lưu thay đổi
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── ADMIN CREATE / EDIT USER MODAL ─────────────────── */}
+      {adminUserModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-[140] p-4"
+          style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(14px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setAdminUserModal(null); }}>
+          <div className="w-full max-w-md rounded-3xl p-8 shadow-2xl transition-all"
+            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="flex items-center gap-2" style={{ fontFamily: F.heading, fontSize: '20px', fontWeight: 700, color: C.txt }}>
+                <i className="ri-user-settings-fill" style={{ color: C.primarySolid }}></i>
+                {adminUserModal._id ? 'Chỉnh Sửa Tài Khoản DB' : 'Thêm Tài Khoản Mới DB'}
+              </h3>
+              <button onClick={() => setAdminUserModal(null)} className="w-8 h-8 rounded-full flex items-center justify-center transition hover:opacity-70 cursor-pointer" style={btn}>
+                <i className="ri-close-line text-lg"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAdminUser} className="flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Họ &amp; Tên người dùng</label>
+                <input type="text" value={adminName} onChange={e => setAdminName(e.target.value)}
+                  placeholder="Nguyễn Văn A..."
+                  className="w-full px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition"
+                  style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Địa chỉ Email</label>
+                <input type="email" value={adminEmail} onChange={e => setAdminEmail(e.target.value)}
+                  placeholder="user@gmail.com..."
+                  className="w-full px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition"
+                  style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>
+                  {adminUserModal._id ? 'Mật khẩu mới (Để trống nếu không đổi)' : 'Mật khẩu'}
+                </label>
+                <input type="password" value={adminPassword} onChange={e => setAdminPassword(e.target.value)}
+                  placeholder={adminUserModal._id ? '••••••••' : 'Nhập mật khẩu...'}
+                  className="w-full px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition"
+                  style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                  required={!adminUserModal._id}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Quyền Hạn (Role)</label>
+                <select value={adminRole} onChange={e => setAdminRole(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition cursor-pointer"
+                  style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}>
+                  <option value="user">Member (Người dùng nghe nhạc)</option>
+                  <option value="admin">Admin (Quản trị viên hệ thống)</option>
+                </select>
+              </div>
+
+              {adminErr && <p className="text-xs font-semibold text-red-500 mt-1">{adminErr}</p>}
+
+              <div className="flex gap-3 mt-3">
+                <button type="button" onClick={() => setAdminUserModal(null)}
+                  className="w-28 shrink-0 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition active:scale-95" style={btn}>
+                  Hủy
+                </button>
+                <button type="submit"
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 shadow-lg cursor-pointer transition active:scale-95"
+                  style={{ background: C.primary, boxShadow: `0 6px 18px ${C.primaryGlow}` }}>
+                  <i className="ri-save-line"></i> Lưu vào DB
                 </button>
               </div>
             </form>
