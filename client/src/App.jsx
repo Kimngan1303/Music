@@ -2022,7 +2022,7 @@ export default function App() {
                       <i className="ri-vip-crown-line"></i>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-xl font-bold" style={{ color: C.txt }}>{adminUsers.filter(u => u.role === 'admin').length}</span>
+                      <span className="text-xl font-bold" style={{ color: C.txt }}>{adminUsers.filter(u => u.role === 'admin' || u.email === 'admin@gmail.com' || u.email === 'unnull@gmail.com').length}</span>
                       <span className="text-xs" style={{ color: C.txtFad }}>Quản trị viên (Admin)</span>
                     </div>
                   </div>
@@ -2060,34 +2060,36 @@ export default function App() {
                     </div>
                   ) : adminUsers
                     .filter(u => !adminSearch || u.name?.toLowerCase().includes(adminSearch.toLowerCase()) || u.email?.toLowerCase().includes(adminSearch.toLowerCase()))
-                    .map(u => (
-                      <div
-                        key={u._id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl gap-4 transition hover:opacity-95"
-                        style={{ background: C.tag, border: `1px solid ${u.isLocked ? '#ef4444' : C.border}` }}
-                      >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <img
-                            src={u.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
-                            alt={u.name}
-                            className="w-12 h-12 rounded-xl object-cover shrink-0 shadow-xs"
-                            style={{ border: `2px solid ${C.border}` }}
-                          />
-                          <div className="flex flex-col min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold truncate" style={{ color: C.txt }}>{u.name}</span>
-                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${u.role === 'admin' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
-                                {u.role === 'admin' ? 'Admin ✦' : 'Member'}
-                              </span>
-                              {u.isLocked && (
-                                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-red-500/20 text-red-500 border border-red-500/30">
-                                  🔒 ĐÃ KHÓA
+                    .map(u => {
+                      const isUserAdmin = u.role === 'admin' || u.email === 'admin@gmail.com' || u.email === 'unnull@gmail.com';
+                      return (
+                        <div
+                          key={u._id}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl gap-4 transition hover:opacity-95"
+                          style={{ background: C.tag, border: `1px solid ${u.isLocked ? '#ef4444' : C.border}` }}
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <img
+                              src={u.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                              alt={u.name}
+                              className="w-12 h-12 rounded-xl object-cover shrink-0 shadow-xs"
+                              style={{ border: `2px solid ${C.border}` }}
+                            />
+                            <div className="flex flex-col min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-bold truncate" style={{ color: C.txt }}>{u.name}</span>
+                                <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${isUserAdmin ? 'bg-amber-500/20 text-amber-500 border border-amber-500/40 shadow-xs' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+                                  {isUserAdmin ? 'Admin ✦' : 'Member'}
                                 </span>
-                              )}
+                                {u.isLocked && (
+                                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-red-500/20 text-red-500 border border-red-500/30">
+                                    🔒 ĐÃ KHÓA
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-xs truncate font-mono mt-0.5" style={{ color: C.txtSub }}>{u.email}</span>
                             </div>
-                            <span className="text-xs truncate font-mono mt-0.5" style={{ color: C.txtSub }}>{u.email}</span>
                           </div>
-                        </div>
 
                         {/* Controls */}
                         <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
@@ -2131,7 +2133,8 @@ export default function App() {
                           </button>
                         </div>
                       </div>
-                    ))}
+                    );
+                  })}
                 </div>
               </div>
             ) : tab === 'home' ? (
