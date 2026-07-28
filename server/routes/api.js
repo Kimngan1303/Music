@@ -141,12 +141,14 @@ router.get('/admin/users', async (req, res) => {
       { $set: { role: 'admin' } }
     );
     const users = await User.find().select('-password').sort({ createdAt: -1 });
+    const now = new Date();
     const formatted = users.map(u => {
       const isSuperAdmin = u.email === 'tyn@gmail.com' || u.email === 'unnull@gmail.com';
       return {
         ...u._doc,
         role: isSuperAdmin ? 'admin' : (u.role || 'user'),
-        lastSeen: u.lastSeen || null
+        lastSeen: u.lastSeen || null,
+        isOnline: u.lastSeen ? (now - new Date(u.lastSeen)) < 20000 : false // 20s threshold to allow slight network delays
       };
     });
     res.json(formatted);

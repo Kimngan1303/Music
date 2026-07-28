@@ -2909,7 +2909,7 @@ export default function App() {
                     .filter(u => !adminSearch || u.name?.toLowerCase().includes(adminSearch.toLowerCase()) || u.email?.toLowerCase().includes(adminSearch.toLowerCase()))
                     .map(u => {
                       const isUserAdmin = u.role === 'admin' || u.email === 'admin@gmail.com' || u.email === 'unnull@gmail.com';
-                      const isOnline = u.lastSeen && (Date.now() - new Date(u.lastSeen).getTime()) < 15 * 1000;
+                      const isOnline = u.isOnline;
                       return (
                         <div
                           key={u._id}
