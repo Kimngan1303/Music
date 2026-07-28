@@ -2021,7 +2021,7 @@ export default function App() {
   // ── LANDING PAGE ──────────────────────────────────────────
   if (!user && page === 'landing') {
     return (
-      <div className="relative min-h-screen w-screen overflow-hidden flex flex-col" style={{ background: C.bg, fontFamily: F.body }}>
+      <div className="relative min-h-screen w-screen overflow-y-auto overflow-x-hidden flex flex-col" style={{ background: C.bg, fontFamily: F.body }}>
         <audio id="silent-audio" src="/silent.mp3" loop preload="auto" style={{ display: 'none' }}></audio>
         <div id="yt-player" className="fixed top-0 left-0 pointer-events-none z-[-50]" style={{ width: '300px', height: '300px', opacity: 1 }} />
 
@@ -2121,7 +2121,7 @@ export default function App() {
   // ── FULLSCREEN LOGIN SCREEN ────────────────────────────────
   if (!user && page === 'login') {
     return (
-      <div className="flex h-screen w-screen items-center justify-center p-4 relative overflow-hidden" style={{ background: C.bg, fontFamily: F.body }}>
+      <div className="flex min-h-screen w-screen items-center justify-center p-4 py-10 relative overflow-y-auto overflow-x-hidden" style={{ background: C.bg, fontFamily: F.body }}>
         <audio id="silent-audio" src="/silent.mp3" loop preload="auto" style={{ display: 'none' }}></audio>
         <div id="yt-player" className="fixed top-0 left-0 pointer-events-none z-[-50]" style={{ width: '300px', height: '300px', opacity: 1 }} />
 
