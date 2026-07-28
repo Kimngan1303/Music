@@ -672,6 +672,12 @@ export default function App() {
   // Scroll Position State for Sticky Header Navigation
   const [mainScrollTop, setMainScrollTop] = useState(0);
 
+  // Lyrics Karaoke Modal States & Ref
+  const [showLyricsModal, setShowLyricsModal] = useState(false);
+  const [lyricsLines, setLyricsLines] = useState([]);
+  const [lyricsLoading, setLyricsLoading] = useState(false);
+  const lyricsContainerRef = useRef(null);
+
   // Reload songs and favs when user logs in or out
   useEffect(() => {
     const uid = user?._id || 'guest';
@@ -971,6 +977,122 @@ export default function App() {
     }
     return `${mins} phút`;
   };
+
+  // Parse LRC timed lyrics string
+  const parseLRC = (lrcString, durationSec) => {
+    if (!lrcString) return [];
+    const lines = lrcString.split('\n');
+    const result = [];
+    const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/;
+
+    lines.forEach(line => {
+      const match = line.match(timeRegex);
+      if (match) {
+        const mins = parseInt(match[1], 10);
+        const secs = parseInt(match[2], 10);
+        const time = mins * 60 + secs;
+        const text = match[4].trim();
+        if (text) result.push({ time, text });
+      }
+    });
+
+    if (result.length === 0) {
+      const plainLines = lrcString.split('\n').map(l => l.trim()).filter(Boolean);
+      if (plainLines.length > 0 && durationSec > 0) {
+        const step = durationSec / plainLines.length;
+        return plainLines.map((text, idx) => ({ time: idx * step, text }));
+      }
+    }
+
+    return result;
+  };
+
+  // Generate fallback synchronized lyrics for songs without online LRCLIB match
+  const generateFallbackLyrics = (currentTrack, durationSec) => {
+    const defaultLines = [
+      `♪ ${currentTrack.title}`,
+      `Trình bày: ${currentTrack.artist}`,
+      `--- ♫ ---`,
+      `A EM XINH NGOAN`,
+      `YÊU EM SỐ MỘT TRÊN THẾ GIỚI`,
+      `LÀM GÌ CÓ ĐƯỢC AI THẾ THAY`,
+      `Giai điệu âm nhạc thăng hoa...`,
+      `--- ♫ ---`,
+      `Đang thưởng thức: ${currentTrack.title}`,
+      `Cùng ${currentTrack.artist}`
+    ];
+    const step = (durationSec || 180) / defaultLines.length;
+    return defaultLines.map((text, idx) => ({ time: Math.round(idx * step), text }));
+  };
+
+  // Fetch lyrics from LRCLIB API or fallback
+  const fetchLyrics = async (currentTrack) => {
+    if (!currentTrack) return;
+    setLyricsLoading(true);
+    setLyricsLines([]);
+    try {
+      const cleanTitle = currentTrack.title
+        .replace(/\(.*?remix.*?\)/gi, '')
+        .replace(/remix|tiktok|hot trend/gi, '')
+        .trim();
+      const cleanArtist = currentTrack.artist
+        .replace(/remix|official|music/gi, '')
+        .trim();
+
+      const res = await axios.get('https://lrclib.net/api/get', {
+        params: {
+          track_name: cleanTitle || currentTrack.title,
+          artist_name: cleanArtist || currentTrack.artist
+        }
+      });
+
+      if (res.data?.syncedLyrics) {
+        setLyricsLines(parseLRC(res.data.syncedLyrics, dur));
+      } else if (res.data?.plainLyrics) {
+        setLyricsLines(parseLRC(res.data.plainLyrics, dur));
+      } else {
+        setLyricsLines(generateFallbackLyrics(currentTrack, dur));
+      }
+    } catch (err) {
+      try {
+        const searchRes = await axios.get('https://lrclib.net/api/search', {
+          params: { q: currentTrack.title }
+        });
+        if (searchRes.data && searchRes.data.length > 0) {
+          const item = searchRes.data[0];
+          const parsed = parseLRC(item.syncedLyrics || item.plainLyrics, dur);
+          setLyricsLines(parsed.length > 0 ? parsed : generateFallbackLyrics(currentTrack, dur));
+        } else {
+          setLyricsLines(generateFallbackLyrics(currentTrack, dur));
+        }
+      } catch (e) {
+        setLyricsLines(generateFallbackLyrics(currentTrack, dur));
+      }
+    } finally {
+      setLyricsLoading(false);
+    }
+  };
+
+  // Calculate current active lyrics line index based on curTime
+  const currentLineIndex = lyricsLines.findLastIndex(l => curTime >= l.time);
+  const activeLyricsIdx = currentLineIndex >= 0 ? currentLineIndex : 0;
+
+  // Auto-scroll lyrics view to current active line
+  useEffect(() => {
+    if (showLyricsModal && lyricsContainerRef.current) {
+      const activeEl = lyricsContainerRef.current.children[activeLyricsIdx];
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [activeLyricsIdx, showLyricsModal]);
+
+  // Refetch lyrics when track changes if lyrics modal is open
+  useEffect(() => {
+    if (showLyricsModal && track) {
+      fetchLyrics(track);
+    }
+  }, [track?.id]);
 
   // Handle local avatar image upload from computer
   const handleAvatarFileUpload = (e) => {
@@ -3449,6 +3571,27 @@ export default function App() {
                 )}
               </button>
             </Tooltip>
+
+            {/* Lyrics Karaoke Button */}
+            <Tooltip text={showLyricsModal ? "Đóng Lời Bài Hát" : "Lời Bài Hát (Lyrics)"}>
+              <button
+                onClick={() => {
+                  if (!showLyricsModal && track) {
+                    fetchLyrics(track);
+                  }
+                  setShowLyricsModal(!showLyricsModal);
+                }}
+                className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                style={{ color: showLyricsModal ? C.primarySolid : C.txtFad }}
+              >
+                <i className={showLyricsModal ? "ri-mic-fill text-lg" : "ri-mic-line text-lg"}></i>
+                {showLyricsModal && (
+                  <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
+                    style={{ background: C.primarySolid }}>
+                  </span>
+                )}
+              </button>
+            </Tooltip>
           </div>
 
           {/* Timeline */}
@@ -3850,6 +3993,150 @@ export default function App() {
               >
                 Xóa ngay
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── LYRICS MODAL OVERLAY (Giao diện Lời bài hát Karaoke chuẩn như hình 2) ─────────────────── */}
+      {showLyricsModal && track && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300"
+          style={{ background: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(28px)' }}>
+
+          {/* Ambient Background Blur Circle */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none opacity-35 blur-[120px]"
+            style={{ background: `radial-gradient(circle, ${C.primarySolid}, transparent)` }} />
+
+          {/* Close Button */}
+          <button
+            onClick={() => setShowLyricsModal(false)}
+            className="absolute top-6 right-6 z-50 w-10 h-10 rounded-full flex items-center justify-center text-white bg-white/10 hover:bg-white/20 transition cursor-pointer active:scale-95"
+            title="Đóng Lời bài hát"
+          >
+            <i className="ri-close-line text-2xl"></i>
+          </button>
+
+          {/* Container Card */}
+          <div className="w-full max-w-5xl h-[85vh] md:h-[75vh] rounded-3xl p-6 md:p-12 relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-12 overflow-hidden border shadow-2xl"
+            style={{ background: C.isDark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.45)', borderColor: C.border, backdropFilter: 'blur(20px)' }}>
+
+            {/* Left Side: Large Album Cover Art (Ảnh bài hát khổ lớn) */}
+            <div className="w-48 h-48 md:w-80 md:h-80 shrink-0 relative group rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border"
+              style={{ borderColor: C.borderSel || C.border }}>
+              <img
+                src={track.thumbnail}
+                alt={track.title}
+                className="w-full h-full object-cover shadow-2xl transition duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-4 text-white">
+                <span className="text-xs font-bold truncate opacity-90">{track.title}</span>
+                <span className="text-[10px] opacity-75 truncate">{track.artist}</span>
+              </div>
+            </div>
+
+            {/* Right Side: Title, Artist, Lyrics Carousel/Scroll */}
+            <div className="flex-1 flex flex-col min-w-0 h-full w-full justify-between">
+              
+              {/* Header Info */}
+              <div className="mb-4 text-left">
+                <h2 className="text-2xl md:text-4xl font-black tracking-tight truncate leading-tight uppercase"
+                  style={{ color: C.txt, fontFamily: F.heading }}>
+                  {track.title}
+                </h2>
+                <p className="text-xs md:text-sm font-bold opacity-80 mt-1 uppercase tracking-wider"
+                  style={{ color: C.primarySolid }}>
+                  {track.artist}
+                </p>
+                <div className="text-base md:text-lg font-bold mt-2 italic"
+                  style={{ fontFamily: F.cursive, color: C.txtSub }}>
+                  ✦ Lyrics
+                </div>
+              </div>
+
+              {/* Lyrics Scrollable Area */}
+              <div className="flex-1 overflow-y-auto my-2 py-4 pr-2 space-y-4 text-left scroll-smooth"
+                ref={lyricsContainerRef}>
+                {lyricsLoading ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-3 text-white/70">
+                    <div className="text-4xl animate-bounce">🎤</div>
+                    <span className="text-xs font-bold">Đang tải lời bài hát...</span>
+                  </div>
+                ) : lyricsLines.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-white/60">
+                    <p className="text-sm font-bold">Chưa có lời cho bài hát này~</p>
+                  </div>
+                ) : (
+                  lyricsLines.map((line, idx) => {
+                    const isActive = idx === activeLyricsIdx;
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          if (line.time !== undefined && audioRef?.current) {
+                            audioRef.current.currentTime = line.time;
+                            setCurTime(line.time);
+                          }
+                        }}
+                        className={`transition-all duration-300 cursor-pointer rounded-xl p-2 select-none ${
+                          isActive
+                            ? 'text-lg md:text-2xl font-black scale-105 origin-left'
+                            : 'text-sm md:text-base font-semibold opacity-40 hover:opacity-75'
+                        }`}
+                        style={{
+                          color: isActive ? C.primarySolid : C.txt,
+                          textShadow: isActive ? `0 0 20px ${C.primaryGlow}` : 'none'
+                        }}
+                      >
+                        {line.text}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Bottom Lyrics Controls (Nav up/down arrows & Play/Pause) */}
+              <div className="flex items-center justify-between pt-3 border-t shrink-0" style={{ borderColor: C.border }}>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={togglePlay}
+                    className="w-10 h-10 rounded-full text-white flex items-center justify-center shadow-lg transition hover:scale-105 active:scale-95 cursor-pointer"
+                    style={{ background: C.primary }}
+                  >
+                    <i className={playing ? "ri-pause-fill text-lg" : "ri-play-fill text-lg ml-0.5"}></i>
+                  </button>
+                  <span className="text-xs font-mono font-bold" style={{ color: C.txtSub }}>
+                    {fmt(curTime)} / {fmt(dur)}
+                  </span>
+                </div>
+
+                {/* Up/Down Scroll Buttons matching Image 2 */}
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => {
+                      if (lyricsContainerRef.current) {
+                        lyricsContainerRef.current.scrollTop -= 60;
+                      }
+                    }}
+                    className="w-7 h-7 rounded-full flex items-center justify-center transition hover:bg-white/10 cursor-pointer"
+                    style={{ color: C.txt, border: `1px solid ${C.border}` }}
+                    title="Cuộn lên"
+                  >
+                    <i className="ri-arrow-up-s-line text-base"></i>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (lyricsContainerRef.current) {
+                        lyricsContainerRef.current.scrollTop += 60;
+                      }
+                    }}
+                    className="w-7 h-7 rounded-full flex items-center justify-center transition hover:bg-white/10 cursor-pointer"
+                    style={{ color: C.txt, border: `1.5px solid ${C.border}` }}
+                    title="Cuộn xuống"
+                  >
+                    <i className="ri-arrow-down-s-line text-base"></i>
+                  </button>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
