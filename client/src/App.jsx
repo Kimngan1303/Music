@@ -949,6 +949,26 @@ export default function App() {
     setConfirmBatchDeleteModal(false);
   };
 
+  // Helper to calculate total playback duration of a song list
+  const calculateTotalDuration = (songList) => {
+    let totalSeconds = 0;
+    (songList || []).forEach(s => {
+      if (!s.duration) return;
+      const parts = s.duration.split(':').map(Number);
+      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+        totalSeconds += parts[0] * 60 + parts[1];
+      } else if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+        totalSeconds += parts[0] * 3600 + parts[1] * 60 + parts[2];
+      }
+    });
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    if (hrs > 0) {
+      return `khoảng ${hrs} giờ ${mins} phút`;
+    }
+    return `${mins} phút`;
+  };
+
   // Handle local avatar image upload from computer
   const handleAvatarFileUpload = (e) => {
     const file = e.target.files?.[0];
@@ -2571,51 +2591,151 @@ export default function App() {
               </div>
             ) : (
               <>
-                {/* ── Section heading ─────────────────── */}
-                <div className="flex items-center gap-3 mb-4 flex-wrap">
-                  <h2 style={{ color: C.txt, fontFamily: F.heading, fontSize: '22px', fontWeight: 700 }}>
-                    {tab === 'favorites' ? '🤍 Yêu Thích' : activePlaylist ? `✨ ${activePlaylist.name}` : '✨ Thư Viện Nhạc'}
-                  </h2>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: C.tag, color: C.tagTxt, border: `1px solid ${C.tagBd}` }}>
-                    {list.length} bài
-                  </span>
-                  {list.length > 0 && (
-                    <>
-                      <button
-                        onClick={random}
-                        title="Phát ngẫu nhiên tất cả bài hát trong danh sách này"
-                        className="text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95"
-                        style={{ background: C.tag, color: C.primarySolid, border: `1.5px solid ${C.border}` }}
-                      >
-                        <i className="ri-shuffle-line text-sm"></i>
-                        <span>Phát ngẫu nhiên</span>
-                      </button>
+                {/* ── SPOTIFY-STYLE PLAYLIST / TAB HERO BANNER ─────────────────── */}
+                <div className="flex flex-col md:flex-row items-center md:items-end gap-6 p-6 md:p-8 mb-6 rounded-3xl relative overflow-hidden transition-all duration-300 shadow-sm"
+                  style={{
+                    background: activePlaylist
+                      ? 'linear-gradient(135deg, rgba(236,72,153,0.18) 0%, rgba(99,102,241,0.14) 100%)'
+                      : tab === 'favorites'
+                      ? 'linear-gradient(135deg, rgba(244,63,94,0.2) 0%, rgba(168,85,247,0.16) 100%)'
+                      : C.surface,
+                    border: `1.5px solid ${C.border}`
+                  }}
+                >
+                  {/* Background Ambient Glow */}
+                  <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full pointer-events-none opacity-40 blur-3xl"
+                    style={{ background: activePlaylist ? C.primaryGlow : (tab === 'favorites' ? '#f43f5e' : C.borderSel) }} />
 
-                      {/* Select Mode Toggle Button */}
-                      <button
-                        onClick={() => {
-                          setIsSelectMode(!isSelectMode);
-                          if (isSelectMode) setSelectedSongIds([]);
-                        }}
-                        title={isSelectMode ? "Thoát chế độ chọn nhiều bài hát" : "Bật chế độ chọn nhiều bài hát để xóa hoặc yêu thích hàng loạt"}
-                        className="text-xs px-3.5 py-1.5 rounded-full font-bold transition flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95"
-                        style={isSelectMode
-                          ? { background: C.primary, color: '#fff', boxShadow: `0 3px 12px ${C.primaryGlow}` }
-                          : { background: C.tag, color: C.txt, border: `1.5px solid ${C.border}` }}
-                      >
-                        <i className={isSelectMode ? "ri-close-line text-sm" : "ri-checkbox-multiple-line text-sm"}></i>
-                        <span>{isSelectMode ? "Thoát Chọn" : "Chọn Bài Hát"}</span>
-                      </button>
-                    </>
-                  )}
-                  {activePlaylist && (
-                    <button onClick={() => confirmDeletePlaylist(activePlaylist._id, activePlaylist.name)}
-                      title="Xóa vĩnh viễn danh sách phát này"
-                      className="ml-auto text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center cursor-pointer hover:scale-105 active:scale-95"
-                      style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
-                      <i className="ri-delete-bin-line mr-1"></i> Xóa Playlist
-                    </button>
-                  )}
+                  {/* Playlist Cover Art Image / 2x2 Grid */}
+                  <div className="shrink-0 relative group z-10">
+                    {(() => {
+                      const thumbs = list.slice(0, 4).map(s => s.thumbnail).filter(Boolean);
+                      if (tab === 'favorites') {
+                        return (
+                          <div className="w-36 h-36 md:w-44 md:h-44 rounded-2xl md:rounded-3xl shadow-2xl flex flex-col items-center justify-center text-white shrink-0"
+                            style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed, #ec4899)' }}>
+                            <i className="ri-heart-3-fill text-5xl mb-1 drop-shadow-md"></i>
+                            <span className="text-[10px] font-extrabold tracking-widest uppercase opacity-80">Favorites</span>
+                          </div>
+                        );
+                      }
+                      if (thumbs.length >= 4) {
+                        return (
+                          <div className="w-36 h-36 md:w-44 md:h-44 rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl grid grid-cols-2 shrink-0 border"
+                            style={{ borderColor: C.border }}>
+                            {thumbs.map((t, idx) => (
+                              <img key={idx} src={t} alt="" className="w-full h-full object-cover" />
+                            ))}
+                          </div>
+                        );
+                      }
+                      if (thumbs.length > 0) {
+                        return (
+                          <img
+                            src={thumbs[0]}
+                            alt=""
+                            className="w-36 h-36 md:w-44 md:h-44 rounded-2xl md:rounded-3xl object-cover shadow-2xl shrink-0 border"
+                            style={{ border: `2px solid ${C.border}` }}
+                          />
+                        );
+                      }
+                      return (
+                        <div className="w-36 h-36 md:w-44 md:h-44 rounded-2xl md:rounded-3xl shadow-2xl flex items-center justify-center text-white shrink-0"
+                          style={{ background: C.primary }}>
+                          <i className="ri-playlist-2-line text-5xl"></i>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Banner Text Info & Action Bar */}
+                  <div className="flex flex-col text-center md:text-left min-w-0 flex-1 z-10 w-full">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider mb-1 flex items-center justify-center md:justify-start gap-1.5"
+                      style={{ color: C.primarySolid }}>
+                      <i className="ri-disc-line"></i>
+                      {tab === 'favorites' ? 'Danh sách yêu thích' : activePlaylist ? 'Danh sách phát' : 'Thư viện nhạc'}
+                    </span>
+
+                    <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight mb-2 truncate leading-tight"
+                      style={{ color: C.txt, fontFamily: F.heading }}>
+                      {tab === 'favorites' ? 'Bài Hát Đã Thích' : activePlaylist ? activePlaylist.name : 'Thư Viện Nhạc Của Tôi'}
+                    </h1>
+
+                    {/* Owner & Meta line */}
+                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-xs font-semibold" style={{ color: C.txtSub }}>
+                      <div className="flex items-center gap-1.5">
+                        <img
+                          src={user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                          alt=""
+                          className="w-5 h-5 rounded-full object-cover"
+                        />
+                        <span className="font-bold" style={{ color: C.txt }}>{user?.name || 'Thành viên'}</span>
+                      </div>
+                      <span>•</span>
+                      <span>{list.length} bài hát</span>
+                      {list.length > 0 && (
+                        <>
+                          <span>•</span>
+                          <span>{calculateTotalDuration(list)}</span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Main Action Bar in Banner */}
+                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-5">
+                      {list.length > 0 && (
+                        <button
+                          onClick={() => play(list[0], list)}
+                          title="Phát tất cả bài hát từ đầu"
+                          className="w-12 h-12 rounded-full text-white shadow-xl flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer"
+                          style={{ background: C.primary, boxShadow: `0 6px 20px ${C.primaryGlow}` }}
+                        >
+                          <i className="ri-play-fill text-2xl ml-0.5"></i>
+                        </button>
+                      )}
+
+                      {list.length > 0 && (
+                        <button
+                          onClick={random}
+                          title="Phát ngẫu nhiên danh sách này"
+                          className="px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95"
+                          style={{ background: C.tag, color: C.txt, border: `1.5px solid ${C.border}` }}
+                        >
+                          <i className="ri-shuffle-line text-sm" style={{ color: C.primarySolid }}></i>
+                          <span>Phát Ngẫu Nhiên</span>
+                        </button>
+                      )}
+
+                      {list.length > 0 && (
+                        <button
+                          onClick={() => {
+                            setIsSelectMode(!isSelectMode);
+                            if (isSelectMode) setSelectedSongIds([]);
+                          }}
+                          title={isSelectMode ? "Thoát chế độ chọn bài" : "Chọn nhiều bài hát"}
+                          className="px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95"
+                          style={isSelectMode
+                            ? { background: C.primary, color: '#fff', boxShadow: `0 3px 12px ${C.primaryGlow}` }
+                            : { background: C.tag, color: C.txt, border: `1.5px solid ${C.border}` }}
+                        >
+                          <i className={isSelectMode ? "ri-close-line text-sm" : "ri-checkbox-multiple-line text-sm"}></i>
+                          <span>{isSelectMode ? "Thoát Chọn" : "Chọn Bài Hát"}</span>
+                        </button>
+                      )}
+
+                      {activePlaylist && (
+                        <button
+                          onClick={() => confirmDeletePlaylist(activePlaylist._id, activePlaylist.name)}
+                          title="Xóa vĩnh viễn danh sách phát này"
+                          className="px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95 md:ml-auto text-red-500"
+                          style={{ background: 'rgba(239,68,68,0.1)', border: '1.5px solid rgba(239,68,68,0.2)' }}
+                        >
+                          <i className="ri-delete-bin-line text-sm"></i>
+                          <span>Xóa Playlist</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* ── BATCH ACTION BAR (Khi bật chế độ chọn bài hát) ─────────────────── */}
