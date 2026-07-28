@@ -1838,6 +1838,9 @@ export default function App() {
   useEffect(() => {
     if (tab === 'admin' && isAdmin) {
       fetchAdminUsers();
+      // Auto-refresh every 5 seconds to update online/offline status in real-time
+      const interval = setInterval(fetchAdminUsers, 5000);
+      return () => clearInterval(interval);
     }
   }, [tab, isAdmin]);
 
