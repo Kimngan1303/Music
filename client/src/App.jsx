@@ -762,6 +762,55 @@ export default function App() {
     });
   };
 
+  // Shuffle Mode State: boolean
+  const [isShuffle, setIsShuffle] = useState(false);
+  const isShuffleRef = useRef(false);
+  isShuffleRef.current = isShuffle;
+
+  // Active playing queue (array of track objects)
+  const [playingQueue, setPlayingQueue] = useState([]);
+
+  const activePlaylist = tab.startsWith('playlist_') ? playlists.find(p => p._id === tab.split('_')[1]) : null;
+
+  const list = songs
+    .filter(s => s.title.toLowerCase().includes(query.toLowerCase()) || s.artist.toLowerCase().includes(query.toLowerCase()))
+    .filter(s => {
+      if (tab === 'favorites') return favs.includes(s.id);
+      if (activePlaylist) return activePlaylist.songs.includes(s.id);
+      return s.inLibrary !== false;
+    });
+
+  const getCurrentTrackList = () => {
+    // 1. If currently viewing a specific playlist tab, use songs in that playlist
+    if (tab.startsWith('playlist_')) {
+      const playlistId = tab.split('_')[1];
+      const pl = playlists.find(p => p._id === playlistId);
+      if (pl && pl.songs && pl.songs.length > 0) {
+        const plSongs = pl.songs
+          .map(id => songs.find(s => s.id === id))
+          .filter(Boolean);
+        if (plSongs.length > 0) return plSongs;
+      }
+    }
+
+    // 2. If currently viewing Favorites tab, use favorite songs
+    if (tab === 'favorites') {
+      const favSongs = songs.filter(s => favs.includes(s.id));
+      if (favSongs.length > 0) return favSongs;
+    }
+
+    // 3. If playingQueue state is active and valid
+    if (playingQueue && playingQueue.length > 0) {
+      const validQueue = playingQueue.filter(qSong => songs.some(s => s.id === qSong.id));
+      if (validQueue.length > 0) return validQueue;
+    }
+
+    // 4. Default: current displayed list or library songs
+    if (list && list.length > 0) return list;
+    const libSongs = songs.filter(s => s.inLibrary !== false);
+    return libSongs.length > 0 ? libSongs : songs;
+  };
+
   // Current active theme tokens
   const C = THEMES[themeKey] || THEMES.nude;
 
@@ -893,8 +942,20 @@ export default function App() {
     setSleepTimeLeft(nextVal * 60);
   };
 
-  const play = trk => {
+  const play = (trk, queue = null) => {
+    if (!trk) return;
     setTrack(trk); setPlaying(true);
+
+    if (queue && Array.isArray(queue) && queue.length > 0) {
+      setPlayingQueue(queue);
+    } else if (tab.startsWith('playlist_') && activePlaylist) {
+      const plSongs = activePlaylist.songs.map(id => songs.find(s => s.id === id)).filter(Boolean);
+      if (plSongs.length > 0) setPlayingQueue(plSongs);
+    } else if (tab === 'favorites') {
+      const favSongs = songs.filter(s => favs.includes(s.id));
+      if (favSongs.length > 0) setPlayingQueue(favSongs);
+    }
+
     let yid = trk.youtubeId;
 
     // Auto-migrate old Spotify tracks
@@ -939,7 +1000,11 @@ export default function App() {
   };
 
   const togglePlay = () => {
-    if (!track) { if (songs[0]) play(songs[0]); return; }
+    if (!track) {
+      const q = getCurrentTrackList();
+      if (q && q[0]) play(q[0], q);
+      return;
+    }
     if (playing) {
       yt.current?.pauseVideo?.();
       setPlaying(false);
@@ -954,9 +1019,19 @@ export default function App() {
   };
 
   const nextTrack = () => {
-    if (songs.length === 0) return;
-    const i = songs.findIndex(s => s.id === track?.id);
-    play(songs[(i + 1) % songs.length]);
+    const q = getCurrentTrackList();
+    if (!q || q.length === 0) return;
+
+    if (isShuffleRef.current) {
+      let candidates = q.filter(s => s.id !== track?.id);
+      if (candidates.length === 0) candidates = q;
+      const nextSong = candidates[Math.floor(Math.random() * candidates.length)];
+      play(nextSong, q);
+    } else {
+      const i = q.findIndex(s => s.id === track?.id);
+      const nextIndex = i < 0 ? 0 : (i + 1) % q.length;
+      play(q[nextIndex], q);
+    }
   };
 
   const nextTrackRef = useRef();
@@ -964,14 +1039,33 @@ export default function App() {
 
 
   const prevTrack = () => {
-    if (songs.length === 0) return;
-    const i = songs.findIndex(s => s.id === track?.id);
-    play(songs[(i - 1 + songs.length) % songs.length]);
+    const q = getCurrentTrackList();
+    if (!q || q.length === 0) return;
+
+    const i = q.findIndex(s => s.id === track?.id);
+    const prevIndex = i < 0 ? 0 : (i - 1 + q.length) % q.length;
+    play(q[prevIndex], q);
   };
 
   const random = () => {
-    if (songs.length === 0) return;
-    play(songs[Math.floor(Math.random() * songs.length)]);
+    const currentList = getCurrentTrackList();
+    if (!currentList || currentList.length === 0) return;
+
+    let candidates = currentList.filter(s => s.id !== track?.id);
+    if (candidates.length === 0) candidates = currentList;
+
+    const selected = candidates[Math.floor(Math.random() * candidates.length)];
+    setIsShuffle(true);
+    play(selected, currentList);
+  };
+
+  const toggleShuffle = () => {
+    if (!isShuffle) {
+      setIsShuffle(true);
+      random();
+    } else {
+      setIsShuffle(false);
+    }
   };
 
   // Background playback control for mobile
@@ -1288,16 +1382,6 @@ export default function App() {
   };
 
   const fmt = s => isNaN(s) || s < 0 ? '0:00' : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-
-  const activePlaylist = tab.startsWith('playlist_') ? playlists.find(p => p._id === tab.split('_')[1]) : null;
-
-  const list = songs
-    .filter(s => s.title.toLowerCase().includes(query.toLowerCase()) || s.artist.toLowerCase().includes(query.toLowerCase()))
-    .filter(s => {
-      if (tab === 'favorites') return favs.includes(s.id);
-      if (activePlaylist) return activePlaylist.songs.includes(s.id);
-      return s.inLibrary !== false;
-    });
 
   const glass = { background: C.surface, backdropFilter: 'blur(20px)', border: `1.5px solid ${C.border}` };
   const btn = { background: C.btn, color: C.btnTxt, border: `1.5px solid ${C.btnBd}` };
@@ -1711,13 +1795,24 @@ export default function App() {
             ) : (
               <>
                 {/* ── Section heading ─────────────────── */}
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-3 mb-4 flex-wrap">
                   <h2 style={{ color: C.txt, fontFamily: F.heading, fontSize: '22px', fontWeight: 700 }}>
                     {tab === 'favorites' ? '🤍 Yêu Thích' : activePlaylist ? `✨ ${activePlaylist.name}` : '✨ Thư Viện Nhạc'}
                   </h2>
                   <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: C.tag, color: C.tagTxt, border: `1px solid ${C.tagBd}` }}>
                     {list.length} bài
                   </span>
+                  {list.length > 0 && (
+                    <button
+                      onClick={random}
+                      title="Phát ngẫu nhiên danh sách này"
+                      className="text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center gap-1.5 cursor-pointer hover:scale-105"
+                      style={{ background: C.tag, color: C.primarySolid, border: `1.5px solid ${C.border}` }}
+                    >
+                      <i className="ri-shuffle-line text-sm"></i>
+                      <span>Phát ngẫu nhiên</span>
+                    </button>
+                  )}
                   {activePlaylist && (
                     <button onClick={() => handleDeletePlaylist(activePlaylist._id)} className="ml-auto text-xs px-3 py-1.5 rounded-full font-bold transition flex items-center"
                       style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
@@ -1736,7 +1831,7 @@ export default function App() {
                   ) : list.map((song, i) => {
                     const sel = track?.id === song.id;
                     return (
-                      <div key={song.id} onClick={() => play(song)}
+                      <div key={song.id} onClick={() => play(song, list)}
                         className="flex items-center p-2 md:p-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-200 group gap-2 md:gap-3"
                         style={{
                           background: sel ? C.tag : C.surface,
@@ -2323,8 +2418,22 @@ export default function App() {
         {/* Controls + Progress */}
         <div className="flex flex-col items-center gap-1.5 md:gap-1.5 w-full md:flex-1 max-w-lg md:px-6">
           <div className="flex items-center justify-between md:justify-center gap-1 md:gap-5 w-full px-4 md:px-0 order-2 md:order-1">
-            <button onClick={random} title="Phát ngẫu nhiên" style={{ color: C.txtFad }}>
+            <button
+              onClick={toggleShuffle}
+              title={
+                isShuffle
+                  ? 'Đang phát ngẫu nhiên trong danh sách (Nhấp để tắt)'
+                  : 'Bật phát ngẫu nhiên trong danh sách này'
+              }
+              className="relative p-1 transition cursor-pointer"
+              style={{ color: isShuffle ? C.primarySolid : C.txtFad }}
+            >
               <i className="ri-shuffle-line text-sm md:text-lg"></i>
+              {isShuffle && (
+                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1.5 md:h-1.5 rounded-full"
+                  style={{ background: C.primarySolid }}>
+                </span>
+              )}
             </button>
 
             {/* Repeat Mode Button */}
