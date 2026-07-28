@@ -500,6 +500,37 @@ function CyberMusicFish() {
   );
 }
 
+// ─── Floating Tooltip Component (Hiển thị nhãn ghi chú phía trên button) ───
+function Tooltip({ text, children }) {
+  if (!text) return children;
+  return (
+    <div className="relative group/tooltip inline-flex items-center justify-center">
+      {children}
+      <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 hidden group-hover/tooltip:flex flex-col items-center pointer-events-none z-[100] whitespace-nowrap transition-all duration-150">
+        <div
+          className="px-2.5 py-1 text-[11px] font-bold rounded-xl text-white shadow-2xl flex items-center gap-1 leading-none"
+          style={{
+            background: 'rgba(15, 23, 42, 0.95)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 255, 255, 0.18)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)'
+          }}
+        >
+          {text}
+        </div>
+        <div
+          className="w-2 h-2 -mt-1 rotate-45 shrink-0"
+          style={{
+            background: 'rgba(15, 23, 42, 0.95)',
+            borderRight: '1px solid rgba(255, 255, 255, 0.18)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.18)'
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 // Start with empty library — user adds their own songs
 const DEFAULT_SONGS = [];
 
@@ -1523,8 +1554,8 @@ export default function App() {
           </div>
 
           {/* Nav */}
-          <nav className="flex flex-col gap-2 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-            <p style={{ fontFamily: F.brand, fontSize: '11px', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.txtFad, padding: '0 12px', marginBottom: '2px' }}>Menu</p>
+          <nav className="flex flex-col gap-2 flex-1 overflow-y-auto px-2 py-1 custom-scrollbar">
+            <p style={{ fontFamily: F.brand, fontSize: '11px', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.txtFad, padding: '0 8px', marginBottom: '2px' }}>Menu</p>
             {[
               {
                 key: 'home',
@@ -1557,7 +1588,7 @@ export default function App() {
                   key={t.key}
                   onClick={() => { setTab(t.key); setIsMobileMenuOpen(false); }}
                   title={t.tooltip}
-                  className={`flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-200 text-left shrink-0 cursor-pointer ${active ? 'scale-[1.02]' : 'hover:opacity-85 active:scale-95'}`}
+                  className={`flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-200 text-left shrink-0 cursor-pointer ${active ? 'opacity-100' : 'hover:opacity-85 active:scale-95'}`}
                   style={active
                     ? {
                       background: C.tag,
@@ -1615,7 +1646,7 @@ export default function App() {
                   key={p._id}
                   onClick={() => { setTab(tabKey); setIsMobileMenuOpen(false); }}
                   title={`Mở danh sách phát: ${p.name}`}
-                  className={`flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-200 text-left shrink-0 cursor-pointer ${active ? 'scale-[1.02]' : 'hover:opacity-85 active:scale-95'}`}
+                  className={`flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-200 text-left shrink-0 cursor-pointer ${active ? 'opacity-100' : 'hover:opacity-85 active:scale-95'}`}
                   style={active
                     ? {
                       background: C.tag,
@@ -2405,86 +2436,90 @@ export default function App() {
         {/* Controls + Progress */}
         <div className="flex flex-col items-center gap-1.5 md:gap-1.5 w-full md:flex-1 max-w-lg md:px-6">
           <div className="flex items-center justify-between md:justify-center gap-1 md:gap-5 w-full px-4 md:px-0 order-2 md:order-1">
-            <button
-              onClick={toggleShuffle}
-              title={
-                isShuffle
-                  ? 'Đang phát ngẫu nhiên trong danh sách (Nhấp để tắt)'
-                  : 'Bật phát ngẫu nhiên trong danh sách này'
-              }
-              className="relative p-1 transition cursor-pointer"
-              style={{ color: isShuffle ? C.primarySolid : C.txtFad }}
-            >
-              <i className="ri-shuffle-line text-sm md:text-lg"></i>
-              {isShuffle && (
-                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1.5 md:h-1.5 rounded-full"
-                  style={{ background: C.primarySolid }}>
-                </span>
-              )}
-            </button>
+            <Tooltip text={isShuffle ? 'Tắt phát ngẫu nhiên' : 'Bật phát ngẫu nhiên'}>
+              <button
+                onClick={toggleShuffle}
+                className="relative p-1 transition cursor-pointer hover:scale-110 active:scale-95"
+                style={{ color: isShuffle ? C.primarySolid : C.txtFad }}
+              >
+                <i className="ri-shuffle-line text-sm md:text-lg"></i>
+                {isShuffle && (
+                  <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1.5 md:h-1.5 rounded-full"
+                    style={{ background: C.primarySolid }}>
+                  </span>
+                )}
+              </button>
+            </Tooltip>
 
             {/* Repeat Mode Button */}
-            <button
-              onClick={toggleRepeat}
-              title={
-                repeatMode === 'one'
-                  ? 'Đang lặp 1 bài hát'
-                  : repeatMode === 'all'
-                    ? 'Đang lặp toàn bộ danh sách'
-                    : 'Lặp lại: Tắt'
-              }
-              className="relative p-1 transition cursor-pointer"
-              style={{ color: repeatMode !== 'off' ? C.primarySolid : C.txtFad }}
-            >
-              <i className={repeatMode === 'one' ? 'ri-repeat-2-line text-sm md:text-lg font-bold' : 'ri-repeat-line text-sm md:text-lg'}></i>
-              {repeatMode === 'one' && (
-                <span className="absolute -top-1 -right-1 text-[7px] md:text-[9px] font-black rounded-full w-2.5 h-2.5 md:w-3.5 md:h-3.5 flex items-center justify-center text-white shadow-xs"
-                  style={{ background: C.primarySolid }}>
-                  1
-                </span>
-              )}
-              {repeatMode === 'all' && (
-                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1.5 md:h-1.5 rounded-full"
-                  style={{ background: C.primarySolid }}>
-                </span>
-              )}
-            </button>
+            <Tooltip text={repeatMode === 'one' ? 'Đang lặp 1 bài' : repeatMode === 'all' ? 'Đang lặp danh sách' : 'Lặp lại danh sách'}>
+              <button
+                onClick={toggleRepeat}
+                className="relative p-1 transition cursor-pointer hover:scale-110 active:scale-95"
+                style={{ color: repeatMode !== 'off' ? C.primarySolid : C.txtFad }}
+              >
+                <i className={repeatMode === 'one' ? 'ri-repeat-2-line text-sm md:text-lg font-bold' : 'ri-repeat-line text-sm md:text-lg'}></i>
+                {repeatMode === 'one' && (
+                  <span className="absolute -top-1 -right-1 text-[7px] md:text-[9px] font-black rounded-full w-2.5 h-2.5 md:w-3.5 md:h-3.5 flex items-center justify-center text-white shadow-xs"
+                    style={{ background: C.primarySolid }}>
+                    1
+                  </span>
+                )}
+                {repeatMode === 'all' && (
+                  <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1.5 md:h-1.5 rounded-full"
+                    style={{ background: C.primarySolid }}>
+                  </span>
+                )}
+              </button>
+            </Tooltip>
 
-            <button onClick={prevTrack} title="Phát bài hát phía trước" className="transition-transform hover:scale-110 active:scale-95 cursor-pointer" style={{ color: C.txtSub }}>
-              <i className="ri-skip-back-fill text-lg md:text-2xl"></i>
-            </button>
-            <button onClick={togglePlay}
-              title={playing ? 'Tạm dừng nghe nhạc' : 'Bật phát nhạc'}
-              className="w-9 h-9 md:w-12 md:h-12 rounded-full text-white text-sm md:text-xl flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
-              style={{ background: C.primary, boxShadow: `0 4px 18px ${C.primaryGlow}` }}>
-              <i className={playing ? 'ri-pause-fill' : 'ri-play-fill'}></i>
-            </button>
-            <button onClick={nextTrack} title="Phát bài hát tiếp theo" className="transition-transform hover:scale-110 active:scale-95 cursor-pointer" style={{ color: C.txtSub }}>
-              <i className="ri-skip-forward-fill text-lg md:text-2xl"></i>
-            </button>
-            <button onClick={() => track && toggleFav(track.id)} title={track && favs.includes(track.id) ? 'Bỏ yêu thích bài hát đang phát' : 'Yêu thích bài hát đang phát'}
-              className="transition-transform hover:scale-110 active:scale-95 cursor-pointer"
-              style={{ color: track && favs.includes(track.id) ? C.primarySolid : C.txtFad }}>
-              <i className={track && favs.includes(track.id) ? 'ri-heart-fill text-lg' : 'ri-heart-line'}></i>
-            </button>
-            <button onClick={cycleSleepTimer} title={sleepTimer ? `Hẹn giờ tắt: ${sleepTimer} phút (còn ${Math.ceil(sleepTimeLeft / 60)} phút)` : 'Đặt hẹn giờ tự động tắt nhạc'}
-              className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
-              style={{ color: sleepTimer > 0 ? C.primarySolid : C.txtFad }}>
-              <i className={sleepTimer > 0 ? 'ri-timer-fill text-lg' : 'ri-timer-line text-lg'}></i>
-              {sleepTimer > 0 && (
-                <span className="absolute -top-1 -right-2 text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center text-white shadow-xs"
-                  style={{ background: C.primarySolid }}>
-                  {sleepTimer}
-                </span>
-              )}
-            </button>
+            <Tooltip text="Bài phía trước">
+              <button onClick={prevTrack} className="transition-transform hover:scale-110 active:scale-95 cursor-pointer" style={{ color: C.txtSub }}>
+                <i className="ri-skip-back-fill text-lg md:text-2xl"></i>
+              </button>
+            </Tooltip>
+
+            <Tooltip text={playing ? 'Tạm dừng' : 'Bật phát nhạc'}>
+              <button onClick={togglePlay}
+                className="w-9 h-9 md:w-12 md:h-12 rounded-full text-white text-sm md:text-xl flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+                style={{ background: C.primary, boxShadow: `0 4px 18px ${C.primaryGlow}` }}>
+                <i className={playing ? 'ri-pause-fill' : 'ri-play-fill'}></i>
+              </button>
+            </Tooltip>
+
+            <Tooltip text="Bài tiếp theo">
+              <button onClick={nextTrack} className="transition-transform hover:scale-110 active:scale-95 cursor-pointer" style={{ color: C.txtSub }}>
+                <i className="ri-skip-forward-fill text-lg md:text-2xl"></i>
+              </button>
+            </Tooltip>
+
+            <Tooltip text={track && favs.includes(track.id) ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}>
+              <button onClick={() => track && toggleFav(track.id)}
+                className="transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                style={{ color: track && favs.includes(track.id) ? C.primarySolid : C.txtFad }}>
+                <i className={track && favs.includes(track.id) ? 'ri-heart-fill text-lg' : 'ri-heart-line'}></i>
+              </button>
+            </Tooltip>
+
+            <Tooltip text={sleepTimer ? `Hẹn giờ: ${sleepTimer} phút` : 'Hẹn giờ tắt nhạc'}>
+              <button onClick={cycleSleepTimer}
+                className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                style={{ color: sleepTimer > 0 ? C.primarySolid : C.txtFad }}>
+                <i className={sleepTimer > 0 ? 'ri-timer-fill text-lg' : 'ri-timer-line text-lg'}></i>
+                {sleepTimer > 0 && (
+                  <span className="absolute -top-1 -right-2 text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center text-white shadow-xs"
+                    style={{ background: C.primarySolid }}>
+                    {sleepTimer}
+                  </span>
+                )}
+              </button>
+            </Tooltip>
           </div>
 
           {/* Timeline */}
           <div className="flex items-center gap-2 md:gap-3 w-full order-1 md:order-2 px-2 md:px-0">
             <span className="text-[10px] md:text-[11px] font-mono w-7 md:w-9 text-right shrink-0" style={{ color: C.txtFad }}>{fmt(curTime)}</span>
             <input type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
-              title={`Tua thời gian bài hát (${fmt(curTime)} / ${fmt(dur)})`}
               className="flex-1 cursor-pointer" style={{ accentColor: C.primarySolid }} />
             <span className="text-[11px] font-mono w-9 shrink-0" style={{ color: C.txtFad }}>{fmt(dur)}</span>
           </div>
@@ -2492,14 +2527,14 @@ export default function App() {
 
         {/* Volume */}
         <div className="hidden md:flex items-center justify-end gap-3 w-64 shrink-0">
-          <button onClick={toggleMute}
-            title={muted || vol === 0 ? 'Bật lại âm thanh' : 'Tắt tiếng (Mute)'}
-            className="transition-transform hover:scale-110 active:scale-95 cursor-pointer"
-            style={{ color: muted || vol === 0 ? '#f43f5e' : C.txtFad }}>
-            <i className={`text-lg ${muted || vol === 0 ? 'ri-volume-mute-fill' : vol < 50 ? 'ri-volume-down-fill' : 'ri-volume-up-fill'}`}></i>
-          </button>
+          <Tooltip text={muted || vol === 0 ? 'Bật lại âm thanh' : 'Tắt tiếng'}>
+            <button onClick={toggleMute}
+              className="transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+              style={{ color: muted || vol === 0 ? '#f43f5e' : C.txtFad }}>
+              <i className={`text-lg ${muted || vol === 0 ? 'ri-volume-mute-fill' : vol < 50 ? 'ri-volume-down-fill' : 'ri-volume-up-fill'}`}></i>
+            </button>
+          </Tooltip>
           <input type="range" min="0" max="100" value={muted ? 0 : vol} onChange={changeVol}
-            title={`Âm lượng: ${muted ? 0 : vol}%`}
             className="w-24 cursor-pointer" style={{ accentColor: C.primarySolid }} />
         </div>
       </footer>
