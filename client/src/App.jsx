@@ -1523,27 +1523,71 @@ export default function App() {
           </div>
 
           {/* Nav */}
-          <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-            <p style={{ fontFamily: F.brand, fontSize: '11px', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.txtFad, padding: '0 12px', marginBottom: '4px' }}>Menu</p>
+          <nav className="flex flex-col gap-2 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            <p style={{ fontFamily: F.brand, fontSize: '11px', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.txtFad, padding: '0 12px', marginBottom: '2px' }}>Menu</p>
             {[
-              { key: 'home', icon: 'ri-home-heart-line', label: 'Trang chủ', tooltip: 'Mở trang chủ' },
-              { key: 'library', icon: 'ri-music-2-line', label: 'Thư viện', tooltip: 'Xem toàn bộ thư viện nhạc' },
-              { key: 'favorites', icon: 'ri-heart-3-line', label: 'Yêu thích', badge: favs.length, tooltip: 'Xem các bài hát đã yêu thích' },
+              {
+                key: 'home',
+                icon: 'ri-home-heart-fill',
+                label: 'Trang chủ',
+                sub: 'Trang nhạc cá nhân',
+                color: 'linear-gradient(135deg, #00f2fe, #4facfe)',
+                tooltip: 'Mở trang chủ'
+              },
+              {
+                key: 'library',
+                icon: 'ri-music-2-fill',
+                label: 'Thư viện',
+                sub: `Thư viện • ${songs.filter(s => s.inLibrary !== false).length} bài`,
+                color: 'linear-gradient(135deg, #a855f7, #ec4899)',
+                tooltip: 'Xem toàn bộ thư viện nhạc'
+              },
+              {
+                key: 'favorites',
+                icon: 'ri-heart-fill',
+                label: 'Yêu thích',
+                sub: `Playlist • ${favs.length} bài`,
+                color: 'linear-gradient(135deg, #450af5, #8e2de2)',
+                tooltip: 'Xem các bài hát đã yêu thích'
+              },
             ].map(t => {
               const active = tab === t.key;
               return (
-                <button key={t.key} onClick={() => { setTab(t.key); setIsMobileMenuOpen(false); }}
+                <button
+                  key={t.key}
+                  onClick={() => { setTab(t.key); setIsMobileMenuOpen(false); }}
                   title={t.tooltip}
-                  className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 text-left shrink-0 cursor-pointer hover:opacity-80 active:scale-95"
+                  className={`flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-200 text-left shrink-0 cursor-pointer ${active ? 'scale-[1.02]' : 'hover:opacity-85 active:scale-95'}`}
                   style={active
-                    ? { background: C.tag, color: C.txt, border: `1.5px solid ${C.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }
-                    : { color: C.txtSub, border: '1.5px solid transparent' }
+                    ? {
+                      background: C.tag,
+                      color: C.txt,
+                      border: `1.5px solid ${C.borderSel || C.primarySolid}`,
+                      boxShadow: `0 4px 16px ${C.primaryGlow || 'rgba(0,0,0,0.1)'}`
+                    }
+                    : {
+                      background: 'transparent',
+                      color: C.txtSub,
+                      border: '1.5px solid transparent'
+                    }
                   }
                 >
-                  <i className={`${t.icon} text-base`}></i>
-                  {t.label}
-                  {t.badge !== undefined && (
-                    <span className="ml-auto text-[11px] font-bold text-white px-2 py-0.5 rounded-full" style={{ background: C.primarySolid }}>{t.badge}</span>
+                  <div
+                    className="w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm transition-transform"
+                    style={{ background: t.color }}
+                  >
+                    <i className={`${t.icon} text-lg`}></i>
+                  </div>
+                  <div className="flex flex-col min-w-0 flex-1 leading-tight">
+                    <span className="text-sm font-bold truncate" style={{ color: active ? C.primarySolid : C.txt }}>
+                      {t.label}
+                    </span>
+                    <span className="text-[11px] font-medium truncate mt-0.5" style={{ color: C.txtSub }}>
+                      {t.sub}
+                    </span>
+                  </div>
+                  {active && (
+                    <i className="ri-volume-up-fill text-sm animate-pulse shrink-0" style={{ color: C.primarySolid }}></i>
                   )}
                 </button>
               );
@@ -1561,17 +1605,57 @@ export default function App() {
             {playlists.map(p => {
               const tabKey = `playlist_${p._id}`;
               const active = tab === tabKey;
+
+              const firstSongId = p.songs?.[0];
+              const firstSong = firstSongId ? songs.find(s => s.id === firstSongId) : null;
+              const coverThumb = firstSong?.thumbnail;
+
               return (
-                <button key={p._id} onClick={() => { setTab(tabKey); setIsMobileMenuOpen(false); }}
+                <button
+                  key={p._id}
+                  onClick={() => { setTab(tabKey); setIsMobileMenuOpen(false); }}
                   title={`Mở danh sách phát: ${p.name}`}
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 text-left shrink-0 cursor-pointer hover:opacity-80 active:scale-95"
+                  className={`flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-200 text-left shrink-0 cursor-pointer ${active ? 'scale-[1.02]' : 'hover:opacity-85 active:scale-95'}`}
                   style={active
-                    ? { background: C.tag, color: C.txt, border: `1.5px solid ${C.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }
-                    : { color: C.txtSub, border: '1.5px solid transparent' }
+                    ? {
+                      background: C.tag,
+                      color: C.txt,
+                      border: `1.5px solid ${C.borderSel || C.primarySolid}`,
+                      boxShadow: `0 4px 16px ${C.primaryGlow || 'rgba(0,0,0,0.1)'}`
+                    }
+                    : {
+                      background: 'transparent',
+                      color: C.txtSub,
+                      border: '1.5px solid transparent'
+                    }
                   }
                 >
-                  <i className={active ? "ri-folder-music-fill text-base" : "ri-folder-music-line text-base"} style={{ color: active ? C.primarySolid : C.txtFad }}></i>
-                  <span className="truncate flex-1">{p.name}</span>
+                  {coverThumb ? (
+                    <img
+                      src={coverThumb}
+                      alt={p.name}
+                      className="w-11 h-11 rounded-xl object-cover shrink-0 shadow-sm"
+                      style={{ border: `1.5px solid ${active ? C.borderSel : C.border}` }}
+                    />
+                  ) : (
+                    <div
+                      className="w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm"
+                      style={{ background: active ? C.primary : 'linear-gradient(135deg, #475569, #334155)' }}
+                    >
+                      <i className={active ? "ri-folder-music-fill text-lg" : "ri-folder-music-line text-lg"}></i>
+                    </div>
+                  )}
+                  <div className="flex flex-col min-w-0 flex-1 leading-tight">
+                    <span className="text-sm font-bold truncate" style={{ color: active ? C.primarySolid : C.txt }}>
+                      {p.name}
+                    </span>
+                    <span className="text-[11px] font-medium truncate mt-0.5" style={{ color: C.txtSub }}>
+                      Playlist • {p.songs ? p.songs.length : 0} bài
+                    </span>
+                  </div>
+                  {active && (
+                    <i className="ri-volume-up-fill text-sm animate-pulse shrink-0" style={{ color: C.primarySolid }}></i>
+                  )}
                 </button>
               );
             })}
