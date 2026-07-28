@@ -673,14 +673,26 @@ export default function App() {
   // Scroll Position State for Sticky Header Navigation
   const [mainScrollTop, setMainScrollTop] = useState(0);
 
-  // System OS Picture-in-Picture Window State & Height Tracking
+  // System OS Picture-in-Picture Window State & Height Tracking (With Ref Sync for Stale Closure Prevention)
   const [pipWindow, setPipWindow] = useState(null);
+  const pipWindowRef = useRef(null);
   const [pipHeight, setPipHeight] = useState(380);
+
+  const updatePipWindow = (win) => {
+    pipWindowRef.current = win;
+    setPipWindow(win);
+  };
 
   // Mobile iOS / Android Video Picture-in-Picture State & Refs
   const mobileCanvasRef = useRef(null);
   const mobileVideoRef = useRef(null);
   const [mobilePipActive, setMobilePipActive] = useState(false);
+  const mobilePipActiveRef = useRef(false);
+
+  const updateMobilePipActive = (active) => {
+    mobilePipActiveRef.current = active;
+    setMobilePipActive(active);
+  };
 
   // Reload songs and favs when user logs in or out
   useEffect(() => {
@@ -998,9 +1010,9 @@ export default function App() {
   const togglePipWindow = async () => {
     if ('documentPictureInPicture' in window) {
       try {
-        if (pipWindow) {
-          pipWindow.close();
-          setPipWindow(null);
+        if (pipWindowRef.current) {
+          try { pipWindowRef.current.close(); } catch (e) {}
+          updatePipWindow(null);
           return;
         }
 
@@ -1056,12 +1068,13 @@ export default function App() {
         pipWin.document.body.style.background = C.isDark ? '#121214' : '#1e1e24';
 
         pipWin.addEventListener('pagehide', () => {
-          setPipWindow(null);
+          updatePipWindow(null);
         });
 
-        setPipWindow(pipWin);
+        updatePipWindow(pipWin);
       } catch (err) {
         console.error('Lỗi mở System PiP Window:', err);
+        updatePipWindow(null);
       }
     }
   };
@@ -1135,17 +1148,17 @@ export default function App() {
       if (videoEl.webkitSetPresentationMode) {
         const isCurrentlyPip = videoEl.webkitPresentationMode === 'picture-in-picture';
         videoEl.webkitSetPresentationMode(isCurrentlyPip ? 'inline' : 'picture-in-picture');
-        setMobilePipActive(!isCurrentlyPip);
+        updateMobilePipActive(!isCurrentlyPip);
         return;
       }
 
       // Standard W3C HTML5 Picture-in-Picture API
       if (document.pictureInPictureElement) {
         await document.exitPictureInPicture();
-        setMobilePipActive(false);
+        updateMobilePipActive(false);
       } else if (videoEl.requestPictureInPicture) {
         await videoEl.requestPictureInPicture();
-        setMobilePipActive(true);
+        updateMobilePipActive(true);
       }
     } catch (e) {
       console.log('Mobile PiP Error:', e);
@@ -1157,30 +1170,30 @@ export default function App() {
     const handleVisibilityChange = async () => {
       if (document.hidden && playing && track) {
         // Tab is hidden / inactive -> Auto launch floating mini player window
-        if ('documentPictureInPicture' in window && !pipWindow) {
+        if ('documentPictureInPicture' in window && !pipWindowRef.current) {
           try { await togglePipWindow(); } catch (e) {}
-        } else if (!pipWindow && !mobilePipActive) {
+        } else if (!pipWindowRef.current && !mobilePipActiveRef.current) {
           try { await triggerMobilePip(); } catch (e) {}
         }
       } else if (!document.hidden) {
         // Tab is visible / active again -> Auto close floating mini player window!
-        if (pipWindow) {
+        if (pipWindowRef.current) {
           try {
-            pipWindow.close();
-            setPipWindow(null);
+            pipWindowRef.current.close();
           } catch (e) {}
+          updatePipWindow(null);
         }
         if (document.pictureInPictureElement) {
           try {
             await document.exitPictureInPicture();
-            setMobilePipActive(false);
           } catch (e) {}
+          updateMobilePipActive(false);
         }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [playing, track, pipWindow, mobilePipActive]);
+  }, [playing, track]);
 
   // MediaSession API Integration for Mobile iOS & Android Lockscreen / Control Center Media Controls
   useEffect(() => {
