@@ -559,12 +559,12 @@ const THEMES = {
 
 const DYNAMIC_UNLOCK_MILESTONES = {
   aurora: { reqMinutes: 0, label: 'Mở sẵn (Mặc định)' },
-  nebula: { reqMinutes: 30, label: '30 phút' },
-  sunset_mix: { reqMinutes: 90, label: '1.5 giờ (90p)' },
-  ocean_mix: { reqMinutes: 180, label: '3 giờ (180p)' },
-  fire_mix: { reqMinutes: 300, label: '5 giờ (300p)' },
-  cyberpunk: { reqMinutes: 480, label: '8 giờ (480p)' },
-  prisma_mix: { reqMinutes: 720, label: '12 giờ (720p)' }
+  nebula: { reqMinutes: 300, label: '5 giờ' },
+  sunset_mix: { reqMinutes: 900, label: '15 giờ' },
+  ocean_mix: { reqMinutes: 1800, label: '30 giờ' },
+  fire_mix: { reqMinutes: 3000, label: '50 giờ' },
+  cyberpunk: { reqMinutes: 4500, label: '75 giờ' },
+  prisma_mix: { reqMinutes: 6000, label: '100 giờ (Cực Phẩm)' }
 };
 
 const fmtActiveTime = (totalSeconds) => {
