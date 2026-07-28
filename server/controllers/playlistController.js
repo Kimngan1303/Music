@@ -16,9 +16,28 @@ const createPlaylist = async (req, res) => {
     const { name, userId } = req.body;
     if (!name || !userId) return res.status(400).json({ message: 'Missing name or userId' });
     
-    const newPlaylist = new Playlist({ name, userId, songs: [] });
+    const newPlaylist = new Playlist({ name, userId, songs: [], pinned: false, cover: '' });
     await newPlaylist.save();
     res.status(201).json(newPlaylist);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const updatePlaylist = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, pinned, cover } = req.body;
+    
+    const playlist = await Playlist.findById(id);
+    if (!playlist) return res.status(404).json({ message: 'Playlist not found' });
+    
+    if (name !== undefined) playlist.name = name;
+    if (pinned !== undefined) playlist.pinned = pinned;
+    if (cover !== undefined) playlist.cover = cover;
+    
+    await playlist.save();
+    res.json(playlist);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -84,6 +103,7 @@ const deletePlaylist = async (req, res) => {
 module.exports = {
   getPlaylists,
   createPlaylist,
+  updatePlaylist,
   addSongToPlaylist,
   removeSongFromPlaylist,
   deletePlaylist

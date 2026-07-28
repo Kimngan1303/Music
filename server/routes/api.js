@@ -149,16 +149,17 @@ router.post('/playlists', auth, async (req, res) => {
   }
 });
 
-router.post('/playlists/:id/add-song', auth, async (req, res) => {
+router.put('/playlists/:id', auth, async (req, res) => {
   try {
-    const { songId } = req.body;
+    const { name, pinned, cover } = req.body;
     const playlist = await Playlist.findOne({ _id: req.params.id, userId: req.user.id });
     if (!playlist) return res.status(404).json({ message: 'Playlist not found' });
 
-    if (!playlist.songs.includes(songId)) {
-      playlist.songs.push(songId);
-      await playlist.save();
-    }
+    if (name !== undefined) playlist.name = name;
+    if (pinned !== undefined) playlist.pinned = pinned;
+    if (cover !== undefined) playlist.cover = cover;
+
+    await playlist.save();
     res.json(playlist);
   } catch (err) {
     res.status(500).json({ message: err.message });

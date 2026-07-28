@@ -1341,10 +1341,16 @@ export default function App() {
   const handleTogglePinPlaylist = id => {
     setPlaylists(prev => {
       const updated = prev.map(p => p._id === id ? { ...p, pinned: !p.pinned } : p);
+      const uid = user?._id || 'guest';
+      localStorage.setItem(playlistsKey(uid), JSON.stringify(updated));
+
       if (user) {
-        localStorage.setItem(playlistsKey(user._id), JSON.stringify(updated));
         const target = updated.find(p => p._id === id);
-        axios.put(`/api/playlists/${id}`, { pinned: target.pinned }).catch(() => { });
+        axios.put(`/api/playlists/${id}`, { pinned: target.pinned }, {
+          headers: { Authorization: `Bearer ${user.token}` }
+        }).catch(() => {
+          axios.put(`/api/playlists/${id}`, { pinned: target.pinned }).catch(() => { });
+        });
       }
       return updated;
     });
@@ -1360,9 +1366,15 @@ export default function App() {
 
     setPlaylists(prev => {
       const updated = prev.map(p => p._id === id ? { ...p, name: newName, cover: newCover } : p);
+      const uid = user?._id || 'guest';
+      localStorage.setItem(playlistsKey(uid), JSON.stringify(updated));
+
       if (user) {
-        localStorage.setItem(playlistsKey(user._id), JSON.stringify(updated));
-        axios.put(`/api/playlists/${id}`, { name: newName, cover: newCover }).catch(() => { });
+        axios.put(`/api/playlists/${id}`, { name: newName, cover: newCover }, {
+          headers: { Authorization: `Bearer ${user.token}` }
+        }).catch(() => {
+          axios.put(`/api/playlists/${id}`, { name: newName, cover: newCover }).catch(() => { });
+        });
       }
       return updated;
     });
