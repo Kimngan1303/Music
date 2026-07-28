@@ -670,9 +670,6 @@ export default function App() {
   const [selectedSongIds, setSelectedSongIds] = useState([]);
   const [confirmBatchDeleteModal, setConfirmBatchDeleteModal] = useState(false);
 
-  // Lock/Unlock Bird Animation State
-  const [lockBirdAnim, setLockBirdAnim] = useState(null); // { userId, type: 'lock'|'unlock' }
-
   // Scroll Position State for Sticky Header Navigation
   const [mainScrollTop, setMainScrollTop] = useState(0);
 
@@ -1874,10 +1871,6 @@ export default function App() {
   };
 
   const handleToggleLockUser = async (u) => {
-    // Trigger bird animation before API call
-    const animType = u.isLocked ? 'unlock' : 'lock';
-    setLockBirdAnim({ userId: u._id, type: animType });
-    setTimeout(() => setLockBirdAnim(null), 2200);
     try {
       await axios.put(`/api/admin/users/${u._id}`, { isLocked: !u.isLocked });
       fetchAdminUsers();
@@ -2742,39 +2735,8 @@ export default function App() {
                         <div
                           key={u._id}
                           className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl gap-4 transition hover:opacity-95"
-                          style={{ background: C.tag, border: `1px solid ${u.isLocked ? '#ef4444' : C.border}`, position: 'relative', overflow: 'hidden' }}
+                          style={{ background: C.tag, border: `1px solid ${u.isLocked ? '#ef4444' : C.border}` }}
                         >
-                          {/* Bird Animation Overlay */}
-                          {lockBirdAnim?.userId === u._id && (
-                            <div className="pointer-events-none" style={{ position: 'absolute', inset: 0, zIndex: 50, overflow: 'hidden' }}>
-                              {lockBirdAnim.type === 'lock' ? (
-                                /* LOCK: Birds fly away (escape upward) */
-                                [0, 1, 2, 3, 4].map((i) => (
-                                  <span key={i} style={{
-                                    position: 'absolute',
-                                    fontSize: `${12 + i * 3}px`,
-                                    left: `${15 + i * 17}%`,
-                                    bottom: '10%',
-                                    animation: `birdFlyAway 1.8s ease-out ${i * 0.12}s both`,
-                                    display: 'inline-block',
-                                    filter: 'grayscale(0.3)',
-                                  }}>🕊️</span>
-                                ))
-                              ) : (
-                                /* UNLOCK: Birds fly in and land */
-                                [0, 1, 2, 3, 4].map((i) => (
-                                  <span key={i} style={{
-                                    position: 'absolute',
-                                    fontSize: `${10 + i * 3}px`,
-                                    left: `${10 + i * 18}%`,
-                                    top: '-20px',
-                                    animation: `birdFlyIn 1.8s ease-out ${i * 0.12}s both`,
-                                    display: 'inline-block',
-                                  }}>🐦</span>
-                                ))
-                              )}
-                            </div>
-                          )}
                           <div className="flex items-center gap-3.5 min-w-0">
                             <img
                               src={u.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
