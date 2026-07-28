@@ -3110,10 +3110,9 @@ export default function App() {
                         style={{
                           '--led-color': C.primarySolid,
                           '--led-glow': C.primaryGlow,
-                          '--row-bg': isSelected ? C.tag : (sel ? C.tag : C.surface),
                           background: isSelected ? C.tag : (sel ? C.tag : C.surface),
-                          border: isPlayingThis ? 'none' : `1.5px solid ${isSelected ? C.primarySolid : (sel ? C.borderSel : 'transparent')}`,
-                          boxShadow: isPlayingThis ? `0 0 24px ${C.primaryGlow}` : (sel || isSelected ? '0 4px 18px rgba(0,0,0,0.06)' : 'none'),
+                          border: isPlayingThis ? `2px solid ${C.primarySolid}` : `1.5px solid ${isSelected ? C.primarySolid : (sel ? C.borderSel : 'transparent')}`,
+                          boxShadow: isPlayingThis ? `0 0 22px ${C.primaryGlow}` : (sel || isSelected ? '0 4px 18px rgba(0,0,0,0.06)' : 'none'),
                         }}
                       >
                         {/* If select mode is active, show checkbox on left instead of track number */}
