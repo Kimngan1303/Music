@@ -533,10 +533,11 @@ const THEMES = {
   },
   cyberpunk: {
     key: 'cyberpunk',
-    name: 'Cyberpunk (Neon Mix)',
+    name: 'Cyberpunk Neon Flow',
     icon: '👾',
-    category: 'dark',
-    bg: 'linear-gradient(145deg,#12041c 0%,#1a0628 50%,#0d0214 100%)',
+    category: 'mix',
+    isAnimated: true,
+    bg: 'linear-gradient(-45deg, #4a1572, #ff2a9d, #00e5ff, #1a0628)',
     surface: 'rgba(30,10,48,0.90)',
     border: '#4a1572',
     borderSel: '#e024b4',
@@ -556,48 +557,90 @@ const THEMES = {
   }
 };
 
-const getHolidayThemeStatus = (tKey, isAdminUser) => {
+const DYNAMIC_UNLOCK_MILESTONES = {
+  aurora: { reqMinutes: 0, label: 'Mở sẵn (Mặc định)' },
+  nebula: { reqMinutes: 30, label: '30 phút' },
+  sunset_mix: { reqMinutes: 90, label: '1.5 giờ (90p)' },
+  ocean_mix: { reqMinutes: 180, label: '3 giờ (180p)' },
+  fire_mix: { reqMinutes: 300, label: '5 giờ (300p)' },
+  cyberpunk: { reqMinutes: 480, label: '8 giờ (480p)' },
+  prisma_mix: { reqMinutes: 720, label: '12 giờ (720p)' }
+};
+
+const fmtListenTime = (totalSeconds) => {
+  const mins = Math.floor(totalSeconds / 60);
+  if (mins < 60) return `${mins} phút`;
+  const hrs = (mins / 60).toFixed(1);
+  return `${hrs} giờ`;
+};
+
+const getThemeLockStatus = (theme, listenSeconds, isAdminUser) => {
+  const tKey = theme.key;
   const now = new Date();
   const m = now.getMonth(); // 0 = Jan, 11 = Dec
   const d = now.getDate();
 
-  let isDateActive = true;
-  let periodText = '';
-  let holidayLabel = '';
+  // 1. DYNAMIC THEMES (Tích lũy thời gian nghe nhạc)
+  if (theme.category === 'mix') {
+    const milestone = DYNAMIC_UNLOCK_MILESTONES[tKey] || { reqMinutes: 0, label: 'Miễn phí' };
+    const listenMinutes = Math.floor(listenSeconds / 60);
+    const isTimeReached = listenMinutes >= milestone.reqMinutes;
+    const isLocked = !isTimeReached && !isAdminUser;
+    const remainingMins = Math.max(0, milestone.reqMinutes - listenMinutes);
 
-  if (tKey === 'christmas') {
-    isDateActive = (m === 11 && d >= 15);
-    periodText = '15/12 - 31/12';
-    holidayLabel = 'Giáng Sinh';
-  } else if (tKey === 'tet_holiday') {
-    isDateActive = ((m === 0 && d >= 15) || m === 1);
-    periodText = '15/01 - 28/02';
-    holidayLabel = 'Tết Nguyên Đán';
-  } else if (tKey === 'mid_autumn') {
-    isDateActive = (m === 8);
-    periodText = 'Tháng 9';
-    holidayLabel = 'Trung Thu';
-  } else if (tKey === 'halloween') {
-    isDateActive = (m === 9 && d >= 15);
-    periodText = '15/10 - 31/10';
-    holidayLabel = 'Halloween';
-  } else if (tKey === 'autumn_season') {
-    isDateActive = (m >= 8 && m <= 10);
-    periodText = 'Tháng 9 - 11';
-    holidayLabel = 'Mùa Thu';
-  } else if (tKey === 'summer_season') {
-    isDateActive = (m >= 5 && m <= 7);
-    periodText = 'Tháng 6 - 8';
-    holidayLabel = 'Mùa Hè';
+    return {
+      isLocked,
+      isDateActive: isTimeReached,
+      reqMinutes: milestone.reqMinutes,
+      milestoneLabel: milestone.label,
+      remainingText: remainingMins > 60 ? `Còn ${(remainingMins / 60).toFixed(1)}h` : `Còn ${remainingMins}p`,
+      type: 'dynamic'
+    };
   }
 
-  const isLocked = !isDateActive && !isAdminUser;
-  return {
-    isDateActive,
-    isLocked,
-    periodText,
-    holidayLabel
-  };
+  // 2. SEASONAL THEMES (Ngày lễ & Mùa)
+  if (theme.category === 'seasonal') {
+    let isDateActive = true;
+    let periodText = '';
+    let holidayLabel = '';
+
+    if (tKey === 'christmas') {
+      isDateActive = (m === 11 && d >= 15);
+      periodText = '15/12 - 31/12';
+      holidayLabel = 'Giáng Sinh';
+    } else if (tKey === 'tet_holiday') {
+      isDateActive = ((m === 0 && d >= 15) || m === 1);
+      periodText = '15/01 - 28/02';
+      holidayLabel = 'Tết Nguyên Đán';
+    } else if (tKey === 'mid_autumn') {
+      isDateActive = (m === 8);
+      periodText = 'Tháng 9';
+      holidayLabel = 'Trung Thu';
+    } else if (tKey === 'halloween') {
+      isDateActive = (m === 9 && d >= 15);
+      periodText = '15/10 - 31/10';
+      holidayLabel = 'Halloween';
+    } else if (tKey === 'autumn_season') {
+      isDateActive = (m >= 8 && m <= 10);
+      periodText = 'Tháng 9 - 11';
+      holidayLabel = 'Mùa Thu';
+    } else if (tKey === 'summer_season') {
+      isDateActive = (m >= 5 && m <= 7);
+      periodText = 'Tháng 6 - 8';
+      holidayLabel = 'Mùa Hè';
+    }
+
+    const isLocked = !isDateActive && !isAdminUser;
+    return {
+      isLocked,
+      isDateActive,
+      periodText,
+      holidayLabel,
+      type: 'seasonal'
+    };
+  }
+
+  return { isLocked: false, isDateActive: true, type: 'standard' };
 };
 
 
@@ -1037,6 +1080,30 @@ export default function App() {
   };
 
   const [themeCategory, setThemeCategory] = useState('mix');
+
+  // Listen Time tracking state (accumulated active music play time in seconds)
+  const listenSecondsKey = uid => `aura_listen_seconds_${uid || 'guest'}`;
+  const [listenSeconds, setListenSeconds] = useState(() => {
+    const saved = localStorage.getItem(listenSecondsKey(initUserId));
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  useEffect(() => {
+    const saved = localStorage.getItem(listenSecondsKey(user?._id));
+    if (saved) setListenSeconds(parseInt(saved, 10));
+  }, [user?._id]);
+
+  useEffect(() => {
+    if (!playing) return;
+    const timer = setInterval(() => {
+      setListenSeconds(prev => {
+        const next = prev + 1;
+        localStorage.setItem(listenSecondsKey(user?._id), next.toString());
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [playing, user?._id]);
 
   // Repeat Mode State: 'off' | 'all' | 'one'
   const [repeatMode, setRepeatMode] = useState('off');
@@ -3883,19 +3950,37 @@ export default function App() {
                 })}
               </div>
 
+              {/* Dynamic Theme Usage Header Badge */}
+              {themeCategory === 'mix' && (
+                <div className="p-3 rounded-2xl flex items-center justify-between gap-2 border text-xs font-semibold animate-in fade-in duration-200"
+                  style={{ background: C.tag, borderColor: C.border, color: C.txt }}>
+                  <div className="flex items-center gap-2">
+                    <i className="ri-headphone-fill text-amber-500 text-sm animate-bounce"></i>
+                    <span>Thời gian nghe nhạc: <strong style={{ color: C.primarySolid }}>{fmtListenTime(listenSeconds)}</strong></span>
+                  </div>
+                  <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                    Nghe càng nhiều, mở thêm màu! 🎧
+                  </span>
+                </div>
+              )}
+
               {/* Theme Cards Grid */}
               <div className="grid grid-cols-2 gap-2.5 max-h-72 overflow-y-auto custom-scrollbar pr-1">
                 {Object.values(THEMES)
                   .filter(t => t.category === themeCategory)
                   .map(t => {
                     const isSelected = themeKey === t.key;
-                    const status = getHolidayThemeStatus(t.key, isAdmin);
+                    const status = getThemeLockStatus(t, listenSeconds, isAdmin);
                     return (
                       <div
                         key={t.key}
                         onClick={() => {
                           if (status.isLocked) {
-                            setLockedThemeNotice(`🔒 Giao diện "${t.name}" đang tạm khóa! Tự động mở vào đúng dịp ${status.holidayLabel} (${status.periodText}).`);
+                            if (status.type === 'dynamic') {
+                              setLockedThemeNotice(`🔒 Giao diện "${t.name}" cần tích lũy ${status.milestoneLabel}! Hiện tại bạn đã nghe ${fmtListenTime(listenSeconds)} (${status.remainingText} nữa). Hãy tiếp tục nghe nhạc để mở khóa! 🎧`);
+                            } else {
+                              setLockedThemeNotice(`🔒 Giao diện "${t.name}" đang tạm khóa! Tự động mở vào đúng dịp ${status.holidayLabel} (${status.periodText}).`);
+                            }
                           } else {
                             setLockedThemeNotice('');
                             setThemeKey(t.key);
@@ -3924,12 +4009,22 @@ export default function App() {
                             {t.name}
                           </span>
                           {status.isLocked ? (
-                            <span className="text-[9px] font-bold text-amber-500/90 dark:text-amber-400 flex items-center gap-0.5 mt-0.5 truncate">
-                              🔒 Mở dịp {status.periodText}
-                            </span>
+                            status.type === 'dynamic' ? (
+                              <span className="text-[9px] font-bold text-amber-500/90 dark:text-amber-400 flex items-center gap-0.5 mt-0.5 truncate">
+                                🔒 Mở: {status.milestoneLabel} ({status.remainingText})
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-bold text-amber-500/90 dark:text-amber-400 flex items-center gap-0.5 mt-0.5 truncate">
+                                🔒 Mở dịp {status.periodText}
+                              </span>
+                            )
                           ) : t.category === 'seasonal' && !status.isDateActive && isAdmin ? (
                             <span className="text-[9px] font-bold text-blue-500 dark:text-blue-400 flex items-center gap-0.5 mt-0.5 truncate">
                               🔑 Admin (Dịp {status.periodText})
+                            </span>
+                          ) : t.category === 'mix' && status.reqMinutes > 0 && isAdmin && (listenSeconds / 60) < status.reqMinutes ? (
+                            <span className="text-[9px] font-bold text-blue-500 dark:text-blue-400 flex items-center gap-0.5 mt-0.5 truncate">
+                              🔑 Admin (Mốc {status.milestoneLabel})
                             </span>
                           ) : t.isAnimated ? (
                             <span className="text-[9px] font-bold text-emerald-500 dark:text-emerald-400 flex items-center gap-0.5 mt-0.5">
