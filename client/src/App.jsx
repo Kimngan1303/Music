@@ -576,6 +576,16 @@ const fmtActiveTime = (totalSeconds) => {
   return `${hrs} giờ ${mins} phút`;
 };
 
+const getSeasonalPlayBtnClass = (tKey) => {
+  if (tKey === 'summer_season') return 'sun-play-btn';
+  if (tKey === 'tet_holiday') return 'tet-play-btn';
+  if (tKey === 'halloween') return 'halloween-play-btn';
+  if (tKey === 'autumn_season') return 'autumn-play-btn';
+  if (tKey === 'christmas') return 'christmas-play-btn';
+  if (tKey === 'mid_autumn') return 'mid-autumn-play-btn';
+  return '';
+};
+
 const getThemeLockStatus = (theme, activeSeconds, isAdminUser) => {
   const tKey = theme.key;
   const now = new Date();
@@ -2895,8 +2905,8 @@ export default function App() {
                         }
                       }}
                       title={track && list.some(s => s.id === track.id) && playing ? "Tạm dừng phát nhạc" : "Phát danh sách phát này"}
-                      className={`w-9 h-9 md:w-10 md:h-10 rounded-full text-white flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0 ${themeKey === 'summer_season' ? 'sun-play-btn' : 'shadow-md'}`}
-                      style={themeKey === 'summer_season' ? {} : { background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
+                      className={`w-9 h-9 md:w-10 md:h-10 rounded-full text-white flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0 ${getSeasonalPlayBtnClass(themeKey) || 'shadow-md'}`}
+                      style={getSeasonalPlayBtnClass(themeKey) ? {} : { background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
                     >
                       {track && list.some(s => s.id === track.id) && playing ? (
                         buffering ? <i className="ri-loader-4-line text-lg md:text-xl animate-spin" /> : <PauseIcon className="w-4 h-4 md:w-5 md:h-5" />
@@ -3704,8 +3714,8 @@ export default function App() {
                             }
                           }}
                           title={track && list.some(s => s.id === track.id) && playing ? "Tạm dừng phát nhạc" : "Phát tất cả bài hát từ đầu"}
-                          className={`w-12 h-12 rounded-full text-white flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer ${themeKey === 'summer_season' ? 'sun-play-btn' : 'shadow-xl'}`}
-                          style={themeKey === 'summer_season' ? {} : { background: C.primary, boxShadow: `0 6px 20px ${C.primaryGlow}` }}
+                          className={`w-12 h-12 rounded-full text-white flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer ${getSeasonalPlayBtnClass(themeKey) || 'shadow-xl'}`}
+                          style={getSeasonalPlayBtnClass(themeKey) ? {} : { background: C.primary, boxShadow: `0 6px 20px ${C.primaryGlow}` }}
                         >
                           {track && list.some(s => s.id === track.id) && playing ? (
                             buffering ? <i className="ri-loader-4-line text-2xl animate-spin" /> : <PauseIcon className="w-6 h-6" />
@@ -4465,8 +4475,8 @@ export default function App() {
 
             <Tooltip text={buffering ? 'Đang tải dữ liệu...' : playing ? 'Tạm dừng' : 'Bật phát nhạc'}>
               <button onClick={togglePlay}
-                className={`w-8 h-8 md:w-10 md:h-10 rounded-full text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0 ${themeKey === 'summer_season' ? 'sun-play-btn' : 'shadow-md'}`}
-                style={themeKey === 'summer_season' ? {} : { background: C.primary, boxShadow: `0 3px 12px ${C.primaryGlow}` }}>
+                className={`w-8 h-8 md:w-10 md:h-10 rounded-full text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0 ${getSeasonalPlayBtnClass(themeKey) || 'shadow-md'}`}
+                style={getSeasonalPlayBtnClass(themeKey) ? {} : { background: C.primary, boxShadow: `0 3px 12px ${C.primaryGlow}` }}>
                 {buffering ? <i className="ri-loader-4-line text-base md:text-lg animate-spin" /> : playing ? <PauseIcon className="w-4 h-4 md:w-5 md:h-5" /> : <PlayIcon className="w-4 h-4 md:w-5 md:h-5" />}
               </button>
             </Tooltip>
