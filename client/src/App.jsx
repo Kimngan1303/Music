@@ -1186,7 +1186,8 @@ export default function App() {
   const [readNotifIds, setReadNotifIds] = useState(() => {
     try {
       const saved = localStorage.getItem(readNotifsKey(initUserId));
-      return saved ? JSON.parse(saved) : [];
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
@@ -1194,8 +1195,9 @@ export default function App() {
 
   const markNotifRead = (id) => {
     setReadNotifIds(prev => {
-      if (prev.includes(id)) return prev;
-      const updated = [...prev, id];
+      const safePrev = Array.isArray(prev) ? prev : [];
+      if (safePrev.includes(id)) return safePrev;
+      const updated = [...safePrev, id];
       localStorage.setItem(readNotifsKey(user?._id), JSON.stringify(updated));
       return updated;
     });
@@ -1203,13 +1205,14 @@ export default function App() {
 
   const markAllNotifsRead = () => {
     const notifs = getSystemNotifications(user, isAdmin);
-    const ids = notifs.map(n => n.id);
+    const ids = Array.isArray(notifs) ? notifs.map(n => n.id) : [];
     setReadNotifIds(ids);
     localStorage.setItem(readNotifsKey(user?._id), JSON.stringify(ids));
   };
 
-  const systemNotifs = getSystemNotifications(user, isAdmin);
-  const unreadNotifsCount = systemNotifs.filter(n => !readNotifIds.includes(n.id)).length;
+  const systemNotifs = Array.isArray(getSystemNotifications(user, isAdmin)) ? getSystemNotifications(user, isAdmin) : [];
+  const safeReadNotifIds = Array.isArray(readNotifIds) ? readNotifIds : [];
+  const unreadNotifsCount = systemNotifs.filter(n => n && n.id && !safeReadNotifIds.includes(n.id)).length;
 
   // Public Leaderboard State (Top 10 users)
   const [publicLeaderboard, setPublicLeaderboard] = useState([]);
@@ -3854,58 +3857,64 @@ export default function App() {
 
                   {/* Leaderboard List (Tối đa Top 10 người dùng, không hiện Role) */}
                   <div className="flex flex-col gap-2.5 max-h-[460px] overflow-y-auto custom-scrollbar pr-1">
-                    {publicLeaderboard.length === 0 ? (
-                      <div className="py-12 text-center text-xs" style={{ color: C.txtFad }}>
-                        Chưa có dữ liệu xếp hạng...
-                      </div>
-                    ) : publicLeaderboard.slice(0, 10).map((lbUser, idx) => {
-                      const badge = getLeaderboardBadge(lbUser.totalActiveTime);
-                      const isTop1 = idx === 0;
-                      const isTop2 = idx === 1;
-                      const isTop3 = idx === 2;
+                    {(() => {
+                      const safeLb = (Array.isArray(publicLeaderboard) ? publicLeaderboard : []).filter(Boolean).slice(0, 10);
+                      if (safeLb.length === 0) {
+                        return (
+                          <div className="py-12 text-center text-xs" style={{ color: C.txtFad }}>
+                            Chưa có dữ liệu xếp hạng...
+                          </div>
+                        );
+                      }
+                      return safeLb.map((lbUser, idx) => {
+                        const badge = getLeaderboardBadge(lbUser?.totalActiveTime || 0);
+                        const isTop1 = idx === 0;
+                        const isTop2 = idx === 1;
+                        const isTop3 = idx === 2;
 
-                      return (
-                        <div key={lbUser._id || idx}
-                          className="flex items-center gap-3 p-3 rounded-2xl border transition-all duration-200 hover:scale-[1.01]"
-                          style={{
-                            background: isTop1 ? 'rgba(245, 158, 11, 0.08)' : (isTop2 ? 'rgba(148, 163, 184, 0.08)' : (isTop3 ? 'rgba(217, 119, 6, 0.06)' : (C.isDark ? 'rgba(30,41,59,0.4)' : '#f8fafc'))),
-                            borderColor: isTop1 ? '#f59e0b' : (isTop2 ? '#94a3b8' : (isTop3 ? '#b45309' : C.border))
-                          }}>
-                          
-                          {/* Rank Medal */}
-                          <div className="w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-xs"
+                        return (
+                          <div key={lbUser?._id || idx}
+                            className="flex items-center gap-3 p-3 rounded-2xl border transition-all duration-200 hover:scale-[1.01]"
                             style={{
-                              background: isTop1 ? 'linear-gradient(135deg,#f59e0b,#fbbf24)' : (isTop2 ? 'linear-gradient(135deg,#94a3b8,#cbd5e1)' : (isTop3 ? 'linear-gradient(135deg,#b45309,#d97706)' : C.tag)),
-                              color: isTop1 || isTop2 || isTop3 ? '#fff' : C.txtSub
+                              background: isTop1 ? 'rgba(245, 158, 11, 0.08)' : (isTop2 ? 'rgba(148, 163, 184, 0.08)' : (isTop3 ? 'rgba(217, 119, 6, 0.06)' : (C.isDark ? 'rgba(30,41,59,0.4)' : '#f8fafc'))),
+                              borderColor: isTop1 ? '#f59e0b' : (isTop2 ? '#94a3b8' : (isTop3 ? '#b45309' : C.border))
                             }}>
-                            {isTop1 ? '🥇' : (isTop2 ? '🥈' : (isTop3 ? '🥉' : `#${idx + 1}`))}
-                          </div>
+                            
+                            {/* Rank Medal */}
+                            <div className="w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-xs"
+                              style={{
+                                background: isTop1 ? 'linear-gradient(135deg,#f59e0b,#fbbf24)' : (isTop2 ? 'linear-gradient(135deg,#94a3b8,#cbd5e1)' : (isTop3 ? 'linear-gradient(135deg,#b45309,#d97706)' : C.tag)),
+                                color: isTop1 || isTop2 || isTop3 ? '#fff' : C.txtSub
+                              }}>
+                              {isTop1 ? '🥇' : (isTop2 ? '🥈' : (isTop3 ? '🥉' : `#${idx + 1}`))}
+                            </div>
 
-                          {/* Avatar */}
-                          <img src={lbUser.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
-                            alt={lbUser.name}
-                            className="w-10 h-10 rounded-full object-cover shrink-0 border-2"
-                            style={{ borderColor: isTop1 ? '#f59e0b' : C.border }}
-                          />
+                            {/* Avatar */}
+                            <img src={lbUser?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                              alt={lbUser?.name || 'User'}
+                              className="w-10 h-10 rounded-full object-cover shrink-0 border-2"
+                              style={{ borderColor: isTop1 ? '#f59e0b' : C.border }}
+                            />
 
-                          {/* User Details (Không hiện Role) */}
-                          <div className="flex flex-col flex-1 min-w-0">
-                            <span className="text-xs font-bold truncate" style={{ color: C.txt }}>
-                              {lbUser.name}
+                            {/* User Details (Không hiện Role) */}
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <span className="text-xs font-bold truncate" style={{ color: C.txt }}>
+                                {lbUser?.name || 'Thành viên'}
+                              </span>
+                              <span className="text-[11px] font-semibold flex items-center gap-1" style={{ color: C.primarySolid }}>
+                                <i className="ri-time-line text-xs"></i> {fmtActiveTime(lbUser?.totalActiveTime || 0)}
+                              </span>
+                            </div>
+
+                            {/* Unlocked Title Badge */}
+                            <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full shrink-0 border"
+                              style={{ background: badge.bg, color: badge.color, borderColor: badge.color + '40' }}>
+                              {badge.label}
                             </span>
-                            <span className="text-[11px] font-semibold flex items-center gap-1" style={{ color: C.primarySolid }}>
-                              <i className="ri-time-line text-xs"></i> {fmtActiveTime(lbUser.totalActiveTime)}
-                            </span>
                           </div>
-
-                          {/* Unlocked Title Badge */}
-                          <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full shrink-0 border"
-                            style={{ background: badge.bg, color: badge.color, borderColor: badge.color + '40' }}>
-                            {badge.label}
-                          </span>
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
 
@@ -3932,72 +3941,78 @@ export default function App() {
 
                   {/* Popular Songs List (Dynamic from all users' listening history) */}
                   <div className="flex flex-col gap-2.5 max-h-[460px] overflow-y-auto custom-scrollbar pr-1">
-                    {(popularSongs.length > 0 ? popularSongs : songs).length === 0 ? (
-                      <div className="py-12 text-center text-xs" style={{ color: C.txtFad }}>
-                        Chưa có bài hát nào trên hệ thống.
-                      </div>
-                    ) : (popularSongs.length > 0 ? popularSongs : songs).slice(0, 15).map((s, idx) => {
-                      const isPlayingThis = track?.id === s.id && playing;
-                      const displayQueue = popularSongs.length > 0 ? popularSongs : songs;
-                      return (
-                        <div key={s.id || s._id || idx}
-                          className="flex items-center gap-3 p-2.5 rounded-2xl border transition-all duration-200 group hover:scale-[1.01]"
-                          style={{
-                            background: isPlayingThis ? C.tag : (C.isDark ? 'rgba(30,41,59,0.4)' : '#f8fafc'),
-                            borderColor: isPlayingThis ? C.primarySolid : C.border
-                          }}>
-                          
-                          {/* Song Thumbnail & Play Overlay */}
-                          <div className="relative w-11 h-11 rounded-xl overflow-hidden shrink-0 group/img cursor-pointer"
-                            onClick={() => {
-                              if (track?.id === s.id) {
-                                togglePlay();
-                              } else {
-                                play(s, displayQueue);
-                              }
+                    {(() => {
+                      const displayQueue = (Array.isArray(popularSongs) && popularSongs.length > 0 ? popularSongs : (Array.isArray(songs) ? songs : [])).filter(Boolean);
+                      if (displayQueue.length === 0) {
+                        return (
+                          <div className="py-12 text-center text-xs" style={{ color: C.txtFad }}>
+                            Chưa có bài hát nào trên hệ thống.
+                          </div>
+                        );
+                      }
+                      return displayQueue.slice(0, 15).map((s, idx) => {
+                        if (!s) return null;
+                        const isPlayingThis = Boolean(track && (track.id === s.id || track._id === s._id || (s.youtubeId && track.youtubeId === s.youtubeId)) && playing);
+                        return (
+                          <div key={s.id || s._id || idx}
+                            className="flex items-center gap-3 p-2.5 rounded-2xl border transition-all duration-200 group hover:scale-[1.01]"
+                            style={{
+                              background: isPlayingThis ? C.tag : (C.isDark ? 'rgba(30,41,59,0.4)' : '#f8fafc'),
+                              borderColor: isPlayingThis ? C.primarySolid : C.border
                             }}>
-                            <img src={s.thumbnail} alt={s.title} className="w-full h-full object-cover" />
-                            <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlayingThis ? 'opacity-100' : 'opacity-0 group-hover/img:opacity-100'}`}>
-                              {isPlayingThis ? (
-                                <i className="ri-pause-fill text-white text-lg animate-pulse" />
-                              ) : (
-                                <i className="ri-play-fill text-white text-lg ml-0.5" />
-                              )}
+                            
+                            {/* Song Thumbnail & Play Overlay */}
+                            <div className="relative w-11 h-11 rounded-xl overflow-hidden shrink-0 group/img cursor-pointer"
+                              onClick={() => {
+                                if (isPlayingThis) {
+                                  togglePlay();
+                                } else {
+                                  play(s, displayQueue);
+                                }
+                              }}>
+                              <img src={s.thumbnail || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150&auto=format&fit=crop&q=80"} alt={s.title || 'Song'} className="w-full h-full object-cover" />
+                              <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlayingThis ? 'opacity-100' : 'opacity-0 group-hover/img:opacity-100'}`}>
+                                {isPlayingThis ? (
+                                  <i className="ri-pause-fill text-white text-lg animate-pulse" />
+                                ) : (
+                                  <i className="ri-play-fill text-white text-lg ml-0.5" />
+                                )}
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Song Info */}
-                          <div className="flex flex-col flex-1 min-w-0">
-                            <span className="text-xs font-bold truncate cursor-pointer hover:underline"
-                              style={{ color: isPlayingThis ? C.primarySolid : C.txt }}
-                              onClick={() => play(s, displayQueue)}>
-                              {s.title}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[11px] truncate" style={{ color: C.txtSub }}>
-                                {s.artist}
+                            {/* Song Info */}
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <span className="text-xs font-bold truncate cursor-pointer hover:underline"
+                                style={{ color: isPlayingThis ? C.primarySolid : C.txt }}
+                                onClick={() => play(s, displayQueue)}>
+                                {s.title || 'Bài Hát'}
                               </span>
-                              {s.playCount > 0 && (
-                                <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-red-500/15 text-red-500 border border-red-500/20 shrink-0">
-                                  🔥 {s.playCount} lượt nghe
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] truncate" style={{ color: C.txtSub }}>
+                                  {s.artist || 'Nghệ sĩ'}
                                 </span>
-                              )}
+                                {s.playCount > 0 && (
+                                  <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-red-500/15 text-red-500 border border-red-500/20 shrink-0">
+                                    🔥 {s.playCount} lượt nghe
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Action Buttons: Add to Playlist */}
-                          <button
-                            onClick={() => setSongToAdd(s)}
-                            title="Thêm bài hát này vào danh sách phát tùy chọn của bạn"
-                            className="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer hover:scale-105 active:scale-95 shrink-0"
-                            style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.primarySolid }}
-                          >
-                            <i className="ri-playlist-add-line text-sm"></i>
-                            <span className="hidden sm:inline">Thêm</span>
-                          </button>
-                        </div>
-                      );
-                    })}
+                            {/* Action Buttons: Add to Playlist */}
+                            <button
+                              onClick={() => setSongToAdd(s)}
+                              title="Thêm bài hát này vào danh sách phát tùy chọn của bạn"
+                              className="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer hover:scale-105 active:scale-95 shrink-0"
+                              style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.primarySolid }}
+                            >
+                              <i className="ri-playlist-add-line text-sm"></i>
+                              <span className="hidden sm:inline">Thêm</span>
+                            </button>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               </div>
