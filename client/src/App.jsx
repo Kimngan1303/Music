@@ -669,6 +669,9 @@ export default function App() {
   const [selectedSongIds, setSelectedSongIds] = useState([]);
   const [confirmBatchDeleteModal, setConfirmBatchDeleteModal] = useState(false);
 
+  // Scroll Position State for Sticky Header Navigation
+  const [mainScrollTop, setMainScrollTop] = useState(0);
+
   // Reload songs and favs when user logs in or out
   useEffect(() => {
     const uid = user?._id || 'guest';
@@ -2093,13 +2096,31 @@ export default function App() {
               </div>
             </div>
 
-            {/* User Name slightly moved to the left from center - Hidden on mobile */}
-            {user && (
-              <div className="hidden md:flex absolute left-[45%] top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none items-center justify-center">
-                <span className="text-3xl lg:text-4xl font-extrabold" style={{ color: C.primarySolid, fontFamily: F.cursive, textShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
-                  {user.name}
+            {/* Floating Sticky Play Button + Playlist Name when scrolled down */}
+            {mainScrollTop > 140 && (activePlaylist || tab === 'favorites' || tab === 'library') ? (
+              <div className="hidden md:flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200 z-20 pointer-events-auto">
+                {list.length > 0 && (
+                  <button
+                    onClick={() => play(list[0], list)}
+                    title="Phát danh sách phát này"
+                    className="w-10 h-10 rounded-full text-white shadow-md flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0"
+                    style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
+                  >
+                    <i className="ri-play-fill text-xl ml-0.5"></i>
+                  </button>
+                )}
+                <span className="text-sm md:text-xl font-extrabold truncate max-w-[200px] lg:max-w-[340px]" style={{ color: C.txt, fontFamily: F.heading }}>
+                  {tab === 'favorites' ? 'Bài Hát Đã Thích' : activePlaylist ? activePlaylist.name : 'Thư Viện Nhạc'}
                 </span>
               </div>
+            ) : (
+              user && (
+                <div className="hidden md:flex absolute left-[45%] top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none items-center justify-center">
+                  <span className="text-3xl lg:text-4xl font-extrabold" style={{ color: C.primarySolid, fontFamily: F.cursive, textShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
+                    {user.name}
+                  </span>
+                </div>
+              )
             )}
 
             <div className="flex items-center gap-1.5 md:gap-3 z-10 shrink-0">
@@ -2371,7 +2392,7 @@ export default function App() {
           </header>
 
           {/* Scrollable content */}
-          <div className="flex-1 p-4 pt-8 md:p-7 md:pt-7 overflow-y-auto">
+          <div className="flex-1 p-4 pt-8 md:p-7 md:pt-7 overflow-y-auto" onScroll={e => setMainScrollTop(e.currentTarget.scrollTop)}>
 
             {tab === 'admin' && isAdmin ? (
               /* ── ADMIN MANAGEMENT VIEW ─────────────────── */
@@ -2606,8 +2627,18 @@ export default function App() {
                   <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full pointer-events-none opacity-40 blur-3xl"
                     style={{ background: activePlaylist ? C.primaryGlow : (tab === 'favorites' ? '#f43f5e' : C.borderSel) }} />
 
-                  {/* Playlist Cover Art Image / 2x2 Grid */}
-                  <div className="shrink-0 relative group z-10">
+                  {/* Playlist Cover Art Image / 2x2 Grid with Spotify Hover Edit Overlay */}
+                  <div
+                    className={`shrink-0 relative group z-10 ${activePlaylist ? 'cursor-pointer' : ''}`}
+                    onClick={() => {
+                      if (activePlaylist) {
+                        setEditPlaylistModal(activePlaylist);
+                        setEditPlaylistName(activePlaylist.name);
+                        setEditPlaylistCover(activePlaylist.cover || '');
+                      }
+                    }}
+                    title={activePlaylist ? "Bấm để chỉnh sửa tên hoặc thay đổi ảnh đại diện Playlist" : ""}
+                  >
                     {(() => {
                       if (activePlaylist && activePlaylist.cover) {
                         return (
@@ -2656,6 +2687,14 @@ export default function App() {
                         </div>
                       );
                     })()}
+
+                    {/* Spotify-style Hover Pencil Overlay for Editing Playlist Photo */}
+                    {activePlaylist && (
+                      <div className="absolute inset-0 rounded-2xl md:rounded-3xl bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-inner">
+                        <i className="ri-pencil-line text-3xl md:text-4xl mb-1 drop-shadow-md"></i>
+                        <span className="text-xs font-bold tracking-wide">Đổi ảnh</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Banner Text Info & Action Bar */}
