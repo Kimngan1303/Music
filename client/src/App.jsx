@@ -576,6 +576,13 @@ export default function App() {
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [songToAdd, setSongToAdd] = useState(null); // Which song is currently selected to be added to a playlist
 
+  // Context Menu (Right Click) & Edit Playlist Details State
+  const [contextMenu, setContextMenu] = useState(null); // { x, y, playlist }
+  const [editPlaylistModal, setEditPlaylistModal] = useState(null); // playlist being edited
+  const [editPlaylistName, setEditPlaylistName] = useState('');
+  const [editPlaylistCover, setEditPlaylistCover] = useState('');
+  const playlistCoverInputRef = useRef(null);
+
 
   const [query, setQuery] = useState('');
   const [curTime, setCurTime] = useState(0);
@@ -611,6 +618,13 @@ export default function App() {
   const [page, setPage] = useState('landing');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hoverTab, setHoverTab] = useState(null);
+
+  // Close context menu on window click
+  useEffect(() => {
+    const handleGlobalClick = () => setContextMenu(null);
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, []);
 
   const [loginModal, setLoginModal] = useState(false);
   const [email, setEmail] = useState('');
@@ -1305,6 +1319,39 @@ export default function App() {
     } catch (err) { console.error(err); }
   };
 
+  // Toggle Pin Playlist (Ghim lên đầu)
+  const handleTogglePinPlaylist = id => {
+    setPlaylists(prev => {
+      const updated = prev.map(p => p._id === id ? { ...p, pinned: !p.pinned } : p);
+      if (user) {
+        localStorage.setItem(playlistsKey(user._id), JSON.stringify(updated));
+        const target = updated.find(p => p._id === id);
+        axios.put(`/api/playlists/${id}`, { pinned: target.pinned }).catch(() => { });
+      }
+      return updated;
+    });
+  };
+
+  // Save Edit Playlist Name & Cover
+  const handleSaveEditPlaylist = e => {
+    if (e) e.preventDefault();
+    if (!editPlaylistModal) return;
+    const id = editPlaylistModal._id;
+    const newName = editPlaylistName.trim() || editPlaylistModal.name;
+    const newCover = editPlaylistCover;
+
+    setPlaylists(prev => {
+      const updated = prev.map(p => p._id === id ? { ...p, name: newName, cover: newCover } : p);
+      if (user) {
+        localStorage.setItem(playlistsKey(user._id), JSON.stringify(updated));
+        axios.put(`/api/playlists/${id}`, { name: newName, cover: newCover }).catch(() => { });
+      }
+      return updated;
+    });
+
+    setEditPlaylistModal(null);
+  };
+
   const handleAddToPlaylist = async (playlistId, songId, songIds = null) => {
     try {
       const payload = songIds ? { songIds } : { songId };
@@ -1637,7 +1684,7 @@ export default function App() {
               </button>
             </div>
 
-            {playlists.map(p => {
+            {playlists.slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)).map(p => {
               const tabKey = `playlist_${p._id}`;
               const active = tab === tabKey;
               const isHovered = hoverTab === tabKey;
@@ -1645,16 +1692,24 @@ export default function App() {
 
               const firstSongId = p.songs?.[0];
               const firstSong = firstSongId ? songs.find(s => s.id === firstSongId) : null;
-              const coverThumb = firstSong?.thumbnail;
+              const coverThumb = p.cover || firstSong?.thumbnail;
 
               return (
                 <button
                   key={p._id}
                   onClick={() => { setTab(tabKey); setIsMobileMenuOpen(false); }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setContextMenu({
+                      x: Math.min(e.clientX, window.innerWidth - 230),
+                      y: Math.min(e.clientY, window.innerHeight - 200),
+                      playlist: p
+                    });
+                  }}
                   onMouseEnter={() => setHoverTab(tabKey)}
                   onMouseLeave={() => setHoverTab(null)}
-                  title={`Mở danh sách phát: ${p.name}`}
-                  className="flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-200 text-left shrink-0 cursor-pointer active:scale-95"
+                  title={`Mở danh sách phát: ${p.name} (Bấm chuột phải để hiện menu tùy chọn)`}
+                  className="flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-200 text-left shrink-0 cursor-pointer active:scale-95 relative"
                   style={isHighlighted
                     ? {
                       background: C.tag,
@@ -1687,10 +1742,11 @@ export default function App() {
                     </div>
                   )}
                   <div className="flex flex-col min-w-0 flex-1 leading-tight">
-                    <span className="text-sm font-bold truncate" style={{ color: isHighlighted ? C.primarySolid : C.txt }}>
+                    <span className="text-sm font-bold truncate flex items-center gap-1" style={{ color: isHighlighted ? C.primarySolid : C.txt }}>
                       {p.name}
                     </span>
-                    <span className="text-[11px] font-medium truncate mt-0.5" style={{ color: C.txtSub }}>
+                    <span className="text-[11px] font-medium truncate mt-0.5 flex items-center gap-1" style={{ color: C.txtSub }}>
+                      {p.pinned && <i className="ri-pushpin-fill text-[11px] text-green-500 shrink-0"></i>}
                       Playlist • {p.songs ? p.songs.length : 0} bài
                     </span>
                   </div>
@@ -2545,6 +2601,175 @@ export default function App() {
             className="w-24 cursor-pointer" style={{ accentColor: C.primarySolid }} />
         </div>
       </footer>
+
+      {/* ── CONTEXT MENU FOR PLAYLIST (RIGHT CLICK) ─────────────────── */}
+      {contextMenu && (
+        <div
+          className="fixed z-[120] w-56 rounded-2xl p-1.5 shadow-2xl backdrop-blur-xl transition-all"
+          style={{
+            top: contextMenu.y,
+            left: contextMenu.x,
+            background: C.isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 252, 249, 0.95)',
+            border: `1.5px solid ${C.border}`,
+            boxShadow: '0 12px 40px rgba(0,0,0,0.35)'
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="px-3 py-2 border-b mb-1 flex items-center gap-2" style={{ borderColor: C.border }}>
+            <i className="ri-folder-music-fill text-sm" style={{ color: C.primarySolid }}></i>
+            <span className="text-xs font-bold truncate" style={{ color: C.txt }}>{contextMenu.playlist.name}</span>
+          </div>
+
+          {/* 1. Ghim / Bỏ ghim */}
+          <button
+            onClick={() => {
+              handleTogglePinPlaylist(contextMenu.playlist._id);
+              setContextMenu(null);
+            }}
+            className="w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-colors text-left cursor-pointer"
+            style={{ color: C.txt }}
+            onMouseEnter={e => e.currentTarget.style.background = C.tag}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <i className={contextMenu.playlist.pinned ? "ri-pushpin-fill text-sm text-green-500" : "ri-pushpin-line text-sm"} style={{ color: contextMenu.playlist.pinned ? '#22c55e' : C.txtSub }}></i>
+            <span>{contextMenu.playlist.pinned ? 'Bỏ ghim danh sách phát' : 'Ghim danh sách phát lên đầu'}</span>
+          </button>
+
+          {/* 2. Edit playlist */}
+          <button
+            onClick={() => {
+              setEditPlaylistName(contextMenu.playlist.name);
+              setEditPlaylistCover(contextMenu.playlist.cover || '');
+              setEditPlaylistModal(contextMenu.playlist);
+              setContextMenu(null);
+            }}
+            className="w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-colors text-left cursor-pointer"
+            style={{ color: C.txt }}
+            onMouseEnter={e => e.currentTarget.style.background = C.tag}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <i className="ri-edit-2-line text-sm" style={{ color: C.txtSub }}></i>
+            <span>Chỉnh sửa thông tin</span>
+          </button>
+
+          {/* 3. Play playlist */}
+          <button
+            onClick={() => {
+              const playlistSongs = songs.filter(s => contextMenu.playlist.songs.includes(s.id));
+              if (playlistSongs.length > 0) {
+                play(playlistSongs[0], playlistSongs);
+              }
+              setTab(`playlist_${contextMenu.playlist._id}`);
+              setContextMenu(null);
+            }}
+            className="w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-colors text-left cursor-pointer"
+            style={{ color: C.txt }}
+            onMouseEnter={e => e.currentTarget.style.background = C.tag}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <i className="ri-play-circle-line text-sm" style={{ color: C.primarySolid }}></i>
+            <span>Phát danh sách này</span>
+          </button>
+
+          <div className="my-1 border-t" style={{ borderColor: C.border }} />
+
+          {/* 4. Delete playlist */}
+          <button
+            onClick={() => {
+              const targetId = contextMenu.playlist._id;
+              setContextMenu(null);
+              handleDeletePlaylist(targetId);
+            }}
+            className="w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-colors text-left text-red-500 cursor-pointer"
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <i className="ri-delete-bin-line text-sm text-red-500"></i>
+            <span>Xóa danh sách phát</span>
+          </button>
+        </div>
+      )}
+
+      {/* ── EDIT PLAYLIST DETAILS MODAL ─────────────────── */}
+      {editPlaylistModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-[130] p-4"
+          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(14px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setEditPlaylistModal(null); }}>
+          <div className="w-full max-w-md rounded-3xl p-8 shadow-2xl transition-all"
+            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="flex items-center gap-2" style={{ fontFamily: F.heading, fontSize: '20px', fontWeight: 700, color: C.txt }}>
+                <i className="ri-edit-2-fill" style={{ color: C.primarySolid }}></i> Chỉnh Sửa Danh Sách Phát
+              </h3>
+              <button onClick={() => setEditPlaylistModal(null)} className="w-8 h-8 rounded-full flex items-center justify-center transition hover:opacity-70 cursor-pointer" style={btn}>
+                <i className="ri-close-line text-lg"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditPlaylist} className="flex flex-col gap-5">
+              <div className="flex flex-col sm:flex-row items-center gap-5">
+                {/* Cover image picker */}
+                <div className="relative group shrink-0 w-28 h-28 rounded-2xl overflow-hidden cursor-pointer shadow-md"
+                  style={{ border: `2px solid ${C.borderSel || C.primarySolid}` }}
+                  onClick={() => playlistCoverInputRef.current?.click()}
+                  title="Bấm để tải ảnh đại diện mới cho danh sách phát"
+                >
+                  {editPlaylistCover ? (
+                    <img src={editPlaylistCover} alt="Cover" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-white" style={{ background: C.primary }}>
+                      <i className="ri-folder-music-fill text-3xl mb-1"></i>
+                      <span className="text-[10px] font-bold">Chưa có ảnh</span>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition duration-200">
+                    <i className="ri-camera-fill text-2xl mb-1"></i>
+                    <span className="text-[10px] font-bold">Đổi ảnh bìa</span>
+                  </div>
+                  <input type="file" ref={playlistCoverInputRef} accept="image/*" className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => setEditPlaylistCover(reader.result);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </div>
+
+                {/* Name input */}
+                <div className="flex-1 w-full">
+                  <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Tên danh sách phát</label>
+                  <input type="text" value={editPlaylistName} onChange={e => setEditPlaylistName(e.target.value)}
+                    placeholder="Nhập tên playlist..."
+                    className="w-full px-4 py-3 rounded-xl text-sm font-semibold outline-none transition"
+                    style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                    autoFocus required
+                  />
+                  <p className="text-[11px] mt-2 leading-relaxed" style={{ color: C.txtFad }}>
+                    💡 Tùy chỉnh tên và tải ảnh bìa riêng cho danh sách phát cá nhân.
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Action Buttons */}
+              <div className="flex gap-3 mt-2">
+                <button type="button" onClick={() => setEditPlaylistModal(null)}
+                  className="w-28 shrink-0 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition active:scale-95" style={btn}>
+                  Hủy
+                </button>
+                <button type="submit"
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg cursor-pointer transition active:scale-95"
+                  style={{ background: C.primary, boxShadow: `0 6px 18px ${C.primaryGlow}` }}>
+                  <i className="ri-save-line"></i> Lưu thay đổi
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
