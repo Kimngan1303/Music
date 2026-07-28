@@ -2810,8 +2810,8 @@ export default function App() {
                         }
                       }}
                       title={track && list.some(s => s.id === track.id) && playing ? "Tạm dừng phát nhạc" : "Phát danh sách phát này"}
-                      className="w-9 h-9 md:w-10 md:h-10 rounded-full text-white shadow-md flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0"
-                      style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
+                      className={`w-9 h-9 md:w-10 md:h-10 rounded-full text-white flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer shrink-0 ${themeKey === 'summer_season' ? 'sun-play-btn' : 'shadow-md'}`}
+                      style={themeKey === 'summer_season' ? {} : { background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
                     >
                       {track && list.some(s => s.id === track.id) && playing ? (
                         buffering ? <i className="ri-loader-4-line text-lg md:text-xl animate-spin" /> : <PauseIcon className="w-4 h-4 md:w-5 md:h-5" />
@@ -3619,8 +3619,8 @@ export default function App() {
                             }
                           }}
                           title={track && list.some(s => s.id === track.id) && playing ? "Tạm dừng phát nhạc" : "Phát tất cả bài hát từ đầu"}
-                          className="w-12 h-12 rounded-full text-white shadow-xl flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer"
-                          style={{ background: C.primary, boxShadow: `0 6px 20px ${C.primaryGlow}` }}
+                          className={`w-12 h-12 rounded-full text-white flex items-center justify-center transition hover:scale-110 active:scale-95 cursor-pointer ${themeKey === 'summer_season' ? 'sun-play-btn' : 'shadow-xl'}`}
+                          style={themeKey === 'summer_season' ? {} : { background: C.primary, boxShadow: `0 6px 20px ${C.primaryGlow}` }}
                         >
                           {track && list.some(s => s.id === track.id) && playing ? (
                             buffering ? <i className="ri-loader-4-line text-2xl animate-spin" /> : <PauseIcon className="w-6 h-6" />
@@ -4344,8 +4344,8 @@ export default function App() {
 
             <Tooltip text={buffering ? 'Đang tải dữ liệu...' : playing ? 'Tạm dừng' : 'Bật phát nhạc'}>
               <button onClick={togglePlay}
-                className="w-8 h-8 md:w-10 md:h-10 rounded-full text-white flex items-center justify-center shadow-md transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
-                style={{ background: C.primary, boxShadow: `0 3px 12px ${C.primaryGlow}` }}>
+                className={`w-8 h-8 md:w-10 md:h-10 rounded-full text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0 ${themeKey === 'summer_season' ? 'sun-play-btn' : 'shadow-md'}`}
+                style={themeKey === 'summer_season' ? {} : { background: C.primary, boxShadow: `0 3px 12px ${C.primaryGlow}` }}>
                 {buffering ? <i className="ri-loader-4-line text-base md:text-lg animate-spin" /> : playing ? <PauseIcon className="w-4 h-4 md:w-5 md:h-5" /> : <PlayIcon className="w-4 h-4 md:w-5 md:h-5" />}
               </button>
             </Tooltip>
@@ -4399,7 +4399,10 @@ export default function App() {
           <div className="flex items-center gap-2 md:gap-3 w-full order-1 md:order-2 px-2 md:px-0">
             <span className="text-[10px] md:text-[11px] font-mono w-7 md:w-9 text-right shrink-0" style={{ color: C.txtFad }}>{fmt(curTime)}</span>
             <input type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
-              className="flex-1 cursor-pointer" style={{ accentColor: C.primarySolid }} />
+              className={`flex-1 cursor-pointer ${themeKey === 'summer_season' ? 'sun-theme-slider' : ''}`}
+              style={themeKey === 'summer_season' ? {
+                background: `linear-gradient(90deg, #ff7e5f 0%, #f59e0b ${(curTime / (dur || 1)) * 100}%, rgba(245, 158, 11, 0.25) ${(curTime / (dur || 1)) * 100}%)`
+              } : { accentColor: C.primarySolid }} />
             <span className="text-[11px] font-mono w-9 shrink-0" style={{ color: C.txtFad }}>{fmt(dur)}</span>
           </div>
         </div>
@@ -4414,7 +4417,10 @@ export default function App() {
             </button>
           </Tooltip>
           <input type="range" min="0" max="100" value={muted ? 0 : vol} onChange={changeVol}
-            className="w-24 cursor-pointer" style={{ accentColor: C.primarySolid }} />
+            className={`w-24 cursor-pointer ${themeKey === 'summer_season' ? 'sun-theme-slider' : ''}`}
+            style={themeKey === 'summer_season' ? {
+              background: `linear-gradient(90deg, #ff7e5f 0%, #f59e0b ${muted ? 0 : vol}%, rgba(245, 158, 11, 0.25) ${muted ? 0 : vol}%)`
+            } : { accentColor: C.primarySolid }} />
         </div>
       </footer>
 
