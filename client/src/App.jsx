@@ -3455,7 +3455,7 @@ export default function App() {
       {themeModal && (
         <div className="fixed inset-0 flex items-center justify-center z-[60] p-4"
           style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(14px)' }}
-          onClick={e => { if (e.target === e.currentTarget) setThemeModal(false); }}>
+          onMouseDown={e => { if (e.target === e.currentTarget) setThemeModal(false); }}>
           <div className="w-full max-w-lg rounded-3xl p-6 md:p-7 shadow-2xl overflow-y-auto"
             style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, color: C.txt, maxHeight: '90vh' }}>
 
@@ -3628,7 +3628,7 @@ export default function App() {
       {addModal && (
         <div className="fixed inset-0 flex items-center justify-center z-[60] p-4"
           style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(14px)' }}
-          onClick={e => { if (e.target === e.currentTarget) { setAddModal(false); setAddErr(''); } }}>
+          onMouseDown={e => { if (e.target === e.currentTarget) { setAddModal(false); setAddErr(''); } }}>
           <div className="w-full max-w-sm rounded-3xl p-8 shadow-2xl"
             style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
             {/* Header */}
@@ -3770,7 +3770,7 @@ export default function App() {
       {playlistModal && (
         <div className="fixed inset-0 flex items-center justify-center z-[60] p-4"
           style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(14px)' }}
-          onClick={e => { if (e.target === e.currentTarget) setPlaylistModal(false); }}>
+          onMouseDown={e => { if (e.target === e.currentTarget) setPlaylistModal(false); }}>
           <div className="w-full max-w-sm rounded-3xl p-8 shadow-2xl"
             style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
             <h3 className="flex items-center gap-2 mb-5" style={{ fontFamily: F.heading, fontSize: '20px', fontWeight: 700, color: C.txt }}>
@@ -3806,7 +3806,7 @@ export default function App() {
       {songToAdd && (
         <div className="fixed inset-0 flex items-center justify-center z-[60] p-4"
           style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(14px)' }}
-          onClick={e => { if (e.target === e.currentTarget) setSongToAdd(null); }}>
+          onMouseDown={e => { if (e.target === e.currentTarget) setSongToAdd(null); }}>
           <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl"
             style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
             <h3 className="mb-4" style={{ fontFamily: F.heading, fontSize: '18px', fontWeight: 700, color: C.txt }}>
@@ -4098,7 +4098,7 @@ export default function App() {
       {editPlaylistModal && (
         <div className="fixed inset-0 flex items-center justify-center z-[130] p-4"
           style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(14px)' }}
-          onClick={e => { if (e.target === e.currentTarget) setEditPlaylistModal(null); }}>
+          onMouseDown={e => { if (e.target === e.currentTarget) setEditPlaylistModal(null); }}>
           <div className="w-full max-w-md rounded-3xl p-8 shadow-2xl transition-all"
             style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
 
@@ -4179,7 +4179,7 @@ export default function App() {
       {adminUserModal && (
         <div className="fixed inset-0 flex items-center justify-center z-[140] p-4"
           style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(14px)' }}
-          onClick={e => { if (e.target === e.currentTarget && !adminSaving) setAdminUserModal(null); }}>
+          onMouseDown={e => { if (e.target === e.currentTarget && !adminSaving) setAdminUserModal(null); }}>
           <div className="w-full max-w-md rounded-3xl p-8 shadow-2xl transition-all relative overflow-hidden"
             style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
 
@@ -4313,7 +4313,7 @@ export default function App() {
         <div
           className="fixed inset-0 flex items-center justify-center z-[150] p-4"
           style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(16px)' }}
-          onClick={e => { if (e.target === e.currentTarget) setConfirmModal(null); }}
+          onMouseDown={e => { if (e.target === e.currentTarget) setConfirmModal(null); }}
         >
           <div
             className="w-full max-w-sm rounded-3xl p-7 shadow-2xl text-center flex flex-col items-center gap-4 transition-all"
@@ -4374,7 +4374,7 @@ export default function App() {
       {confirmBatchDeleteModal && (
         <div className="fixed inset-0 flex items-center justify-center z-[70] p-4"
           style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(14px)' }}
-          onClick={e => { if (e.target === e.currentTarget) setConfirmBatchDeleteModal(false); }}>
+          onMouseDown={e => { if (e.target === e.currentTarget) setConfirmBatchDeleteModal(false); }}>
           <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
             style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, color: C.txt }}>
             
