@@ -3416,9 +3416,9 @@ export default function App() {
 
             <Tooltip text={playing ? 'Tạm dừng' : 'Bật phát nhạc'}>
               <button onClick={togglePlay}
-                className="w-9 h-9 md:w-12 md:h-12 rounded-full text-white text-sm md:text-xl flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
-                style={{ background: C.primary, boxShadow: `0 4px 18px ${C.primaryGlow}` }}>
-                <i className={playing ? 'ri-pause-fill' : 'ri-play-fill'}></i>
+                className="w-8 h-8 md:w-10 md:h-10 rounded-full text-white flex items-center justify-center shadow-md transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                style={{ background: C.primary, boxShadow: `0 3px 12px ${C.primaryGlow}` }}>
+                <i className={playing ? 'ri-pause-fill text-base md:text-lg' : 'ri-play-fill text-base md:text-lg pl-0.5'}></i>
               </button>
             </Tooltip>
 
