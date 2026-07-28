@@ -1393,7 +1393,7 @@ export default function App() {
   };
 
   // ── ADMIN USER MANAGEMENT HANDLERS ───────────────────
-  const isAdmin = Boolean(user && (user.role === 'admin' || user.email === 'admin@gmail.com'));
+  const isAdmin = Boolean(user && (user.role === 'admin' || user.email === 'admin@gmail.com' || user.email === 'unnull@gmail.com' || user.name?.toLowerCase() === 'tyn'));
 
   const fetchAdminUsers = () => {
     axios.get('/api/admin/users').then(res => {
@@ -1950,7 +1950,9 @@ export default function App() {
                   />
                   <div className="hidden md:flex flex-col leading-tight">
                     <span className="text-xs font-bold group-hover:underline" style={{ color: C.txt }}>{user.name}</span>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.primarySolid }}>{user.role === 'admin' ? 'Admin ✦' : (user.email === 'unnull@gmail.com' ? 'admin' : 'Member')}</span>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: isAdmin ? '#f59e0b' : C.primarySolid }}>
+                      {isAdmin ? 'Admin ✦' : 'Member'}
+                    </span>
                   </div>
                   <button onClick={(e) => { e.stopPropagation(); logout(); }} title="Đăng xuất tài khoản" className="p-1.5 md:p-2 rounded-full hover:scale-110 active:scale-95 transition cursor-pointer" style={{ color: C.txtFad }}>
                     <i className="ri-logout-box-r-line text-base hover:text-red-500 transition"></i>

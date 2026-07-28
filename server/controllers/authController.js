@@ -31,7 +31,7 @@ const loginUser = async (req, res) => {
         id:       'user-unnull',
         name:     'Unnull',
         avatar:   'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=150&auto=format&fit=crop&q=80',
-        role:     'user',
+        role:     'admin',
       },
       {
         email:    process.env.USER4_EMAIL    || 'Sweefee@gmail.com',
@@ -63,12 +63,12 @@ const loginUser = async (req, res) => {
           { 
             $set: {
               email: matched.email,
-              password: hashedPassword
+              password: hashedPassword,
+              role: matched.role || 'admin'
             },
             $setOnInsert: {
               name: matched.name,
               avatar: matched.avatar,
-              role: matched.role || 'user',
               isLocked: false
             }
           },
