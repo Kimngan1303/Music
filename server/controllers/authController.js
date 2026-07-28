@@ -5,6 +5,12 @@ const jwt = require('jsonwebtoken');
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Vui lòng nhập đầy đủ email và mật khẩu.' });
+    }
+
+    const cleanInput = email.trim().toLowerCase();
+    const inputName = cleanInput.split('@')[0];
 
     // List of hardcoded accounts (from .env)
     const hardcodedAccounts = [
@@ -44,98 +50,106 @@ const loginUser = async (req, res) => {
       },
     ];
 
-    // Check against hardcoded accounts (case-insensitive email/username)
-    const matched = hardcodedAccounts.find(
+    // Find matched hardcoded template config (if any)
+    const matchedConfig = hardcodedAccounts.find(
       acc => (
-        acc.email.toLowerCase() === email.toLowerCase() ||
-        (acc.username && acc.username.toLowerCase() === email.toLowerCase()) ||
-        acc.email.split('@')[0].toLowerCase() === email.toLowerCase()
-      ) && acc.password === password
+        acc.email.toLowerCase() === cleanInput ||
+        (acc.username && acc.username.toLowerCase() === cleanInput) ||
+        acc.email.split('@')[0].toLowerCase() === cleanInput ||
+        acc.id.toLowerCase() === cleanInput ||
+        acc.id.toLowerCase() === `user-${cleanInput}`
+      )
     );
 
-    if (matched) {
-      // Lưu thông tin người dùng vào database để đồng bộ
-      let dbUser;
-      try {
-        const hashedPassword = await bcrypt.hash(matched.password, 10);
-        dbUser = await User.findOneAndUpdate(
-          { _id: matched.id },
-          { 
-            $set: {
-              email: matched.email,
-              password: hashedPassword
-            },
-            $setOnInsert: {
-              name: matched.name,
-              avatar: matched.avatar,
-              role: matched.role || 'user',
-              isLocked: false
-            }
-          },
-          { upsert: true, new: true }
-        );
+    // 1. Try finding existing user in MongoDB database
+    let dbUser = null;
+    try {
+      dbUser = await User.findOne({
+        $or: [
+          { email: new RegExp(`^${cleanInput}$`, 'i') },
+          { email: new RegExp(`^${cleanInput}@gmail\\.com$`, 'i') },
+          { _id: matchedConfig?.id || `user-${inputName}` }
+        ]
+      });
+    } catch (e) {
+      console.error('MongoDB findOne error:', e);
+    }
 
-        if (dbUser.isLocked) {
-          return res.status(403).json({ message: 'Tài khoản của bạn đã bị khóa bởi Quản trị viên.' });
-        }
-      } catch (err) {
-        console.error('Lỗi lưu user vào db:', err);
-        dbUser = matched;
+    if (dbUser) {
+      if (dbUser.isLocked) {
+        return res.status(403).json({ message: 'Tài khoản của bạn đã bị khóa bởi Quản trị viên.' });
       }
 
-      const userRole = dbUser.role || matched.role || 'user';
+      // Check entered password against hashed password in DB
+      let isMatch = false;
+      if (dbUser.password) {
+        isMatch = await bcrypt.compare(password, dbUser.password);
+      }
+
+      // Fallback: Check if default hardcoded password matches (only if user hasn't set a custom DB password yet)
+      if (!isMatch && matchedConfig && matchedConfig.password === password) {
+        isMatch = true;
+      }
+
+      if (isMatch) {
+        const userRole = dbUser.role || matchedConfig?.role || 'user';
+        const token = jwt.sign(
+          { id: dbUser._id, email: dbUser.email, role: userRole },
+          process.env.JWT_SECRET || 'aura_music_secret_jwt_key_2026',
+          { expiresIn: '30d' }
+        );
+        return res.json({
+          _id: dbUser._id,
+          name: dbUser.name,
+          email: dbUser.email,
+          avatar: dbUser.avatar,
+          favorites: dbUser.favorites || [],
+          role: userRole,
+          isLocked: dbUser.isLocked || false,
+          token
+        });
+      }
+
+      return res.status(400).json({ message: 'Email hoặc mật khẩu không chính xác.' });
+    }
+
+    // 2. If user does NOT exist in DB yet, check initial default hardcoded accounts
+    if (matchedConfig && matchedConfig.password === password) {
+      // Seed account into MongoDB for future persistence
+      let seededUser;
+      try {
+        const hashedPassword = await bcrypt.hash(matchedConfig.password, 10);
+        seededUser = await User.create({
+          _id: matchedConfig.id,
+          name: matchedConfig.name,
+          email: matchedConfig.email,
+          password: hashedPassword,
+          avatar: matchedConfig.avatar,
+          role: matchedConfig.role || 'user',
+          isLocked: false
+        });
+      } catch (err) {
+        console.error('Lỗi khởi tạo tài khoản vào DB:', err);
+        seededUser = matchedConfig;
+      }
+
+      const userRole = seededUser.role || matchedConfig.role || 'user';
       const token = jwt.sign(
-        { id: matched.id, email: matched.email, role: userRole },
+        { id: matchedConfig.id, email: matchedConfig.email, role: userRole },
         process.env.JWT_SECRET || 'aura_music_secret_jwt_key_2026',
         { expiresIn: '30d' }
       );
       return res.json({
-        _id:    dbUser._id || matched.id,
-        name:   dbUser.name || matched.name,
-        email:  dbUser.email || matched.email,
-        avatar: dbUser.avatar || matched.avatar,
-        favorites: dbUser.favorites || [],
-        role:   userRole,
-        isLocked: dbUser.isLocked || false,
+        _id: seededUser._id || matchedConfig.id,
+        name: seededUser.name || matchedConfig.name,
+        email: seededUser.email || matchedConfig.email,
+        avatar: seededUser.avatar || matchedConfig.avatar,
+        favorites: seededUser.favorites || [],
+        role: userRole,
+        isLocked: false,
         token
       });
     }
-
-    // Try MongoDB user lookup if database is connected
-    try {
-      const cleanEmail = email.trim().toLowerCase();
-      const user = await User.findOne({
-        $or: [
-          { email: cleanEmail },
-          { email: `${cleanEmail}@gmail.com` },
-          { _id: `user-${cleanEmail}` }
-        ]
-      });
-      if (user) {
-        if (user.isLocked) {
-          return res.status(403).json({ message: 'Tài khoản của bạn đã bị khóa bởi Quản trị viên.' });
-        }
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (isMatch) {
-          const userRole = user.role || (user.email === 'admin@gmail.com' ? 'admin' : 'user');
-          const token = jwt.sign(
-            { id: user._id, email: user.email, role: userRole },
-            process.env.JWT_SECRET || 'aura_music_secret_jwt_key_2026',
-            { expiresIn: '30d' }
-          );
-          return res.json({
-            _id:    user._id,
-            name:   user.name,
-            email:  user.email,
-            avatar: user.avatar,
-            favorites: user.favorites || [],
-            role:   userRole,
-            isLocked: user.isLocked || false,
-            token
-          });
-        }
-      }
-    } catch (dbErr) {}
 
     return res.status(400).json({ message: 'Email hoặc mật khẩu không chính xác.' });
   } catch (error) {

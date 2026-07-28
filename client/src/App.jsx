@@ -843,14 +843,19 @@ export default function App() {
 
     setPwdSaving(true);
     try {
-      if (user?.token) {
-        await axios.put('/api/auth/change-password', {
-          newPassword: newPwdInput.trim()
-        }, {
-          headers: { Authorization: `Bearer ${user.token}` }
-        });
+      const token = user?.token || localStorage.getItem('aura_token');
+      if (!token) {
+        setPwdMsg({ text: 'Phiên làm việc hết hạn. Vui lòng đăng nhập lại!', type: 'error' });
+        return;
       }
-      setPwdMsg({ text: 'Đã đổi mật khẩu thành công!', type: 'success' });
+
+      const res = await axios.put('/api/auth/change-password', {
+        newPassword: newPwdInput.trim()
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setPwdMsg({ text: res.data?.message || 'Đã lưu mật khẩu mới thành công!', type: 'success' });
       setNewPwdInput('');
       setConfirmPwdInput('');
       setTimeout(() => {

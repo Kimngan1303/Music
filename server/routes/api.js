@@ -70,15 +70,31 @@ router.put('/auth/change-password', auth, async (req, res) => {
     if (!newPassword || newPassword.trim().length < 4) {
       return res.status(400).json({ message: 'Mật khẩu mới phải từ 4 ký tự trở lên!' });
     }
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: 'Không tìm thấy tài khoản người dùng.' });
 
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword.trim(), salt);
-    await user.save();
+    const hashedPassword = await bcrypt.hash(newPassword.trim(), salt);
+
+    let user = await User.findById(req.user.id);
+    if (!user && req.user.email) {
+      user = await User.findOne({ email: new RegExp(`^${req.user.email}$`, 'i') });
+    }
+
+    if (user) {
+      user.password = hashedPassword;
+      await user.save();
+    } else {
+      await User.create({
+        _id: req.user.id || `user-${req.user.email?.split('@')[0]}`,
+        email: req.user.email,
+        password: hashedPassword,
+        name: req.user.name || 'User',
+        role: req.user.role || 'user'
+      });
+    }
 
     res.json({ message: 'Đổi mật khẩu thành công!' });
   } catch (err) {
+    console.error('Lỗi đổi mật khẩu:', err);
     res.status(500).json({ message: err.message });
   }
 });
