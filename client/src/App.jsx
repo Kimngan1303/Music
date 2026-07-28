@@ -673,8 +673,16 @@ export default function App() {
   // Scroll Position State for Sticky Header Navigation
   const [mainScrollTop, setMainScrollTop] = useState(0);
 
-  // System OS Picture-in-Picture Window State
+  // System OS Picture-in-Picture Window State (Desktop & Mobile)
   const [pipWindow, setPipWindow] = useState(null);
+  const canvasRef = useRef(null);
+  const videoRef = useRef(null);
+  const [mobilePipActive, setMobilePipActive] = useState(false);
+
+  // Mobile Touch Swipe Gesture State for Player Bar
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchOffset, setTouchOffset] = useState(0);
+  const [isMobileDismissed, setIsMobileDismissed] = useState(false);
 
   // Reload songs and favs when user logs in or out
   useEffect(() => {
@@ -976,20 +984,59 @@ export default function App() {
     return `${mins} phút`;
   };
 
-  // Get saved PiP window size from localStorage (default compact size: 320x340)
-  const getSavedPipSize = () => {
-    try {
-      const saved = localStorage.getItem('aura_pip_size');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.width >= 240 && parsed.height >= 260) return parsed;
-      }
-    } catch (e) {}
-    return { width: 320, height: 340 };
+  // Update canvas artwork & text for Mobile Video Picture-in-Picture
+  const updateMobilePipCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !track) return;
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      ctx.fillStyle = C.isDark ? '#121214' : '#1e1e24';
+      ctx.fillRect(0, 0, 480, 480);
+      // Draw Album Cover
+      ctx.drawImage(img, 40, 40, 400, 400);
+      // Bottom Gradient Overlay
+      const grad = ctx.createLinearGradient(0, 320, 0, 480);
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.9)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 320, 480, 160);
+      // Song Title
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText(track.title || '', 50, 425);
+      // Artist
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = '18px sans-serif';
+      ctx.fillText(track.artist || '', 50, 455);
+    };
+    img.src = track.thumbnail || '/default-cover.png';
   };
 
-  // Open Native OS System Level Picture-in-Picture window (Floats ALWAYS ON TOP across Windows Desktop & All Browser Tabs)
+  // Touch gesture handlers for swiping player bar left/right to dismiss on mobile
+  const handleTouchStart = (e) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    if (touchStart === null) return;
+    const currentTouch = e.targetTouches[0].clientX;
+    const diff = currentTouch - touchStart;
+    setTouchOffset(diff);
+  };
+
+  const handleTouchEnd = () => {
+    if (Math.abs(touchOffset) > 80) {
+      setIsMobileDismissed(true);
+    }
+    setTouchStart(null);
+    setTouchOffset(0);
+  };
+
+  // Open Native OS System Level Picture-in-Picture window (Desktop Document PiP & Mobile Video PiP for iPhone/Android)
   const togglePipWindow = async () => {
+    // 1. Desktop Document Picture-in-Picture
     if ('documentPictureInPicture' in window) {
       try {
         if (pipWindow) {
@@ -1005,7 +1052,6 @@ export default function App() {
           height: initialSize.height,
         });
 
-        // Listen for resize event to save user's custom window size into localStorage
         pipWin.addEventListener('resize', () => {
           try {
             const newSize = { width: pipWin.innerWidth, height: pipWin.innerHeight };
@@ -1013,7 +1059,6 @@ export default function App() {
           } catch (e) {}
         });
 
-        // Copy active document stylesheets into PiP window
         [...document.styleSheets].forEach((styleSheet) => {
           try {
             const cssRules = [...styleSheet.cssRules].map(r => r.cssText).join('');
@@ -1030,21 +1075,21 @@ export default function App() {
           }
         });
 
-        // Include Remixicon font CSS inside PiP window
         const iconLink = pipWin.document.createElement('link');
         iconLink.rel = 'stylesheet';
         iconLink.href = 'https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css';
         pipWin.document.head.appendChild(iconLink);
 
-        // Apply rounded corner styling and body overflow hidden to PiP window
-        pipWin.document.documentElement.style.borderRadius = '20px';
+        pipWin.document.documentElement.style.margin = '0';
+        pipWin.document.documentElement.style.padding = '0';
+        pipWin.document.documentElement.style.width = '100%';
+        pipWin.document.documentElement.style.height = '100%';
         pipWin.document.documentElement.style.overflow = 'hidden';
         pipWin.document.body.style.margin = '0';
         pipWin.document.body.style.padding = '0';
         pipWin.document.body.style.width = '100%';
         pipWin.document.body.style.height = '100%';
         pipWin.document.body.style.overflow = 'hidden';
-        pipWin.document.body.style.borderRadius = '20px';
         pipWin.document.body.style.background = C.isDark ? '#121214' : '#1e1e24';
 
         pipWin.addEventListener('pagehide', () => {
@@ -1052,8 +1097,30 @@ export default function App() {
         });
 
         setPipWindow(pipWin);
+        return;
       } catch (err) {
-        console.error('Lỗi mở System PiP Window:', err);
+        console.error('Desktop Document PiP Error:', err);
+      }
+    }
+
+    // 2. Mobile Video Picture-in-Picture (Support iPhone iOS / iPad & Mobile Android System Floating PiP)
+    if (videoRef.current && document.pictureInPictureEnabled) {
+      try {
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture();
+          setMobilePipActive(false);
+        } else {
+          updateMobilePipCanvas();
+          if (canvasRef.current && videoRef.current) {
+            const stream = canvasRef.current.captureStream(15);
+            videoRef.current.srcObject = stream;
+            await videoRef.current.play().catch(() => {});
+            await videoRef.current.requestPictureInPicture();
+            setMobilePipActive(true);
+          }
+        }
+      } catch (err) {
+        console.error('Mobile Video PiP Error:', err);
       }
     }
   };
@@ -1061,7 +1128,7 @@ export default function App() {
   // Automatically launch OS Picture-in-Picture window when user switches browser tab or minimizes window while playing
   useEffect(() => {
     const handleVisibilityChange = async () => {
-      if (document.hidden && playing && track && !pipWindow) {
+      if (document.hidden && playing && track && !pipWindow && !mobilePipActive) {
         try {
           await togglePipWindow();
         } catch (e) {}
@@ -1069,7 +1136,7 @@ export default function App() {
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [playing, track, pipWindow]);
+  }, [playing, track, pipWindow, mobilePipActive]);
 
   // MediaSession API Integration for OS & Browser Media Controls
   useEffect(() => {
@@ -3571,14 +3638,14 @@ export default function App() {
             </Tooltip>
 
             {/* Mini Player Window Button */}
-            <Tooltip text={pipWindow ? "Đóng cửa sổ thu nhỏ" : "Mở cửa sổ con nổi toàn hệ thống (Mini Player)"}>
+            <Tooltip text={pipWindow || mobilePipActive ? "Đóng cửa sổ thu nhỏ" : "Mở cửa sổ con nổi toàn hệ thống (Mini Player)"}>
               <button
                 onClick={togglePipWindow}
                 className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
-                style={{ color: pipWindow ? C.primarySolid : C.txtFad }}
+                style={{ color: pipWindow || mobilePipActive ? C.primarySolid : C.txtFad }}
               >
-                <i className={pipWindow ? "ri-picture-in-picture-2-fill text-lg" : "ri-picture-in-picture-2-line text-lg"}></i>
-                {pipWindow && (
+                <i className={pipWindow || mobilePipActive ? "ri-picture-in-picture-2-fill text-lg" : "ri-picture-in-picture-2-line text-lg"}></i>
+                {(pipWindow || mobilePipActive) && (
                   <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
                     style={{ background: C.primarySolid }}>
                   </span>
@@ -3991,6 +4058,16 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* ── HIDDEN CANVAS & VIDEO FOR MOBILE iOS / ANDROID NATIVE PIP ─────────────────── */}
+      <canvas ref={canvasRef} width="480" height="480" className="hidden" />
+      <video
+        ref={videoRef}
+        className="hidden"
+        muted
+        playsInline
+        onLeavePictureInPicture={() => setMobilePipActive(false)}
+      />
 
       {/* ── FLOATING MINI PLAYER WIDGET (ONLY OS SYSTEM LEVEL DOCUMENT PICTURE-IN-PICTURE) ─────────────────── */}
       {pipWindow && track && createPortal(
