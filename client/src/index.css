@@ -91,28 +91,43 @@ input[type='range']::-webkit-slider-thumb:hover {
 }
 
 /* Sun Theme Play Button & Sun Ray Pulsing Effects */
+@keyframes sunRayRotate {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.06); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
 @keyframes sunPulseGlow {
   0%, 100% {
-    box-shadow: 0 0 15px rgba(245, 158, 11, 0.8), 0 0 35px rgba(251, 191, 36, 0.5);
+    box-shadow: 0 0 20px #f59e0b, 0 0 45px #fbbf24, 0 0 70px rgba(245, 158, 11, 0.6);
   }
   50% {
-    box-shadow: 0 0 25px rgba(245, 158, 11, 1), 0 0 60px rgba(251, 191, 36, 0.85);
+    box-shadow: 0 0 35px #f97316, 0 0 70px #f59e0b, 0 0 100px rgba(251, 191, 36, 0.9);
   }
 }
 
 .sun-play-btn {
-  background: linear-gradient(135deg, #ff7e5f, #feb47b, #f59e0b, #eab308) !important;
-  animation: sunPulseGlow 3s ease-in-out infinite !important;
-  position: relative;
+  background: radial-gradient(circle at 32% 32%, #ffffff 0%, #fff066 22%, #f59e0b 58%, #ea580c 88%, #9a3412 100%) !important;
+  animation: sunPulseGlow 2.5s ease-in-out infinite !important;
+  position: relative !important;
+  overflow: visible !important;
+  border: 2px solid #fffde7 !important;
 }
 
-.sun-play-btn::before {
-  content: '☀️';
+.sun-play-btn::after {
+  content: '';
   position: absolute;
-  font-size: 10px;
-  top: -4px;
-  right: -4px;
-  animation: spinSlow 8s linear infinite;
+  inset: -7px;
+  border-radius: 50%;
+  border: 3px dashed #fbbf24;
+  animation: sunRayRotate 12s linear infinite;
+  pointer-events: none;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.8);
+}
+
+.sun-play-btn svg, .sun-play-btn i {
+  color: #451a03 !important;
+  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.8)) !important;
 }
 
 /* Custom Sun Slider for Timeline Progress */
