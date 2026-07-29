@@ -1060,6 +1060,27 @@ export default function App() {
   const [showAllSongs, setShowAllSongs] = useState(false);
   const SONGS_PER_PAGE = 40;
 
+  // Toast Popup Notification State
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success', title: '' });
+
+  const showToast = (message, type = 'success', title = '') => {
+    setToast({
+      show: true,
+      message,
+      type,
+      title: title || (type === 'success' ? 'Thành công 🎉' : 'Thông báo lỗi ⚠️')
+    });
+  };
+
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => {
+        setToast(prev => ({ ...prev, show: false }));
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
+
   // Helper to compress avatar image to ~15KB - 25KB WebP/JPEG (max 250x250)
   const compressImage = (file, maxWidth = 250, maxHeight = 250, quality = 0.82) => {
     return new Promise((resolve, reject) => {
@@ -2270,11 +2291,16 @@ export default function App() {
         });
       }
       setAddModal(false); setYtUrl(''); play(s);
+      showToast(`Đã thêm bài hát "${s.title}" vào thư viện!`, 'success');
 
       if (isPlaylistTab) {
         handleAddToPlaylist(tab.split('_')[1], s.id);
       }
-    } catch (err) { setAddErr(err.message || 'Lỗi không xác định.'); }
+    } catch (err) {
+      const msg = err.message || 'Lỗi không xác định khi thêm nhạc.';
+      setAddErr(msg);
+      showToast(msg, 'error');
+    }
     finally { setAdding(false); }
   };
 
@@ -2312,11 +2338,16 @@ export default function App() {
       play(finalSongs[0]);
       setAddModal(false);
       setSpotifyUrl('');
+      showToast(`Đã thêm thành công ${finalSongs.length} bài hát từ Spotify!`, 'success');
 
       if (tab.startsWith('playlist_')) {
         handleAddToPlaylist(tab.split('_')[1], null, finalSongs.map(ns => ns.id));
       }
-    } catch (err) { setAddErr(err.response?.data?.message || err.message || 'Lỗi không xác định.'); }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Lỗi không thể tải bài hát từ Spotify.';
+      setAddErr(msg);
+      showToast(msg, 'error');
+    }
     finally { setAdding(false); }
   };
 
@@ -2351,12 +2382,15 @@ export default function App() {
       play(finalSongs[0]);
       setAddModal(false);
       setPlaylistUrl('');
+      showToast(`Đã thêm thành công ${finalSongs.length} bài hát từ Playlist YouTube!`, 'success');
 
       if (tab.startsWith('playlist_')) {
         handleAddToPlaylist(tab.split('_')[1], null, finalSongs.map(ns => ns.id));
       }
     } catch (err) {
-      setAddErr(err.response?.data?.message || err.message || 'Lỗi không xác định.');
+      const msg = err.response?.data?.message || err.message || 'Lỗi không thể tải Playlist YouTube.';
+      setAddErr(msg);
+      showToast(msg, 'error');
     }
     finally { setAdding(false); }
   };
@@ -5751,6 +5785,63 @@ export default function App() {
           );
         })(),
         pipWindow.document.body
+      )}
+
+      {/* ── GLOBAL TOAST POPUP NOTIFICATION ────────────────────────── */}
+      {toast.show && (
+        <div
+          className="fixed top-6 right-6 z-[200] max-w-md w-[90vw] md:w-96 rounded-2xl p-4 shadow-2xl flex items-start gap-3.5 transition-all duration-300 animate-slide-in pointer-events-auto"
+          style={{
+            background: C.isDark ? 'rgba(30, 41, 59, 0.94)' : 'rgba(255, 252, 249, 0.96)',
+            backdropFilter: 'blur(16px)',
+            border: `1.5px solid ${
+              toast.type === 'success' ? '#10b981' : toast.type === 'error' ? '#f43f5e' : C.primarySolid
+            }`,
+            boxShadow: toast.type === 'success'
+              ? '0 12px 35px rgba(16, 185, 129, 0.3)'
+              : toast.type === 'error'
+              ? '0 12px 35px rgba(244, 63, 94, 0.3)'
+              : '0 12px 35px rgba(0,0,0,0.3)',
+            color: C.txt
+          }}
+        >
+          <div
+            className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center text-xl shadow-xs ${
+              toast.type === 'success'
+                ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30'
+                : toast.type === 'error'
+                ? 'bg-rose-500/20 text-rose-500 border border-rose-500/30'
+                : 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
+            }`}
+          >
+            <i className={
+              toast.type === 'success'
+                ? 'ri-checkbox-circle-fill'
+                : toast.type === 'error'
+                ? 'ri-error-warning-fill'
+                : 'ri-information-fill'
+            }></i>
+          </div>
+
+          <div className="flex flex-col flex-1 min-w-0 pr-1">
+            <span className="text-xs font-black uppercase tracking-wider mb-0.5" style={{
+              color: toast.type === 'success' ? '#10b981' : toast.type === 'error' ? '#f43f5e' : C.primarySolid
+            }}>
+              {toast.title}
+            </span>
+            <p className="text-xs font-semibold leading-relaxed break-words" style={{ color: C.txt }}>
+              {toast.message}
+            </p>
+          </div>
+
+          <button
+            onClick={() => setToast(prev => ({ ...prev, show: false }))}
+            className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center transition cursor-pointer hover:opacity-75"
+            style={{ background: C.tag, color: C.txtFad }}
+          >
+            <i className="ri-close-line text-sm"></i>
+          </button>
+        </div>
       )}
     </div>
   );
