@@ -139,10 +139,6 @@ router.post('/auth/heartbeat', auth, async (req, res) => {
 // --- ADMIN USER MANAGEMENT ROUTES ---
 router.get('/admin/users', async (req, res) => {
   try {
-    await User.updateMany(
-      { $or: [{ email: 'tyn@gmail.com' }, { email: 'unnull@gmail.com' }, { _id: 'admin-owner' }] },
-      { $set: { role: 'admin' } }
-    );
     const users = await User.find().select('-password').sort({ createdAt: -1 });
     const now = new Date();
     const formatted = users.map(u => {
@@ -175,11 +171,11 @@ router.get('/admin/stats', async (req, res) => {
       User.countDocuments(),
       Music.countDocuments(),
       Playlist.countDocuments(),
-      User.find().select('name avatar email totalActiveTime role').sort({ totalActiveTime: -1 }).limit(10),
+      User.find().select('name avatar email totalActiveTime role').sort({ totalActiveTime: -1 }),
       DailyStat.find().sort({ date: -1 }).limit(30)
     ]);
 
-    // Top 10 users by totalActiveTime
+    // All active users by totalActiveTime
     const topActiveUsers = allUsers.map(u => ({
       _id: u._id,
       name: u.name,

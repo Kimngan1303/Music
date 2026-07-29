@@ -1285,6 +1285,7 @@ export default function App() {
 
   // Public Leaderboard State (Top 10 users)
   const [publicLeaderboard, setPublicLeaderboard] = useState([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   // Global Popular Songs State (Top songs listened by all users)
   const [popularSongs, setPopularSongs] = useState([]);
 
@@ -1294,7 +1295,7 @@ export default function App() {
         if (Array.isArray(res.data)) {
           setPublicLeaderboard(res.data.slice(0, 10));
         }
-      }).catch(() => {});
+      }).catch(() => {}).finally(() => setLeaderboardLoading(false));
     };
     const fetchPopular = () => {
       axios.get('/api/music/popular').then(res => {
@@ -3621,16 +3622,16 @@ export default function App() {
                   <div className="p-5 rounded-2xl shadow-sm" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
                     <div className="flex items-center gap-2 mb-6">
                       <i className="ri-timer-flash-fill text-lg" style={{ color: '#f59e0b' }} />
-                      <h3 className="text-base font-bold" style={{ color: C.txt }}>Top Người Dùng Hoạt Động (Thời Gian Sử Dụng)</h3>
+                      <h3 className="text-base font-bold" style={{ color: C.txt }}>Danh Sách Người Dùng Hoạt Động (Tổng {statsData.topActiveUsers?.length || 0} Thành Viên)</h3>
                     </div>
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-3 max-h-[550px] overflow-y-auto custom-scrollbar pr-1">
                       {statsData.topActiveUsers?.length === 0 ? (
                         <p className="text-sm" style={{ color: C.txtSub }}>Chưa có dữ liệu thời gian</p>
                       ) : statsData.topActiveUsers.map((u, i) => (
-                        <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl gap-4 transition hover:opacity-95" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+                        <div key={u._id || i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl gap-4 transition hover:opacity-95" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
                           <div className="flex items-center gap-4">
                             <span className="text-lg font-black w-6 text-center" style={{ color: i < 3 ? '#f59e0b' : C.txtSub }}>#{i + 1}</span>
-                            <img src={u.avatar} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                            <img src={u.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" />
                             <div className="flex flex-col">
                               <span className="text-sm font-bold" style={{ color: C.txt }}>{u.name}</span>
                               <span className="text-[10px]" style={{ color: C.txtSub }}>{u.email}</span>
@@ -3744,10 +3745,15 @@ export default function App() {
 
                 {/* Users List */}
                 <div className="flex flex-col gap-3">
-                  {adminUsers.length === 0 ? (
+                  {adminUsersLoading && adminUsers.length === 0 ? (
+                    <div className="text-center py-16 animate-pulse">
+                      <i className="ri-shield-flash-line text-4xl mb-3 inline-block" style={{ color: C.primarySolid }} />
+                      <p className="text-sm font-semibold" style={{ color: C.txtSub }}>Đang tải danh sách tài khoản từ DB...</p>
+                    </div>
+                  ) : adminUsers.length === 0 ? (
                     <div className="text-center py-16">
                       <div className="text-4xl mb-3">🛡️</div>
-                      <p className="text-sm font-semibold" style={{ color: C.txtFad }}>Đang tải danh sách tài khoản từ DB...</p>
+                      <p className="text-sm font-semibold" style={{ color: C.txtFad }}>Chưa có tài khoản nào trong hệ thống...</p>
                     </div>
                   ) : adminUsers
                     .filter(u => !adminSearch || u.name?.toLowerCase().includes(adminSearch.toLowerCase()) || u.email?.toLowerCase().includes(adminSearch.toLowerCase()))
@@ -3932,7 +3938,15 @@ export default function App() {
                   <div className="flex flex-col gap-2.5 max-h-[460px] overflow-y-auto custom-scrollbar pr-1">
                     {(() => {
                       const safeLb = (Array.isArray(publicLeaderboard) ? publicLeaderboard : []).filter(Boolean).slice(0, 10);
-                      if (safeLb.length === 0) {
+                      if (leaderboardLoading && safeLb.length === 0) {
+                        return (
+                          <div className="py-12 text-center text-xs flex flex-col items-center justify-center gap-2 animate-pulse" style={{ color: C.txtSub }}>
+                            <i className="ri-trophy-line text-3xl" style={{ color: C.primarySolid }}></i>
+                            <span>Đang tải bảng xếp hạng...</span>
+                          </div>
+                        );
+                      }
+                      if (!leaderboardLoading && safeLb.length === 0) {
                         return (
                           <div className="py-12 text-center text-xs" style={{ color: C.txtFad }}>
                             Chưa có dữ liệu xếp hạng...
