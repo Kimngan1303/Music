@@ -976,6 +976,7 @@ export default function App() {
   const [adminErr, setAdminErr] = useState('');
   const [adminSaving, setAdminSaving] = useState(false);
   const [directEditUser, setDirectEditUser] = useState(null);
+  const [selectedDayStat, setSelectedDayStat] = useState(null);
   const adminListAvatarInputRef = useRef(null);
   const adminFormAvatarInputRef = useRef(null);
 
@@ -3636,54 +3637,108 @@ export default function App() {
                   </div>
 
                   {/* ── DAILY ACTIVE USERS CHART ── */}
-                  <div className="p-5 rounded-2xl shadow-sm" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
-                    <div className="flex items-center gap-2 mb-6">
-                      <i className="ri-line-chart-line text-lg" style={{ color: '#06b6d4' }} />
-                      <h3 className="text-base font-bold" style={{ color: C.txt }}>Lượng Người Dùng Hoạt Động Theo Ngày (30 ngày)</h3>
-                    </div>
-                    <div className="h-72 w-full">
-                      {statsData.dailyActiveUsersChart?.length === 0 ? (
-                        <div className="h-full flex items-center justify-center">
-                          <p className="text-sm" style={{ color: C.txtSub }}>Chưa có dữ liệu hoạt động</p>
+                  <div className="p-5 rounded-2xl shadow-sm flex flex-col gap-4" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <i className="ri-line-chart-line text-lg" style={{ color: '#06b6d4' }} />
+                          <h3 className="text-base font-bold" style={{ color: C.txt }}>Lượng Người Dùng Hoạt Động Theo Ngày (30 ngày)</h3>
                         </div>
-                      ) : (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={statsData.dailyActiveUsersChart} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                            <defs>
-                              <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
-                            <XAxis 
-                              dataKey="date" 
-                              stroke={C.txtSub} 
-                              fontSize={11}
-                              tickLine={false}
-                              axisLine={false}
-                              tickFormatter={(val) => {
-                                const d = new Date(val);
-                                return `${d.getDate()}/${d.getMonth()+1}`;
+                        <span className="text-[11px] font-semibold flex items-center gap-1.5 px-3 py-1 rounded-full text-cyan-400 bg-cyan-500/10 border border-cyan-500/20">
+                          <i className="ri-cursor-fill text-xs animate-bounce" /> Nhấp vào điểm ngày trên biểu đồ để xem chi tiết
+                        </span>
+                      </div>
+
+                      <div className="h-72 w-full">
+                        {statsData.dailyActiveUsersChart?.length === 0 ? (
+                          <div className="h-full flex items-center justify-center">
+                            <p className="text-sm" style={{ color: C.txtSub }}>Chưa có dữ liệu hoạt động</p>
+                          </div>
+                        ) : (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart 
+                              data={statsData.dailyActiveUsersChart} 
+                              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                              onClick={(e) => {
+                                if (e && e.activePayload && e.activePayload[0]) {
+                                  setSelectedDayStat(e.activePayload[0].payload);
+                                }
                               }}
-                            />
-                            <YAxis 
-                              stroke={C.txtSub} 
-                              fontSize={11}
-                              tickLine={false}
-                              axisLine={false}
-                            />
-                            <RechartsTooltip 
-                              contentStyle={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: '12px', color: C.txt }}
-                              itemStyle={{ color: '#06b6d4', fontWeight: 'bold' }}
-                              labelStyle={{ color: C.txtSub, marginBottom: '4px' }}
-                            />
-                            <Area type="monotone" dataKey="count" name="Người dùng" stroke="#06b6d4" strokeWidth={3} fillOpacity={1} fill="url(#colorActive)" />
-                          </AreaChart>
-                        </ResponsiveContainer>
+                            >
+                              <defs>
+                                <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
+                                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
+                              <XAxis 
+                                dataKey="date" 
+                                stroke={C.txtSub} 
+                                fontSize={11}
+                                tickLine={false}
+                                axisLine={false}
+                                tickFormatter={(val) => {
+                                  const d = new Date(val);
+                                  return `${d.getDate()}/${d.getMonth()+1}`;
+                                }}
+                              />
+                              <YAxis 
+                                stroke={C.txtSub} 
+                                fontSize={11}
+                                tickLine={false}
+                                axisLine={false}
+                              />
+                              <RechartsTooltip 
+                                contentStyle={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: '12px', color: C.txt }}
+                                itemStyle={{ color: '#06b6d4', fontWeight: 'bold' }}
+                                labelStyle={{ color: C.txtSub, marginBottom: '4px' }}
+                                formatter={(value) => [`${value} người dùng (Nhấp để xem danh sách)`, 'Hoạt động']}
+                              />
+                              <Area 
+                                type="monotone" 
+                                dataKey="count" 
+                                name="Người dùng" 
+                                stroke="#06b6d4" 
+                                strokeWidth={3} 
+                                fillOpacity={1} 
+                                fill="url(#colorActive)"
+                                activeDot={{ 
+                                  r: 8, 
+                                  style: { cursor: 'pointer' },
+                                  onClick: (e, payload) => {
+                                    if (payload && payload.payload) {
+                                      setSelectedDayStat(payload.payload);
+                                    }
+                                  } 
+                                }} 
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        )}
+                      </div>
+
+                      {/* Quick Date Selector Chips */}
+                      {statsData.dailyActiveUsersChart?.length > 0 && (
+                        <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pt-2 pb-1">
+                          <span className="text-[11px] font-bold shrink-0" style={{ color: C.txtFad }}>Danh sách các ngày:</span>
+                          {statsData.dailyActiveUsersChart.slice(-14).map((d) => (
+                            <button
+                              key={d.date}
+                              onClick={() => setSelectedDayStat(d)}
+                              className="px-3 py-1 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 hover:scale-105 active:scale-95 cursor-pointer"
+                              style={{
+                                background: C.surface,
+                                border: `1px solid ${C.border}`,
+                                color: C.txt
+                              }}
+                            >
+                              <span style={{ color: '#06b6d4' }}>{d.date.split('-').slice(1).join('/')}</span>
+                              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-cyan-500/15 text-cyan-400 font-extrabold">{d.count} ng/dùng</span>
+                            </button>
+                          ))}
+                        </div>
                       )}
                     </div>
-                  </div>
 
                   {/* ── TOP ACTIVE USERS ── */}
                   <div className="p-5 rounded-2xl shadow-sm" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
@@ -5923,6 +5978,106 @@ export default function App() {
           >
             <i className="ri-close-line text-sm"></i>
           </button>
+        </div>
+      )}
+
+      {/* ── DAILY ACTIVE USERS DETAIL MODAL ────────────────────────── */}
+      {selectedDayStat && (
+        <div 
+          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in pointer-events-auto"
+          onClick={() => setSelectedDayStat(null)}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[85vh] rounded-3xl p-6 shadow-2xl flex flex-col gap-5 border overflow-hidden transition-all relative"
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: C.isDark ? '#0f172a' : '#ffffff',
+              borderColor: C.border,
+              color: C.txt
+            }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b pb-4 shrink-0" style={{ borderColor: C.border }}>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl bg-cyan-500/10 text-cyan-500 border border-cyan-500/20">
+                  <i className="ri-calendar-check-fill" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold flex items-center gap-2" style={{ color: C.txt }}>
+                    Chi Tiết Hoạt Động Ngày {selectedDayStat.date}
+                  </h3>
+                  <p className="text-xs mt-0.5" style={{ color: C.txtSub }}>
+                    Có tổng cộng <span className="font-bold text-cyan-500">{selectedDayStat.count || selectedDayStat.users?.length || 0} người dùng</span> đã truy cập hệ thống trong ngày này.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedDayStat(null)}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg transition hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                style={{ background: C.tag, color: C.txtFad }}
+              >
+                <i className="ri-close-line" />
+              </button>
+            </div>
+
+            {/* Users List */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-3">
+              {(!selectedDayStat.users || selectedDayStat.users.length === 0) ? (
+                <div className="text-center py-12">
+                  <i className="ri-user-unfollow-line text-4xl mb-2 inline-block" style={{ color: C.txtFad }} />
+                  <p className="text-xs font-semibold" style={{ color: C.txtSub }}>Chưa có dữ liệu chi tiết cho ngày này</p>
+                </div>
+              ) : selectedDayStat.users.map((u, i) => (
+                <div
+                  key={u._id || i}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-2xl gap-3 transition hover:opacity-95"
+                  style={{ background: C.surface, border: `1px solid ${C.border}` }}
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <span className="text-base font-black w-6 text-center shrink-0" style={{ color: i < 3 ? '#06b6d4' : C.txtSub }}>
+                      #{i + 1}
+                    </span>
+                    <img
+                      src={u.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                      alt=""
+                      className="w-11 h-11 rounded-xl object-cover shrink-0"
+                      style={{ border: `1.5px solid ${C.border}` }}
+                    />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-bold truncate" style={{ color: C.txt }}>{u.name}</span>
+                      <span className="text-[11px] truncate" style={{ color: C.txtSub }}>{u.email}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl shrink-0 self-end sm:self-center" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                    <i className="ri-time-line text-cyan-500 text-sm" />
+                    <span className="text-xs font-extrabold" style={{ color: C.txt }}>
+                      {u.activeSeconds && u.activeSeconds > 0 ? (
+                        u.activeSeconds < 60
+                          ? `${u.activeSeconds} giây`
+                          : u.activeSeconds < 3600
+                            ? `${Math.floor(u.activeSeconds / 60)} phút ${u.activeSeconds % 60} giây`
+                            : `${Math.floor(u.activeSeconds / 3600)} giờ ${Math.floor((u.activeSeconds % 3600) / 60)} phút`
+                      ) : (
+                        "Đã truy cập"
+                      )}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div className="pt-3 border-t flex justify-end shrink-0" style={{ borderColor: C.border }}>
+              <button
+                onClick={() => setSelectedDayStat(null)}
+                className="px-6 py-2 rounded-xl text-xs font-bold text-white transition hover:scale-105 active:scale-95 cursor-pointer"
+                style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

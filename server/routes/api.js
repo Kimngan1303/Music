@@ -132,9 +132,13 @@ router.post('/auth/heartbeat', auth, async (req, res) => {
     }
 
     if (updatedUser) {
+      const uIdStr = String(updatedUser._id);
       await DailyStat.findOneAndUpdate(
         { date: today },
-        { $addToSet: { activeUsers: updatedUser._id } },
+        { 
+          $addToSet: { activeUsers: uIdStr },
+          $inc: { [`userTimes.${uIdStr}`]: 5 }
+        },
         { upsert: true }
       );
     }
@@ -197,11 +201,38 @@ router.get('/admin/stats', async (req, res) => {
       role: u.role
     }));
 
-    // Chart data for daily active users
-    const dailyActiveUsersChart = thirtyDaysStats.reverse().map(stat => ({
-      date: stat.date,
-      count: stat.activeUsers.length
-    }));
+    // Map of users for fast lookup
+    const userMap = new Map(allUsers.map(u => [String(u._id), u]));
+
+    // Chart data for daily active users with populated active users list
+    const dailyActiveUsersChart = thirtyDaysStats.reverse().map(stat => {
+      const rawUserTimes = stat.userTimes;
+      const userTimesMap = rawUserTimes instanceof Map 
+        ? Object.fromEntries(rawUserTimes) 
+        : (typeof rawUserTimes === 'object' && rawUserTimes !== null ? rawUserTimes : {});
+
+      const userList = (stat.activeUsers || []).map(uId => {
+        const uIdStr = String(uId);
+        const userObj = userMap.get(uIdStr);
+        const daySeconds = userTimesMap[uIdStr] !== undefined 
+          ? userTimesMap[uIdStr] 
+          : (userObj ? userObj.totalActiveTime : 0);
+
+        return {
+          _id: uIdStr,
+          name: userObj ? userObj.name : 'Người dùng hệ thống',
+          email: userObj ? userObj.email : '',
+          avatar: userObj ? (userObj.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80") : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+          activeSeconds: daySeconds
+        };
+      }).sort((a, b) => b.activeSeconds - a.activeSeconds);
+
+      return {
+        date: stat.date,
+        count: stat.activeUsers.length,
+        users: userList
+      };
+    });
 
     res.json({
       users: { total: totalUsers },
