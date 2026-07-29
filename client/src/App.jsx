@@ -2208,13 +2208,14 @@ export default function App() {
   };
 
   const toggleFav = id => {
+    if (!id) return;
     setFavs(p => {
       const updated = p.includes(id) ? p.filter(x => x !== id) : [...p, id];
       if (user) {
         localStorage.setItem(favsKey(user._id), JSON.stringify(updated));
         // Sync to backend
         axios.put('/api/auth/profile', { favorites: updated }, {
-          headers: { Authorization: `Bearer ${user.token}` }
+          headers: { Authorization: `Bearer ${user.token || localStorage.getItem('aura_token')}` }
         }).catch(err => console.error("Failed to sync favorites", err));
       }
       return updated;
@@ -4209,16 +4210,31 @@ export default function App() {
                               </div>
                             </div>
 
-                            {/* Action Buttons: Add to Playlist */}
-                            <button
-                              onClick={() => setSongToAdd(s)}
-                              title="Thêm bài hát này vào danh sách phát tùy chọn của bạn"
-                              className="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer hover:scale-105 active:scale-95 shrink-0"
-                              style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.primarySolid }}
-                            >
-                              <i className="ri-playlist-add-line text-sm"></i>
-                              <span className="hidden sm:inline">Thêm</span>
-                            </button>
+                            {/* Action Buttons: Add to Playlist & Favorite */}
+                            <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
+                              <button
+                                onClick={() => setSongToAdd(s)}
+                                title="Thêm bài hát này vào danh sách phát tùy chọn của bạn"
+                                className="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer hover:scale-105 active:scale-95 shrink-0"
+                                style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.primarySolid }}
+                              >
+                                <i className="ri-playlist-add-line text-sm"></i>
+                                <span className="hidden sm:inline">Thêm</span>
+                              </button>
+
+                              <button
+                                onClick={() => toggleFav(s.id || s._id)}
+                                title={(favs.includes(s.id) || (s._id && favs.includes(s._id))) ? "Bỏ yêu thích bài hát này" : "Thêm bài hát này vào Yêu Thích"}
+                                className="p-1.5 px-2 rounded-xl transition active:scale-95 cursor-pointer hover:scale-110 shrink-0 flex items-center justify-center"
+                                style={{ 
+                                  background: (favs.includes(s.id) || (s._id && favs.includes(s._id))) ? 'rgba(244, 63, 94, 0.15)' : C.tag, 
+                                  border: `1.5px solid ${(favs.includes(s.id) || (s._id && favs.includes(s._id))) ? 'rgba(244, 63, 94, 0.3)' : C.border}`,
+                                  color: (favs.includes(s.id) || (s._id && favs.includes(s._id))) ? '#f43f5e' : C.txtFad
+                                }}
+                              >
+                                <i className={(favs.includes(s.id) || (s._id && favs.includes(s._id))) ? 'ri-heart-fill text-sm text-rose-500' : 'ri-heart-line text-sm'} />
+                              </button>
+                            </div>
                           </div>
                         );
                       });
@@ -5066,9 +5082,10 @@ export default function App() {
               {playlists.length === 0 ? (
                 <p className="text-sm text-center py-4" style={{ color: C.txtSub }}>Bạn chưa có playlist nào.</p>
               ) : playlists.map(p => {
-                const inPlaylist = p.songs.includes(songToAdd.id);
+                const targetSongId = songToAdd.id || songToAdd._id;
+                const inPlaylist = (p.songs || []).includes(targetSongId) || (songToAdd.id && (p.songs || []).includes(songToAdd.id)) || (songToAdd._id && (p.songs || []).includes(songToAdd._id));
                 return (
-                  <button key={p._id} onClick={() => inPlaylist ? handleRemoveFromPlaylist(p._id, songToAdd.id) : handleAddToPlaylist(p._id, songToAdd.id)}
+                  <button key={p._id} onClick={() => inPlaylist ? handleRemoveFromPlaylist(p._id, targetSongId) : handleAddToPlaylist(p._id, targetSongId)}
                     className="flex items-center justify-between px-4 py-3 rounded-xl transition-all hover:opacity-80 active:scale-[0.98] active:opacity-60"
                     style={{ background: C.tag, border: `1px solid ${inPlaylist ? C.primarySolid : C.border}` }}>
                     <span className="text-sm font-semibold truncate" style={{ color: inPlaylist ? C.primarySolid : C.txt }}>{p.name}</span>
