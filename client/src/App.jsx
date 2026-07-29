@@ -1394,13 +1394,14 @@ export default function App() {
 
   const yt = useRef(null);
 
-  // Sync profile edit state when opening profile dropdown
+  // Sync profile edit state ONLY when opening profile dropdown (prevents timer updates from resetting avatar preview)
   useEffect(() => {
-    if (user) {
+    if (profileDropdown && user) {
       setEditName(user.name || '');
       setEditAvatar(user.avatar || '');
     }
-  }, [user, profileDropdown]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileDropdown]);
 
   // Click outside to auto-close profile dropdown
   useEffect(() => {
