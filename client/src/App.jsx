@@ -6049,19 +6049,38 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl shrink-0 self-end sm:self-center" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
-                    <i className="ri-time-line text-cyan-500 text-sm" />
-                    <span className="text-xs font-extrabold" style={{ color: C.txt }}>
-                      {u.activeSeconds && u.activeSeconds > 0 ? (
-                        u.activeSeconds < 60
-                          ? `${u.activeSeconds} giây`
-                          : u.activeSeconds < 3600
-                            ? `${Math.floor(u.activeSeconds / 60)} phút ${u.activeSeconds % 60} giây`
-                            : `${Math.floor(u.activeSeconds / 3600)} giờ ${Math.floor((u.activeSeconds % 3600) / 60)} phút`
-                      ) : (
-                        "Đã truy cập"
-                      )}
-                    </span>
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center flex-wrap">
+                    {/* Added Songs count on this day badge */}
+                    <div 
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl shrink-0" 
+                      style={{ 
+                        background: (u.addedSongsCount || 0) > 0 ? 'rgba(16, 185, 129, 0.15)' : C.tag, 
+                        border: `1px solid ${(u.addedSongsCount || 0) > 0 ? 'rgba(16, 185, 129, 0.3)' : C.border}`,
+                        color: (u.addedSongsCount || 0) > 0 ? '#10b981' : C.txtFad
+                      }}
+                      title={`Số bài nhạc đã thêm vào ngày ${selectedDayStat.date}`}
+                    >
+                      <i className="ri-music-2-line text-sm" />
+                      <span className="text-xs font-bold">
+                        {(u.addedSongsCount || 0) > 0 ? `+${u.addedSongsCount} bài nhạc` : '0 bài nhạc'}
+                      </span>
+                    </div>
+
+                    {/* Active Time badge */}
+                    <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl shrink-0" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
+                      <i className="ri-time-line text-cyan-500 text-sm" />
+                      <span className="text-xs font-extrabold" style={{ color: C.txt }}>
+                        {u.activeSeconds && u.activeSeconds > 0 ? (
+                          u.activeSeconds < 60
+                            ? `${u.activeSeconds} giây`
+                            : u.activeSeconds < 3600
+                              ? `${Math.floor(u.activeSeconds / 60)} phút ${u.activeSeconds % 60} giây`
+                              : `${Math.floor(u.activeSeconds / 3600)} giờ ${Math.floor((u.activeSeconds % 3600) / 60)} phút`
+                        ) : (
+                          "Đã truy cập"
+                        )}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}

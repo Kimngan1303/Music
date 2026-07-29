@@ -182,13 +182,15 @@ router.get('/admin/stats', async (req, res) => {
       totalSongs,
       totalPlaylists,
       allUsers,
-      thirtyDaysStats
+      thirtyDaysStats,
+      allMusic
     ] = await Promise.all([
       User.countDocuments(),
       Music.countDocuments(),
       Playlist.countDocuments(),
-      User.find().select('name avatar email totalActiveTime role').sort({ totalActiveTime: -1 }),
-      DailyStat.find().sort({ date: -1 }).limit(30)
+      User.find().select('name avatar email totalActiveTime role'),
+      DailyStat.find().sort({ date: -1 }).limit(30),
+      Music.find().select('addedBy createdAt')
     ]);
 
     // All active users by totalActiveTime
@@ -211,6 +213,24 @@ router.get('/admin/stats', async (req, res) => {
         ? Object.fromEntries(rawUserTimes) 
         : (typeof rawUserTimes === 'object' && rawUserTimes !== null ? rawUserTimes : {});
 
+      // Filter music added on this specific date
+      const songsOnDate = allMusic.filter(m => {
+        if (!m.createdAt) return false;
+        try {
+          const dStr = new Date(m.createdAt).toISOString().split('T')[0];
+          return dStr === stat.date;
+        } catch { return false; }
+      });
+
+      // Map of uploader key => song count
+      const songsAddedMap = {};
+      songsOnDate.forEach(m => {
+        if (m.addedBy) {
+          const k = String(m.addedBy).toLowerCase();
+          songsAddedMap[k] = (songsAddedMap[k] || 0) + 1;
+        }
+      });
+
       const userList = (stat.activeUsers || []).map(uId => {
         const uIdStr = String(uId);
         const userObj = userMap.get(uIdStr);
@@ -218,12 +238,21 @@ router.get('/admin/stats', async (req, res) => {
           ? userTimesMap[uIdStr] 
           : (userObj ? userObj.totalActiveTime : 0);
 
+        const keyId = uIdStr.toLowerCase();
+        const keyEmail = userObj?.email?.toLowerCase() || '';
+        const keyName = userObj?.name?.toLowerCase() || '';
+
+        const addedSongsCount = (songsAddedMap[keyId] || 0) +
+          (keyEmail && keyEmail !== keyId ? (songsAddedMap[keyEmail] || 0) : 0) +
+          (keyName && keyName !== keyId && keyName !== keyEmail ? (songsAddedMap[keyName] || 0) : 0);
+
         return {
           _id: uIdStr,
           name: userObj ? userObj.name : 'Người dùng hệ thống',
           email: userObj ? userObj.email : '',
           avatar: userObj ? (userObj.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80") : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-          activeSeconds: daySeconds
+          activeSeconds: daySeconds,
+          addedSongsCount
         };
       }).sort((a, b) => b.activeSeconds - a.activeSeconds);
 
