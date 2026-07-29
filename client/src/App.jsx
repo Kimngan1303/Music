@@ -1214,6 +1214,7 @@ export default function App() {
   useEffect(() => {
     const authToken = user?.token || localStorage.getItem('aura_token');
     if (!authToken) return;
+
     const sendHeartbeat = () => {
       const token = user?.token || localStorage.getItem('aura_token');
       if (!token) return;
@@ -1225,9 +1226,22 @@ export default function App() {
         }
       }).catch(() => {});
     };
+
     sendHeartbeat(); // ping immediately on login/mount
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        sendHeartbeat();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     const hbInterval = setInterval(sendHeartbeat, 5000);
-    return () => clearInterval(hbInterval);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(hbInterval);
+    };
   }, [user?.token, user?._id]);
 
   // Local active timer (increments active time by 1s every second for smooth UI count)

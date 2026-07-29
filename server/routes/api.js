@@ -153,7 +153,7 @@ router.get('/admin/users', async (req, res) => {
     const formatted = users.map(u => {
       const isSuperAdmin = u.email === 'tyn@gmail.com' || u.email === 'unnull@gmail.com';
       const lastSeenTime = u.lastSeen ? new Date(u.lastSeen).getTime() : 0;
-      const isOnline = lastSeenTime > 0 && (now.getTime() - lastSeenTime) < 30000; // 30s threshold to account for heartbeat intervals
+      const isOnline = lastSeenTime > 0 && (now.getTime() - lastSeenTime) < 75000; // 75s threshold to handle browser tab throttling
       return {
         ...u._doc,
         role: isSuperAdmin ? 'admin' : (u.role || 'user'),
