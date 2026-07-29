@@ -118,17 +118,26 @@ router.get('/auth/me', auth, async (req, res) => {
 router.post('/auth/heartbeat', auth, async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
-    const [updatedUser] = await Promise.all([
-      User.findByIdAndUpdate(req.user.id, { 
-        lastSeen: new Date(),
-        $inc: { totalActiveTime: 5 } // Increment by 5 seconds
-      }, { new: true }),
-      DailyStat.findOneAndUpdate(
+    let updatedUser = await User.findByIdAndUpdate(req.user.id, { 
+      lastSeen: new Date(),
+      $inc: { totalActiveTime: 5 } // Increment by 5 seconds
+    }, { new: true });
+
+    if (!updatedUser && req.user.email) {
+      updatedUser = await User.findOneAndUpdate(
+        { email: new RegExp(`^${req.user.email}$`, 'i') },
+        { lastSeen: new Date(), $inc: { totalActiveTime: 5 } },
+        { new: true }
+      );
+    }
+
+    if (updatedUser) {
+      await DailyStat.findOneAndUpdate(
         { date: today },
-        { $addToSet: { activeUsers: req.user.id } },
+        { $addToSet: { activeUsers: updatedUser._id } },
         { upsert: true }
-      )
-    ]);
+      );
+    }
     res.json({ ok: true, totalActiveTime: updatedUser ? updatedUser.totalActiveTime : 0 });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -143,11 +152,13 @@ router.get('/admin/users', async (req, res) => {
     const now = new Date();
     const formatted = users.map(u => {
       const isSuperAdmin = u.email === 'tyn@gmail.com' || u.email === 'unnull@gmail.com';
+      const lastSeenTime = u.lastSeen ? new Date(u.lastSeen).getTime() : 0;
+      const isOnline = lastSeenTime > 0 && (now.getTime() - lastSeenTime) < 30000; // 30s threshold to account for heartbeat intervals
       return {
         ...u._doc,
         role: isSuperAdmin ? 'admin' : (u.role || 'user'),
         lastSeen: u.lastSeen || null,
-        isOnline: u.lastSeen ? (now - new Date(u.lastSeen)) < 20000 : false // 20s threshold to allow slight network delays
+        isOnline
       };
     });
     res.json(formatted);

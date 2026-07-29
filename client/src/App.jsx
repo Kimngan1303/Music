@@ -1043,6 +1043,7 @@ export default function App() {
   const [editAvatar, setEditAvatar] = useState('');
   const avatarFileInputRef = useRef(null);
   const profileDropdownRef = useRef(null);
+  const notifMenuRef = useRef(null);
 
   // Change Password States
   const [showChangePwd, setShowChangePwd] = useState(false);
@@ -1211,10 +1212,13 @@ export default function App() {
 
   // ── HEARTBEAT: Ping server every 5s to update lastSeen & totalActiveTime ──
   useEffect(() => {
-    if (!user?.token) return;
+    const authToken = user?.token || localStorage.getItem('aura_token');
+    if (!authToken) return;
     const sendHeartbeat = () => {
+      const token = user?.token || localStorage.getItem('aura_token');
+      if (!token) return;
       axios.post('/api/auth/heartbeat', {}, {
-        headers: { Authorization: `Bearer ${user.token}` }
+        headers: { Authorization: `Bearer ${token}` }
       }).then(res => {
         if (res.data?.totalActiveTime !== undefined) {
           setUser(prev => prev ? ({ ...prev, totalActiveTime: res.data.totalActiveTime }) : prev);
@@ -1224,7 +1228,7 @@ export default function App() {
     sendHeartbeat(); // ping immediately on login/mount
     const hbInterval = setInterval(sendHeartbeat, 5000);
     return () => clearInterval(hbInterval);
-  }, [user?.token]);
+  }, [user?.token, user?._id]);
 
   // Local active timer (increments active time by 1s every second for smooth UI count)
   useEffect(() => {
@@ -1442,6 +1446,23 @@ export default function App() {
       document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [profileDropdown]);
+
+  // Click outside to auto-close notification dropdown menu
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notifMenuRef.current && !notifMenuRef.current.contains(event.target)) {
+        setShowNotifMenu(false);
+      }
+    };
+    if (showNotifMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showNotifMenu]);
 
   // Handle change password form submission
   const handleChangePassword = async (e) => {
@@ -3412,7 +3433,7 @@ export default function App() {
               )}
 
               {/* 🔔 Notification Bell Button & Dropdown Panel (Đặt ngang hàng ở cuối hàng) */}
-              <div className="relative z-50">
+              <div ref={notifMenuRef} className="relative z-50">
                 <button
                   onClick={() => setShowNotifMenu(!showNotifMenu)}
                   className={`relative p-2 rounded-full transition-all cursor-pointer hover:scale-110 active:scale-95 flex items-center justify-center ${unreadNotifsCount > 0 ? 'bell-ring-anim' : ''}`}
