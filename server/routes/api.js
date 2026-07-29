@@ -508,13 +508,51 @@ router.post('/playlists', auth, async (req, res) => {
 
 router.put('/playlists/:id', auth, async (req, res) => {
   try {
-    const { name, pinned, cover } = req.body;
+    const { name, pinned, cover, songs } = req.body;
     const playlist = await Playlist.findOne({ _id: req.params.id, userId: req.user.id });
     if (!playlist) return res.status(404).json({ message: 'Playlist not found' });
 
     if (name !== undefined) playlist.name = name;
     if (pinned !== undefined) playlist.pinned = pinned;
     if (cover !== undefined) playlist.cover = cover;
+    if (songs !== undefined) playlist.songs = songs;
+
+    await playlist.save();
+    res.json(playlist);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.put('/playlists/:id/add', auth, async (req, res) => {
+  try {
+    const { songId, songIds } = req.body;
+    const playlist = await Playlist.findOne({ _id: req.params.id, userId: req.user.id });
+    if (!playlist) return res.status(404).json({ message: 'Playlist not found' });
+
+    const idsToAdd = songIds || (songId ? [songId] : []);
+    idsToAdd.forEach(id => {
+      if (id && !playlist.songs.includes(id)) {
+        playlist.songs.push(id);
+      }
+    });
+
+    await playlist.save();
+    res.json(playlist);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.put('/playlists/:id/remove', auth, async (req, res) => {
+  try {
+    const { songId } = req.body;
+    const playlist = await Playlist.findOne({ _id: req.params.id, userId: req.user.id });
+    if (!playlist) return res.status(404).json({ message: 'Playlist not found' });
+
+    if (songId) {
+      playlist.songs = playlist.songs.filter(id => id !== songId && id !== String(songId));
+    }
 
     await playlist.save();
     res.json(playlist);

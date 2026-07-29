@@ -1401,14 +1401,42 @@ export default function App() {
 
   const activePlaylist = tab.startsWith('playlist_') ? playlists.find(p => p._id === tab.split('_')[1]) : null;
 
+  const allKnownSongs = useMemo(() => {
+    const list = [...(Array.isArray(songs) ? songs : []), ...(Array.isArray(popularSongs) ? popularSongs : [])];
+    const unique = [];
+    const seen = new Set();
+    list.forEach(s => {
+      if (!s) return;
+      const key = s.id || s._id || s.youtubeId;
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        unique.push(s);
+      }
+    });
+    return unique;
+  }, [songs, popularSongs]);
+
+  const findSongById = (id) => {
+    if (!id) return null;
+    const idStr = String(id);
+    return allKnownSongs.find(s => 
+      (s.id && String(s.id) === idStr) || 
+      (s._id && String(s._id) === idStr) ||
+      (s.youtubeId && String(s.youtubeId) === idStr)
+    );
+  };
+
   const getBaseList = () => {
     if (tab.startsWith('playlist_') && activePlaylist) {
-      return activePlaylist.songs.map(id => songs.find(s => s.id === id)).filter(Boolean);
+      return (activePlaylist.songs || []).map(id => findSongById(id)).filter(Boolean);
     }
     if (tab === 'favorites') {
-      return songs.filter(s => favs.includes(s.id));
+      return allKnownSongs.filter(s => 
+        (s.id && favs.includes(s.id)) || 
+        (s._id && favs.includes(s._id))
+      );
     }
-    return songs.filter(s => s.inLibrary !== false);
+    return (Array.isArray(songs) ? songs : []).filter(s => s.inLibrary !== false);
   };
 
   const list = getBaseList()
@@ -2207,10 +2235,20 @@ export default function App() {
     });
   };
 
-  const toggleFav = id => {
-    if (!id) return;
+  const toggleFav = songOrId => {
+    if (!songOrId) return;
+    const songObj = typeof songOrId === 'object' ? songOrId : findSongById(songOrId);
+    const primaryId = songObj ? (songObj.id || songObj._id) : songOrId;
+    if (!primaryId) return;
+
     setFavs(p => {
-      const updated = p.includes(id) ? p.filter(x => x !== id) : [...p, id];
+      const isFav = p.includes(primaryId) || (songObj && songObj._id && p.includes(songObj._id)) || (songObj && songObj.id && p.includes(songObj.id));
+      let updated;
+      if (isFav) {
+        updated = p.filter(x => x !== primaryId && x !== songObj?.id && x !== songObj?._id);
+      } else {
+        updated = [...p, primaryId];
+      }
       if (user) {
         localStorage.setItem(favsKey(user._id), JSON.stringify(updated));
         // Sync to backend
@@ -2719,26 +2757,62 @@ export default function App() {
 
   const handleAddToPlaylist = async (playlistId, songId, songIds = null) => {
     try {
-      const payload = songIds ? { songIds } : { songId };
-      const res = await axios.put(`/api/playlists/${playlistId}/add`, payload);
-      setPlaylists(p => {
-        const up = p.map(x => x._id === playlistId ? res.data : x);
-        localStorage.setItem(playlistsKey(user._id), JSON.stringify(up));
-        return up;
+      const songObj = typeof songId === 'object' ? songId : findSongById(songId);
+      const targetId = songObj ? (songObj.id || songObj._id) : songId;
+
+      // Fallback local update first so UI updates instantly
+      if (targetId && !songIds) {
+        setPlaylists(p => p.map(pl => {
+          if (pl._id === playlistId) {
+            const currentSongs = pl.songs || [];
+            if (!currentSongs.includes(targetId)) {
+              return { ...pl, songs: [...currentSongs, targetId] };
+            }
+          }
+          return pl;
+        }));
+      }
+
+      const payload = songIds ? { songIds } : { songId: targetId };
+      const res = await axios.put(`/api/playlists/${playlistId}/add`, payload, {
+        headers: { Authorization: `Bearer ${user?.token || localStorage.getItem('aura_token')}` }
       });
-      // Do not close modal immediately so user can see the success tick
-    } catch (err) { console.error(err); }
+      if (res.data) {
+        setPlaylists(p => {
+          const up = p.map(x => x._id === playlistId ? res.data : x);
+          if (user) localStorage.setItem(playlistsKey(user._id), JSON.stringify(up));
+          return up;
+        });
+      }
+    } catch (err) { console.error("Failed to add to playlist", err); }
   };
 
   const handleRemoveFromPlaylist = async (playlistId, songId) => {
     try {
-      const res = await axios.put(`/api/playlists/${playlistId}/remove`, { songId });
-      setPlaylists(p => {
-        const up = p.map(x => x._id === playlistId ? res.data : x);
-        localStorage.setItem(playlistsKey(user._id), JSON.stringify(up));
-        return up;
+      const songObj = typeof songId === 'object' ? songId : findSongById(songId);
+      const targetId = songObj ? (songObj.id || songObj._id) : songId;
+
+      // Fallback local update first so UI updates instantly
+      if (targetId) {
+        setPlaylists(p => p.map(pl => {
+          if (pl._id === playlistId) {
+            return { ...pl, songs: (pl.songs || []).filter(id => id !== targetId && id !== songObj?.id && id !== songObj?._id) };
+          }
+          return pl;
+        }));
+      }
+
+      const res = await axios.put(`/api/playlists/${playlistId}/remove`, { songId: targetId }, {
+        headers: { Authorization: `Bearer ${user?.token || localStorage.getItem('aura_token')}` }
       });
-    } catch (err) { console.error(err); }
+      if (res.data) {
+        setPlaylists(p => {
+          const up = p.map(x => x._id === playlistId ? res.data : x);
+          if (user) localStorage.setItem(playlistsKey(user._id), JSON.stringify(up));
+          return up;
+        });
+      }
+    } catch (err) { console.error("Failed to remove from playlist", err); }
   };
 
   const fmt = s => isNaN(s) || s < 0 ? '0:00' : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
