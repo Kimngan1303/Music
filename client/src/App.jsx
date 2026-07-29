@@ -1350,7 +1350,7 @@ export default function App() {
     const interval = setInterval(() => {
       fetchLeaderboard();
       fetchPopular();
-    }, 8000);
+    }, 20000);
     return () => clearInterval(interval);
   }, []);
 

@@ -9,4 +9,6 @@ const playlistSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+playlistSchema.index({ userId: 1 });
+
 module.exports = mongoose.model('Playlist', playlistSchema);

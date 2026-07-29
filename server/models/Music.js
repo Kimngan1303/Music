@@ -14,4 +14,8 @@ const musicSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+musicSchema.index({ playCount: -1, createdAt: -1 });
+musicSchema.index({ createdAt: -1 });
+musicSchema.index({ addedBy: 1 });
+
 module.exports = mongoose.model('Music', musicSchema);

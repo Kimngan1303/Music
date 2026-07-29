@@ -382,13 +382,26 @@ router.delete('/admin/users/:id', async (req, res) => {
   }
 });
 
-// --- PUBLIC LEADERBOARD ROUTE ---
+// --- IN-MEMORY CACHE SYSTEM ---
+const cache = {
+  leaderboard: { data: null, timestamp: 0, ttl: 20000 },
+  popularSongs: { data: null, timestamp: 0, ttl: 30000 },
+  adminStats: { data: null, timestamp: 0, ttl: 15000 }
+};
+
+// --- PUBLIC LEADERBOARD ROUTE (With 20s In-Memory Cache) ---
 router.get('/leaderboard', async (req, res) => {
   try {
+    const now = Date.now();
+    if (cache.leaderboard.data && (now - cache.leaderboard.timestamp < cache.leaderboard.ttl)) {
+      return res.json(cache.leaderboard.data);
+    }
+
     const topUsers = await User.find()
       .select('name avatar email totalActiveTime role')
       .sort({ totalActiveTime: -1 })
-      .limit(10);
+      .limit(10)
+      .lean();
 
     const formatted = topUsers.map((u, index) => ({
       rank: index + 1,
@@ -399,6 +412,8 @@ router.get('/leaderboard', async (req, res) => {
       totalActiveTime: u.totalActiveTime || 0
     }));
 
+    cache.leaderboard.data = formatted;
+    cache.leaderboard.timestamp = now;
     res.json(formatted);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -408,17 +423,24 @@ router.get('/leaderboard', async (req, res) => {
 // --- MUSIC ROUTES ---
 router.get('/music', async (req, res) => {
   try {
-    const songs = await Music.find().sort({ createdAt: -1 });
+    const songs = await Music.find().sort({ createdAt: -1 }).lean();
     res.json(songs);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// --- GLOBAL POPULAR SONGS ROUTE (Tất cả bài hát được nghe nhiều nhất của hệ thống) ---
+// --- GLOBAL POPULAR SONGS ROUTE (With 30s In-Memory Cache) ---
 router.get('/music/popular', async (req, res) => {
   try {
-    const popularSongs = await Music.find().sort({ playCount: -1, createdAt: -1 }).limit(15);
+    const now = Date.now();
+    if (cache.popularSongs.data && (now - cache.popularSongs.timestamp < cache.popularSongs.ttl)) {
+      return res.json(cache.popularSongs.data);
+    }
+
+    const popularSongs = await Music.find().sort({ playCount: -1, createdAt: -1 }).limit(15).lean();
+    cache.popularSongs.data = popularSongs;
+    cache.popularSongs.timestamp = now;
     res.json(popularSongs);
   } catch (err) {
     res.status(500).json({ message: err.message });

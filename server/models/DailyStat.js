@@ -6,4 +6,6 @@ const dailyStatSchema = new mongoose.Schema({
   userTimes: { type: Map, of: Number, default: {} } // Map of userId => active time in seconds on this specific day
 });
 
+dailyStatSchema.index({ date: -1 });
+
 module.exports = mongoose.model('DailyStat', dailyStatSchema);
