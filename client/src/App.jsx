@@ -1416,27 +1416,38 @@ export default function App() {
     return unique;
   }, [songs, popularSongs]);
 
+  const isFav = (sOrId) => {
+    if (!sOrId) return false;
+    const safeFavs = Array.isArray(favs) ? favs : [];
+    if (safeFavs.length === 0) return false;
+    if (typeof sOrId === 'object') {
+      return Boolean(
+        (sOrId.id && safeFavs.includes(sOrId.id)) || 
+        (sOrId._id && safeFavs.includes(sOrId._id))
+      );
+    }
+    return safeFavs.includes(sOrId);
+  };
+
   const findSongById = (id) => {
     if (!id) return null;
+    if (typeof id === 'object') return id;
     const idStr = String(id);
     return allKnownSongs.find(s => 
-      (s.id && String(s.id) === idStr) || 
-      (s._id && String(s._id) === idStr) ||
-      (s.youtubeId && String(s.youtubeId) === idStr)
-    );
+      (s && s.id && String(s.id) === idStr) || 
+      (s && s._id && String(s._id) === idStr) ||
+      (s && s.youtubeId && String(s.youtubeId) === idStr)
+    ) || null;
   };
 
   const getBaseList = () => {
     if (tab.startsWith('playlist_') && activePlaylist) {
-      return (activePlaylist.songs || []).map(id => findSongById(id)).filter(Boolean);
+      return (activePlaylist.songs || []).map(id => typeof id === 'object' ? id : findSongById(id)).filter(Boolean);
     }
     if (tab === 'favorites') {
-      return allKnownSongs.filter(s => 
-        (s.id && favs.includes(s.id)) || 
-        (s._id && favs.includes(s._id))
-      );
+      return allKnownSongs.filter(s => isFav(s));
     }
-    return (Array.isArray(songs) ? songs : []).filter(s => s.inLibrary !== false);
+    return (Array.isArray(songs) ? songs : []).filter(s => s && s.inLibrary !== false);
   };
 
   const list = getBaseList()
@@ -1469,13 +1480,13 @@ export default function App() {
 
     // 3. If currently viewing Favorites tab, use favorite songs
     if (tab === 'favorites') {
-      const favSongs = songs.filter(s => favs.includes(s.id));
+      const favSongs = allKnownSongs.filter(s => isFav(s));
       if (favSongs.length > 0) return favSongs;
     }
 
     // 4. Default: current displayed list or library songs
     if (list && list.length > 0) return list;
-    const libSongs = songs.filter(s => s.inLibrary !== false);
+    const libSongs = (Array.isArray(songs) ? songs : []).filter(s => s && s.inLibrary !== false);
     return libSongs.length > 0 ? libSongs : songs;
   };
 
@@ -2070,10 +2081,10 @@ export default function App() {
     if (queue && Array.isArray(queue) && queue.length > 0) {
       setPlayingQueue(queue);
     } else if (tab.startsWith('playlist_') && activePlaylist) {
-      const plSongs = activePlaylist.songs.map(id => songs.find(s => s.id === id)).filter(Boolean);
+      const plSongs = (activePlaylist.songs || []).map(id => typeof id === 'object' ? id : findSongById(id)).filter(Boolean);
       if (plSongs.length > 0) setPlayingQueue(plSongs);
     } else if (tab === 'favorites') {
-      const favSongs = songs.filter(s => favs.includes(s.id));
+      const favSongs = allKnownSongs.filter(s => isFav(s));
       if (favSongs.length > 0) setPlayingQueue(favSongs);
     }
 
@@ -3065,7 +3076,7 @@ export default function App() {
                 key: 'favorites',
                 icon: 'ri-heart-fill',
                 label: 'Yêu thích',
-                sub: `Playlist • ${songs.filter(s => favs.includes(s.id)).length} bài`,
+                sub: `Playlist • ${allKnownSongs.filter(s => isFav(s)).length} bài`,
                 color: 'linear-gradient(135deg, #450af5, #8e2de2)',
                 tooltip: 'Xem các bài hát đã yêu thích'
               },
@@ -4297,16 +4308,16 @@ export default function App() {
                               </button>
 
                               <button
-                                onClick={() => toggleFav(s.id || s._id)}
-                                title={(favs.includes(s.id) || (s._id && favs.includes(s._id))) ? "Bỏ yêu thích bài hát này" : "Thêm bài hát này vào Yêu Thích"}
+                                onClick={() => toggleFav(s)}
+                                title={isFav(s) ? "Bỏ yêu thích bài hát này" : "Thêm bài hát này vào Yêu Thích"}
                                 className="p-1.5 px-2 rounded-xl transition active:scale-95 cursor-pointer hover:scale-110 shrink-0 flex items-center justify-center"
                                 style={{ 
-                                  background: (favs.includes(s.id) || (s._id && favs.includes(s._id))) ? 'rgba(244, 63, 94, 0.15)' : C.tag, 
-                                  border: `1.5px solid ${(favs.includes(s.id) || (s._id && favs.includes(s._id))) ? 'rgba(244, 63, 94, 0.3)' : C.border}`,
-                                  color: (favs.includes(s.id) || (s._id && favs.includes(s._id))) ? '#f43f5e' : C.txtFad
+                                  background: isFav(s) ? 'rgba(244, 63, 94, 0.15)' : C.tag, 
+                                  border: `1.5px solid ${isFav(s) ? 'rgba(244, 63, 94, 0.3)' : C.border}`,
+                                  color: isFav(s) ? '#f43f5e' : C.txtFad
                                 }}
                               >
-                                <i className={(favs.includes(s.id) || (s._id && favs.includes(s._id))) ? 'ri-heart-fill text-sm text-rose-500' : 'ri-heart-line text-sm'} />
+                                <i className={isFav(s) ? 'ri-heart-fill text-sm text-rose-500' : 'ri-heart-line text-sm'} />
                               </button>
                             </div>
                           </div>
@@ -4628,11 +4639,11 @@ export default function App() {
                             onMouseLeave={e => e.currentTarget.style.color = C.txtFad}>
                             <i className="ri-play-list-add-line text-sm md:text-base"></i>
                           </button>
-                          <button onClick={() => toggleFav(song.id)}
-                            title={favs.includes(song.id) ? "Bỏ yêu thích bài hát này" : "Thêm bài hát này vào yêu thích"}
+                          <button onClick={() => toggleFav(song)}
+                            title={isFav(song) ? "Bỏ yêu thích bài hát này" : "Thêm bài hát này vào yêu thích"}
                             className="p-1.5 md:p-2 rounded-full transition active:scale-95 cursor-pointer hover:scale-110"
-                            style={{ color: favs.includes(song.id) ? C.primarySolid : C.txtFad }}>
-                            <i className={favs.includes(song.id) ? 'ri-heart-fill text-sm md:text-base' : 'ri-heart-line text-sm md:text-base'}></i>
+                            style={{ color: isFav(song) ? C.primarySolid : C.txtFad }}>
+                            <i className={isFav(song) ? 'ri-heart-fill text-sm md:text-base' : 'ri-heart-line text-sm md:text-base'}></i>
                           </button>
                           <button
                             onClick={() => {
