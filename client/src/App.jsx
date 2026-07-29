@@ -965,6 +965,7 @@ export default function App() {
 
   // Admin Account Management State
   const [adminUsers, setAdminUsers] = useState([]);
+  const [adminUsersLoading, setAdminUsersLoading] = useState(false);
   const [adminSearch, setAdminSearch] = useState('');
   const [adminUserModal, setAdminUserModal] = useState(null); // null, {}, or user object being edited
   const [adminName, setAdminName] = useState('');
@@ -2526,11 +2527,12 @@ export default function App() {
   // ── ADMIN USER MANAGEMENT HANDLERS ───────────────────
 
   const fetchAdminUsers = () => {
+    if (adminUsers.length === 0) setAdminUsersLoading(true);
     axios.get('/api/admin/users').then(res => {
       if (Array.isArray(res.data)) {
         setAdminUsers(res.data);
       }
-    }).catch(console.error);
+    }).catch(console.error).finally(() => setAdminUsersLoading(false));
   };
 
   useEffect(() => {
