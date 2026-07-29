@@ -983,8 +983,28 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [curTime, setCurTime] = useState(0);
   const [dur, setDur] = useState(0);
-  const [vol, setVol] = useState(80);
-  const [muted, setMuted] = useState(false);
+  const [vol, setVol] = useState(() => {
+    const saved = localStorage.getItem('aura_volume');
+    return saved !== null ? Math.min(100, Math.max(0, parseInt(saved, 10))) : 80;
+  });
+  const [muted, setMuted] = useState(() => {
+    return localStorage.getItem('aura_muted') === 'true';
+  });
+
+  const volRef = useRef(vol);
+  const mutedRef = useRef(muted);
+
+  const applyVolume = () => {
+    try {
+      if (mutedRef.current || volRef.current === 0) {
+        yt.current?.mute?.();
+        yt.current?.setVolume?.(0);
+      } else {
+        yt.current?.unMute?.();
+        yt.current?.setVolume?.(volRef.current);
+      }
+    } catch { }
+  };
   const [sleepTimer, setSleepTimer] = useState(0);
   const [sleepTimeLeft, setSleepTimeLeft] = useState(0);
   const [addModal, setAddModal] = useState(false);
@@ -1901,8 +1921,8 @@ export default function App() {
         events: {
           onReady: () => {
             try {
-              yt.current?.setVolume?.(80);
               yt.current?.setPlaybackQuality?.('small');
+              applyVolume();
             } catch { }
           },
           onStateChange: e => {
@@ -1915,8 +1935,7 @@ export default function App() {
               setBuffering(false);
               try {
                 yt.current?.setPlaybackQuality?.('small');
-                yt.current?.unMute?.();
-                yt.current?.setVolume?.(vol || 80);
+                applyVolume();
               } catch (err) { }
             }
             else if (e.data === window.YT.PlayerState.PAUSED) {
@@ -2059,13 +2078,11 @@ export default function App() {
     }
 
     if (yid) {
-      try {
-        yt.current?.unMute?.();
-        yt.current?.setVolume?.(vol || 80);
-      } catch (err) { }
-
+      applyVolume();
       yt.current?.loadVideoById?.(yid);
       yt.current?.playVideo?.();
+      setTimeout(applyVolume, 100);
+      setTimeout(applyVolume, 300);
     } else {
       // If still no yid, just stop
       setPlaying(false);
@@ -2082,12 +2099,10 @@ export default function App() {
       yt.current?.pauseVideo?.();
       setPlaying(false);
     } else {
-      try {
-        yt.current?.unMute?.();
-        yt.current?.setVolume?.(vol || 80);
-      } catch (err) { }
+      applyVolume();
       yt.current?.playVideo?.();
       setPlaying(true);
+      setTimeout(applyVolume, 100);
     }
   };
 
@@ -2170,10 +2185,25 @@ export default function App() {
   }, [track, songs]);
 
   const seek = e => { const t = +e.target.value; setCurTime(t); yt.current?.seekTo?.(t, true); };
-  const changeVol = e => { const v = +e.target.value; setVol(v); setMuted(v === 0); yt.current?.setVolume?.(v); };
+  const changeVol = e => {
+    const v = +e.target.value;
+    setVol(v);
+    volRef.current = v;
+    const isM = v === 0;
+    setMuted(isM);
+    mutedRef.current = isM;
+    localStorage.setItem('aura_volume', String(v));
+    localStorage.setItem('aura_muted', String(isM));
+    applyVolume();
+  };
   const toggleMute = () => {
-    if (muted) { setMuted(false); yt.current?.setVolume?.(vol || 80); }
-    else { setMuted(true); yt.current?.setVolume?.(0); }
+    setMuted(prev => {
+      const nextMuted = !prev;
+      mutedRef.current = nextMuted;
+      localStorage.setItem('aura_muted', String(nextMuted));
+      applyVolume();
+      return nextMuted;
+    });
   };
 
   const toggleFav = id => {
