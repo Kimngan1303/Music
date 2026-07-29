@@ -3796,7 +3796,8 @@ export default function App() {
                     .filter(u => !adminSearch || u.name?.toLowerCase().includes(adminSearch.toLowerCase()) || u.email?.toLowerCase().includes(adminSearch.toLowerCase()))
                     .map(u => {
                       const isUserAdmin = u.role === 'admin' || u.email === 'admin@gmail.com' || u.email === 'unnull@gmail.com';
-                      const isOnline = u.isOnline;
+                      const isCurrentUser = user && (u._id === user._id || (u.email && user.email && u.email.toLowerCase() === user.email.toLowerCase()));
+                      const isOnline = isCurrentUser || Boolean(u.isOnline);
                       return (
                         <div
                           key={u._id}
