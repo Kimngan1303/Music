@@ -51,7 +51,10 @@ router.post('/auth/login', async (req, res) => {
 router.put('/auth/profile', auth, async (req, res) => {
   try {
     const { name, avatar, favorites } = req.body;
-    const user = await User.findById(req.user.id);
+    let user = await User.findById(req.user.id);
+    if (!user && req.user.email) {
+      user = await User.findOne({ email: new RegExp(`^${req.user.email}$`, 'i') });
+    }
     if (!user) return res.status(404).json({ message: 'User not found' });
     
     if (name) user.name = name;
@@ -59,7 +62,7 @@ router.put('/auth/profile', auth, async (req, res) => {
     if (favorites !== undefined) user.favorites = favorites;
     
     await user.save();
-    res.json({ id: user._id, name: user.name, email: user.email, avatar: user.avatar, favorites: user.favorites });
+    res.json({ id: user._id, _id: user._id, name: user.name, email: user.email, avatar: user.avatar, favorites: user.favorites });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

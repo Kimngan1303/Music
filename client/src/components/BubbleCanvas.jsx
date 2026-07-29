@@ -175,7 +175,7 @@ export default function BubbleCanvas({ themeKey }) {
 
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
     container.appendChild(renderer.domElement);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
@@ -193,7 +193,7 @@ export default function BubbleCanvas({ themeKey }) {
     pinkLight.position.set(6, -2, 5);
     scene.add(pinkLight);
 
-    const bubblesCount = 45;
+    const bubblesCount = 25;
     const bubblesGeo = new THREE.SphereGeometry(0.18, 16, 16);
     const bubblesMat = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,

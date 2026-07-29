@@ -1055,6 +1055,48 @@ export default function App() {
   const [selectedSongIds, setSelectedSongIds] = useState([]);
   const [confirmBatchDeleteModal, setConfirmBatchDeleteModal] = useState(false);
 
+  // Pagination State for Song List (to prevent lag when rendering 800+ songs)
+  const [songPage, setSongPage] = useState(1);
+  const [showAllSongs, setShowAllSongs] = useState(false);
+  const SONGS_PER_PAGE = 40;
+
+  // Helper to compress avatar image to ~15KB - 25KB WebP/JPEG (max 250x250)
+  const compressImage = (file, maxWidth = 250, maxHeight = 250, quality = 0.82) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Scroll Position State for Sticky Header Navigation
   const [mainScrollTop, setMainScrollTop] = useState(0);
 
@@ -1124,9 +1166,10 @@ export default function App() {
       }).catch(console.error);
 
       // Fetch latest profile & favorites
-      axios.get('/api/auth/me', { headers: { Authorization: `Bearer ${user.token}` } }).then(res => {
+      const authToken = user?.token || localStorage.getItem('aura_token');
+      axios.get('/api/auth/me', { headers: { Authorization: `Bearer ${authToken}` } }).then(res => {
         const dbProfile = res.data;
-        const updatedUser = { ...user, name: dbProfile.name, avatar: dbProfile.avatar, favorites: dbProfile.favorites, totalActiveTime: dbProfile.totalActiveTime };
+        const updatedUser = { ...user, token: authToken, name: dbProfile.name, avatar: dbProfile.avatar, favorites: dbProfile.favorites, totalActiveTime: dbProfile.totalActiveTime };
         setUser(updatedUser);
         localStorage.setItem('aura_user', JSON.stringify(updatedUser));
 
@@ -1138,6 +1181,11 @@ export default function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?._id]);
+
+  // Reset song page when tab or search query changes
+  useEffect(() => {
+    setSongPage(1);
+  }, [tab, query]);
 
   // ── HEARTBEAT: Ping server every 5s to update lastSeen & totalActiveTime ──
   useEffect(() => {
@@ -1303,6 +1351,12 @@ export default function App() {
 
   const list = getBaseList()
     .filter(s => s.title.toLowerCase().includes(query.toLowerCase()) || s.artist.toLowerCase().includes(query.toLowerCase()));
+
+  const totalSongPages = Math.ceil(list.length / SONGS_PER_PAGE) || 1;
+  const currentSongPage = Math.min(Math.max(1, songPage), totalSongPages);
+  const paginatedList = showAllSongs
+    ? list
+    : list.slice((currentSongPage - 1) * SONGS_PER_PAGE, currentSongPage * SONGS_PER_PAGE);
 
   const getCurrentTrackList = () => {
     // 1. If playingQueue state is active and valid (highest priority)
@@ -1748,22 +1802,19 @@ export default function App() {
     }
   }, [track, playing, curTime, dur]);
 
-  // Handle local avatar image upload from computer
-  const handleAvatarFileUpload = (e) => {
+  // Handle local avatar image upload from computer (with auto 250x250 compression)
+  const handleAvatarFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 3 * 1024 * 1024) {
-        alert('Vui lòng chọn file ảnh dung lượng dưới 3MB!');
-        return;
+      try {
+        const compressedBase64 = await compressImage(file, 250, 250, 0.82);
+        setEditAvatar(compressedBase64);
+      } catch (err) {
+        console.error("Failed to compress avatar", err);
+        alert("Có lỗi khi xử lý ảnh đại diện.");
       }
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        if (ev.target?.result) {
-          setEditAvatar(ev.target.result);
-        }
-      };
-      reader.readAsDataURL(file);
     }
+    e.target.value = null;
   };
 
   // Reload songs/favs when user changes (login to a different account)
@@ -2158,8 +2209,10 @@ export default function App() {
     if (user) {
       setProfileSaving(true);
       setProfileSavedMsg('');
+      const authToken = user?.token || localStorage.getItem('aura_token');
       const updated = {
         ...user,
+        token: authToken,
         name: editName.trim() || user.name,
         avatar: editAvatar.trim() || user.avatar
       };
@@ -2171,7 +2224,7 @@ export default function App() {
           name: updated.name,
           avatar: updated.avatar
         }, {
-          headers: { Authorization: `Bearer ${user.token}` }
+          headers: { Authorization: `Bearer ${authToken}` }
         });
         setProfileSavedMsg('Đã lưu hồ sơ thành công!');
         setTimeout(() => setProfileSavedMsg(''), 2500);
@@ -2507,45 +2560,30 @@ export default function App() {
     adminListAvatarInputRef.current?.click();
   };
 
-  const handleListAvatarUpload = (e) => {
+  const handleListAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
     if (file && directEditUser) {
-      if (file.size > 3 * 1024 * 1024) {
-        alert('Vui lòng chọn file ảnh dung lượng dưới 3MB!');
-        e.target.value = null;
-        return;
+      try {
+        const compressedBase64 = await compressImage(file, 250, 250, 0.82);
+        await axios.put(`/api/admin/users/${directEditUser._id}`, { avatar: compressedBase64 });
+        fetchAdminUsers();
+      } catch (err) {
+        alert(err.response?.data?.message || err.message || 'Lỗi khi đổi ảnh đại diện.');
       }
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        if (ev.target?.result) {
-          try {
-            await axios.put(`/api/admin/users/${directEditUser._id}`, { avatar: ev.target.result });
-            fetchAdminUsers();
-          } catch (err) {
-            alert(err.response?.data?.message || err.message || 'Lỗi khi đổi ảnh đại diện.');
-          }
-        }
-      };
-      reader.readAsDataURL(file);
     }
     e.target.value = null;
   };
 
-  const handleFormAvatarUpload = (e) => {
+  const handleFormAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 3 * 1024 * 1024) {
-        alert('Vui lòng chọn file ảnh dung lượng dưới 3MB!');
-        e.target.value = null;
-        return;
+      try {
+        const compressedBase64 = await compressImage(file, 250, 250, 0.82);
+        setAdminAvatar(compressedBase64);
+      } catch (err) {
+        console.error("Failed to compress admin avatar", err);
+        alert("Có lỗi khi xử lý ảnh đại diện.");
       }
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        if (ev.target?.result) {
-          setAdminAvatar(ev.target.result);
-        }
-      };
-      reader.readAsDataURL(file);
     }
     e.target.value = null;
   };
@@ -4261,10 +4299,11 @@ export default function App() {
                       <div className="text-4xl mb-3">🕊️</div>
                       <p className="text-sm font-semibold" style={{ color: C.txtFad }}>Chưa có bài hát nào~</p>
                     </div>
-                  ) : list.map((song, i) => {
+                  ) : paginatedList.map((song, i) => {
                     const sel = track?.id === song.id;
                     const isPlayingThis = sel && playing;
                     const isSelected = selectedSongIds.includes(song.id);
+                    const realIndex = showAllSongs ? i + 1 : (currentSongPage - 1) * SONGS_PER_PAGE + i + 1;
                     return (
                       <div key={song.id}
                         onClick={() => {
@@ -4304,7 +4343,7 @@ export default function App() {
                           <span className="hidden md:flex justify-center items-center text-sm font-bold w-8 shrink-0" style={{ color: C.txtFad }}>
                             {sel && playing
                               ? <i className="ri-volume-up-fill animate-pulse" style={{ color: C.primarySolid }}></i>
-                              : i + 1
+                              : realIndex
                             }
                           </span>
                         )}
@@ -4354,6 +4393,73 @@ export default function App() {
                     );
                   })}
                 </div>
+
+                {/* ── Song Pagination Controls ───────────────────────── */}
+                {list.length > SONGS_PER_PAGE && (
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-3 pt-5 pb-2 px-2 border-t mt-4" style={{ borderColor: C.border }}>
+                    <div className="text-xs font-semibold" style={{ color: C.txtSub }}>
+                      {showAllSongs ? (
+                        <span>Hiển thị tất cả <b>{list.length}</b> bài hát</span>
+                      ) : (
+                        <span>Hiển thị <b>{(currentSongPage - 1) * SONGS_PER_PAGE + 1} - {Math.min(currentSongPage * SONGS_PER_PAGE, list.length)}</b> / <b>{list.length}</b> bài</span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        onClick={() => setShowAllSongs(!showAllSongs)}
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer hover:opacity-90 mr-2"
+                        style={{ background: showAllSongs ? C.primarySolid : C.tag, color: showAllSongs ? '#fff' : C.txt, border: `1px solid ${C.border}` }}
+                      >
+                        {showAllSongs ? '⚡ Chia trang (Tối ưu máy yếu)' : 'Xem tất cả'}
+                      </button>
+
+                      {!showAllSongs && (
+                        <>
+                          <button
+                            disabled={currentSongPage === 1}
+                            onClick={() => setSongPage(1)}
+                            className="p-2 rounded-xl text-xs font-bold transition disabled:opacity-30 cursor-pointer"
+                            style={{ background: C.tag, color: C.txt }}
+                            title="Trang đầu"
+                          >
+                            <i className="ri-double-left-line"></i>
+                          </button>
+                          <button
+                            disabled={currentSongPage === 1}
+                            onClick={() => setSongPage(p => Math.max(1, p - 1))}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold transition disabled:opacity-30 cursor-pointer flex items-center gap-1"
+                            style={{ background: C.tag, color: C.txt }}
+                          >
+                            <i className="ri-arrow-left-s-line"></i> Trước
+                          </button>
+
+                          <span className="px-3 py-1.5 text-xs font-extrabold rounded-xl" style={{ background: C.surface, border: `1px solid ${C.borderSel}`, color: C.txt }}>
+                            {currentSongPage} / {totalSongPages}
+                          </span>
+
+                          <button
+                            disabled={currentSongPage >= totalSongPages}
+                            onClick={() => setSongPage(p => Math.min(totalSongPages, p + 1))}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold transition disabled:opacity-30 cursor-pointer flex items-center gap-1"
+                            style={{ background: C.tag, color: C.txt }}
+                          >
+                            Sau <i className="ri-arrow-right-s-line"></i>
+                          </button>
+                          <button
+                            disabled={currentSongPage >= totalSongPages}
+                            onClick={() => setSongPage(totalSongPages)}
+                            className="p-2 rounded-xl text-xs font-bold transition disabled:opacity-30 cursor-pointer"
+                            style={{ background: C.tag, color: C.txt }}
+                            title="Trang cuối"
+                          >
+                            <i className="ri-double-right-line"></i>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
