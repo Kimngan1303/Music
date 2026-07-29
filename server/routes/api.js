@@ -188,20 +188,20 @@ router.get('/admin/stats', async (req, res) => {
       User.countDocuments(),
       Music.countDocuments(),
       Playlist.countDocuments(),
-      User.find().select('name avatar email totalActiveTime role'),
+      User.find().select('name avatar email totalActiveTime role').sort({ totalActiveTime: -1 }),
       DailyStat.find().sort({ date: -1 }).limit(30),
       Music.find().select('addedBy createdAt')
     ]);
 
-    // All active users by totalActiveTime
+    // All active users strictly sorted by totalActiveTime descending
     const topActiveUsers = allUsers.map(u => ({
       _id: u._id,
       name: u.name,
-      avatar: u.avatar,
+      avatar: u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       email: u.email,
       totalActiveTime: u.totalActiveTime || 0,
       role: u.role
-    }));
+    })).sort((a, b) => b.totalActiveTime - a.totalActiveTime);
 
     // Map of users for fast lookup
     const userMap = new Map(allUsers.map(u => [String(u._id), u]));
