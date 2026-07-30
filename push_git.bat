@@ -1,3 +1,3 @@
 git add .
-git commit -m "Fix volume and music progress slider thumb color sync with selected theme"
+git commit -m "Fix Vercel deployment dependencies and local song search & library add fixes"
 git push
