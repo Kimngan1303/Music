@@ -1493,6 +1493,19 @@ export default function App() {
   // Current active theme tokens
   const C = THEMES[themeKey] || THEMES.nude;
 
+  // Sync slider accent & theme colors to root CSS variables whenever theme changes
+  useEffect(() => {
+    if (C) {
+      const root = document.documentElement;
+      const primaryColor = C.primarySolid || C.primary || '#2dd4bf';
+      const glowColor = C.primaryGlow || 'rgba(45, 212, 191, 0.45)';
+      root.style.setProperty('--accent-color', primaryColor);
+      root.style.setProperty('--accent-glow', glowColor);
+      root.style.setProperty('--theme-primary', primaryColor);
+      root.style.setProperty('--theme-glow', glowColor);
+    }
+  }, [themeKey, C]);
+
   const yt = useRef(null);
 
   // Sync profile edit state ONLY when opening profile dropdown (prevents timer updates from resetting avatar preview)
@@ -5349,7 +5362,7 @@ export default function App() {
               className={`flex-1 cursor-pointer ${themeKey === 'summer_season' ? 'sun-theme-slider' : ''}`}
               style={themeKey === 'summer_season' ? {
                 background: `linear-gradient(90deg, #ff7e5f 0%, #f59e0b ${(curTime / (dur || 1)) * 100}%, rgba(245, 158, 11, 0.25) ${(curTime / (dur || 1)) * 100}%)`
-              } : { accentColor: C.primarySolid }} />
+              } : { accentColor: C.primarySolid, '--accent-color': C.primarySolid, '--accent-glow': C.primaryGlow }} />
             <span className="text-[11px] font-mono w-9 shrink-0" style={{ color: C.txtFad }}>{fmt(dur)}</span>
           </div>
         </div>
@@ -5367,7 +5380,7 @@ export default function App() {
             className={`w-24 cursor-pointer ${themeKey === 'summer_season' ? 'sun-theme-slider' : ''}`}
             style={themeKey === 'summer_season' ? {
               background: `linear-gradient(90deg, #ff7e5f 0%, #f59e0b ${muted ? 0 : vol}%, rgba(245, 158, 11, 0.25) ${muted ? 0 : vol}%)`
-            } : { accentColor: C.primarySolid }} />
+            } : { accentColor: C.primarySolid, '--accent-color': C.primarySolid, '--accent-glow': C.primaryGlow }} />
         </div>
       </footer>
 
@@ -5902,7 +5915,7 @@ export default function App() {
                     <input
                       type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
                       className="w-full h-1 cursor-pointer bg-white/30 rounded-lg"
-                      style={{ accentColor: C.primarySolid }}
+                      style={{ accentColor: C.primarySolid, '--accent-color': C.primarySolid, '--accent-glow': C.primaryGlow }}
                     />
                   </div>
 
@@ -5998,7 +6011,7 @@ export default function App() {
                     <input
                       type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
                       className="w-full h-1 cursor-pointer bg-white/30 rounded-lg"
-                      style={{ accentColor: C.primarySolid }}
+                      style={{ accentColor: C.primarySolid, '--accent-color': C.primarySolid, '--accent-glow': C.primaryGlow }}
                     />
                   </div>
 

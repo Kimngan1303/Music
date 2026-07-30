@@ -70,20 +70,33 @@ input[type='range'] {
   appearance: none;
   height: 4px;
   border-radius: 99px;
-  background: #f5e3d3;
+  background: rgba(255, 255, 255, 0.2);
   outline: none;
   cursor: pointer;
+  accent-color: var(--accent-color, var(--theme-primary, #2dd4bf));
 }
 
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
+  appearance: none;
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #c9967a;
+  background: var(--accent-color, var(--theme-primary, #2dd4bf)) !important;
   cursor: pointer;
-  box-shadow: 0 0 6px rgba(180, 122, 92, 0.45);
-  transition: transform 0.15s;
+  box-shadow: 0 0 8px var(--accent-glow, var(--theme-glow, rgba(45, 212, 191, 0.5)));
+  transition: transform 0.15s, background-color 0.2s, box-shadow 0.2s;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent-color, var(--theme-primary, #2dd4bf)) !important;
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--accent-glow, var(--theme-glow, rgba(45, 212, 191, 0.5)));
+  transition: transform 0.15s, background-color 0.2s, box-shadow 0.2s;
 }
 
 /* Bell Ring Shaking Animation for Notifications */
