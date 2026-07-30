@@ -210,6 +210,39 @@ const searchYouTube = async (req, res) => {
   }
 };
 
+const searchOnline = async (req, res) => {
+  try {
+    const { q, query, limit = 15 } = req.query;
+    const searchTerm = q || query;
+    if (!searchTerm || !searchTerm.trim()) {
+      return res.status(400).json({ message: 'Từ khóa tìm kiếm không được để trống.' });
+    }
+
+    const r = await ytSearch(searchTerm.trim());
+    if (!r || !r.videos || r.videos.length === 0) {
+      return res.json([]);
+    }
+
+    const maxLimit = Math.min(parseInt(limit) || 15, 30);
+    const results = r.videos.slice(0, maxLimit).map((v) => ({
+      id: 'yt_' + v.videoId,
+      youtubeId: v.videoId,
+      youtubeUrl: `https://www.youtube.com/watch?v=${v.videoId}`,
+      title: v.title,
+      artist: v.author ? v.author.name : 'YouTube Creator',
+      thumbnail: v.thumbnail || `https://img.youtube.com/vi/${v.videoId}/hqdefault.jpg`,
+      duration: v.timestamp || '3:30',
+      views: v.views || 0,
+      ago: v.ago || ''
+    }));
+
+    res.json(results);
+  } catch (error) {
+    console.error('Error in searchOnline:', error);
+    res.status(500).json({ message: 'Lỗi khi tìm kiếm bài hát online: ' + error.message });
+  }
+};
+
 const addSpotifyPlaylist = async (req, res) => {
   try {
     const { playlistUrl, addedBy, inLibrary } = req.body;
@@ -276,4 +309,4 @@ const addSpotifyPlaylist = async (req, res) => {
   }
 };
 
-module.exports = { getSongs, parseYouTubeUrl, addSong, deleteSong, deleteBatchSongs, searchYouTube, addPlaylist, addSpotifyPlaylist };
+module.exports = { getSongs, parseYouTubeUrl, addSong, deleteSong, deleteBatchSongs, searchYouTube, searchOnline, addPlaylist, addSpotifyPlaylist };

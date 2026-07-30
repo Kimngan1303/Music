@@ -1399,6 +1399,12 @@ export default function App() {
   // Active playing queue (array of track objects)
   const [playingQueue, setPlayingQueue] = useState([]);
 
+  // Online YouTube Search state
+  const [onlineSearchQuery, setOnlineSearchQuery] = useState('');
+  const [onlineSearchResults, setOnlineSearchResults] = useState([]);
+  const [onlineSearching, setOnlineSearching] = useState(false);
+  const [onlineSearchErr, setOnlineSearchErr] = useState('');
+
   const activePlaylist = tab.startsWith('playlist_') ? playlists.find(p => p._id === tab.split('_')[1]) : null;
 
   const allKnownSongs = useMemo(() => {
@@ -2526,6 +2532,99 @@ export default function App() {
     finally { setAdding(false); }
   };
 
+  const handleOnlineSearch = async (searchTerm) => {
+    const q = searchTerm !== undefined ? searchTerm : onlineSearchQuery;
+    if (!q || !q.trim()) return;
+    setOnlineSearching(true);
+    setOnlineSearchErr('');
+    try {
+      const res = await axios.get(`/api/music/search-online?q=${encodeURIComponent(q.trim())}`);
+      setOnlineSearchResults(res.data || []);
+      if (!res.data || res.data.length === 0) {
+        setOnlineSearchErr('Không tìm thấy bài hát nào phù hợp trên YouTube.');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Lỗi khi tìm kiếm bài hát online.';
+      setOnlineSearchErr(msg);
+    } finally {
+      setOnlineSearching(false);
+    }
+  };
+
+  const handlePlayOnlineSong = (resItem) => {
+    const s = {
+      id: resItem.id || 's' + resItem.youtubeId,
+      youtubeId: resItem.youtubeId,
+      youtubeUrl: resItem.youtubeUrl,
+      title: resItem.title,
+      artist: resItem.artist,
+      thumbnail: resItem.thumbnail,
+      duration: resItem.duration,
+      inLibrary: false
+    };
+    play(s, onlineSearchResults.map(item => ({
+      id: item.id || 's' + item.youtubeId,
+      youtubeId: item.youtubeId,
+      youtubeUrl: item.youtubeUrl,
+      title: item.title,
+      artist: item.artist,
+      thumbnail: item.thumbnail,
+      duration: item.duration,
+      inLibrary: false
+    })));
+    showToast(`Đang phát: "${resItem.title}"`, 'info');
+  };
+
+  const handleAddOnlineSongToLibrary = async (resItem) => {
+    try {
+      const existing = songs.find(s => s.youtubeId === resItem.youtubeId);
+      if (existing) {
+        showToast(`Bài hát "${resItem.title}" đã có trong thư viện của bạn!`, 'info');
+        return;
+      }
+      const isPlaylistTab = tab.startsWith('playlist_');
+      const s = {
+        id: 's' + resItem.youtubeId + Date.now(),
+        youtubeId: resItem.youtubeId,
+        youtubeUrl: resItem.youtubeUrl,
+        title: resItem.title,
+        artist: resItem.artist,
+        thumbnail: resItem.thumbnail,
+        duration: resItem.duration,
+        inLibrary: !isPlaylistTab
+      };
+      setSongs(p => {
+        const updated = [s, ...p];
+        if (user) {
+          localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
+          axios.post('/api/music', { ...s, addedBy: user._id, inLibrary: !isPlaylistTab }).catch(() => {});
+        }
+        return updated;
+      });
+      if (isPlaylistTab) {
+        handleAddToPlaylist(tab.split('_')[1], s.id);
+      }
+      showToast(`Đã thêm bài hát "${resItem.title}" vào thư viện!`, 'success');
+    } catch (err) {
+      showToast('Lỗi khi thêm bài hát vào thư viện', 'error');
+    }
+  };
+
+  const handleAddOnlineSongToQueue = (resItem) => {
+    const s = {
+      id: resItem.id || 's' + resItem.youtubeId,
+      youtubeId: resItem.youtubeId,
+      youtubeUrl: resItem.youtubeUrl,
+      title: resItem.title,
+      artist: resItem.artist,
+      thumbnail: resItem.thumbnail,
+      duration: resItem.duration,
+      inLibrary: false
+    };
+    setPlayingQueue(prev => [...prev, s]);
+    showToast(`Đã thêm "${resItem.title}" vào hàng chờ!`, 'success');
+  };
+
   const handleCreatePlaylist = async e => {
     e.preventDefault();
     if (!newPlaylistName.trim() || !user) return;
@@ -3092,6 +3191,14 @@ export default function App() {
                 sub: `Playlist • ${allKnownSongs.filter(s => isFav(s)).length} bài`,
                 color: 'linear-gradient(135deg, #450af5, #8e2de2)',
                 tooltip: 'Xem các bài hát đã yêu thích'
+              },
+              {
+                key: 'online_search',
+                icon: 'ri-search-eye-line',
+                label: 'Tìm Nhạc Online',
+                sub: 'YouTube Search • Nghe trực tiếp',
+                color: 'linear-gradient(135deg, #ff416c, #ff4b2b)',
+                tooltip: 'Tìm kiếm & nghe nhạc YouTube trực tiếp'
               },
               ...(isAdmin ? [{
                 key: 'admin',
@@ -3688,7 +3795,169 @@ export default function App() {
           {/* Scrollable content */}
           <div className="flex-1 p-4 pt-8 md:p-7 md:pt-7 overflow-y-auto" onScroll={e => setMainScrollTop(e.currentTarget.scrollTop)}>
 
-            {tab === 'stats' && isAdmin ? (
+            {tab === 'online_search' ? (
+              /* ── ONLINE MUSIC SEARCH PAGE ─────────────────── */
+              <div className="flex flex-col gap-6 max-w-6xl mx-auto pb-10">
+                {/* Header Banner */}
+                <div className="p-6 md:p-8 rounded-3xl relative overflow-hidden shadow-xl"
+                  style={{ background: 'linear-gradient(135deg, rgba(255,65,108,0.2) 0%, rgba(255,75,43,0.2) 100%)', border: `1.5px solid ${C.border}` }}>
+                  <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                      <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-white bg-gradient-to-r from-pink-500 to-rose-500 shadow-sm inline-block mb-2">
+                        YouTube Live Search
+                      </span>
+                      <h2 className="text-2xl md:text-3xl font-extrabold" style={{ fontFamily: F.heading, color: C.txt }}>
+                        Tìm &amp; Nghe Nhạc Online Trực Tiếp
+                      </h2>
+                      <p className="text-xs md:text-sm mt-1 max-w-xl" style={{ color: C.txtSub }}>
+                        Tìm kiếm hàng triệu bài hát trên YouTube, phát ngay tức thì hoặc lưu vào Thư viện &amp; Playlist cá nhân.
+                      </p>
+                    </div>
+
+                    {/* Search Bar */}
+                    <form onSubmit={(e) => { e.preventDefault(); handleOnlineSearch(); }} className="w-full md:w-96 flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          placeholder="Nhập tên bài hát, ca sĩ..."
+                          value={onlineSearchQuery}
+                          onChange={e => setOnlineSearchQuery(e.target.value)}
+                          className="w-full pl-10 pr-8 py-3 rounded-2xl text-xs font-semibold outline-none transition shadow-inner"
+                          style={{ background: C.surface, border: `1.5px solid ${C.border}`, color: C.txt }}
+                        />
+                        <i className="ri-search-eye-line absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-rose-500"></i>
+                        {onlineSearchQuery && (
+                          <button type="button" onClick={() => setOnlineSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: C.txtFad }}>
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={onlineSearching}
+                        className="px-5 py-3 rounded-2xl text-xs font-bold text-white shadow-lg transition hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                        style={{ background: 'linear-gradient(135deg, #ff416c, #ff4b2b)', boxShadow: '0 6px 20px rgba(255,65,108,0.35)' }}
+                      >
+                        {onlineSearching ? <i className="ri-loader-4-line animate-spin text-sm"></i> : 'Tìm Kiếm'}
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Hot Tags preset */}
+                  <div className="relative z-10 flex items-center gap-2 mt-4 flex-wrap">
+                    <span className="text-xs font-bold" style={{ color: C.txtSub }}>Gợi ý hot:</span>
+                    {['Lofi Chill tiếng Việt', 'Nhạc Trẻ Remix TikTok 2026', 'Sơn Tùng M-TP', 'Chi Chill Lofi', 'Piano Thư Giãn Học Bài', 'Nhạc Đám Cưới Hợp Âm'].map(tag => (
+                      <button
+                        key={tag}
+                        onClick={() => { setOnlineSearchQuery(tag); handleOnlineSearch(tag); }}
+                        className="px-3 py-1 rounded-xl text-xs font-bold transition hover:scale-105 active:scale-95 cursor-pointer"
+                        style={{ background: C.tag, border: `1px solid ${C.border}`, color: C.txt }}
+                      >
+                        🔥 {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Error Banner */}
+                {onlineSearchErr && (
+                  <div className="p-4 rounded-2xl text-xs font-bold bg-red-500/15 text-red-500 border border-red-500/30">
+                    {onlineSearchErr}
+                  </div>
+                )}
+
+                {/* Search Results Grid */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: C.txt }}>
+                      <i className="ri-youtube-fill text-red-500 text-xl"></i>
+                      Kết Quả Tìm Kiếm {onlineSearchResults.length > 0 ? `(${onlineSearchResults.length} bài hát)` : ''}
+                    </h3>
+                  </div>
+
+                  {onlineSearching ? (
+                    <div className="flex flex-col items-center justify-center py-20 gap-3">
+                      <i className="ri-loader-4-line text-4xl animate-spin" style={{ color: '#ff416c' }}></i>
+                      <span className="text-sm font-bold" style={{ color: C.txtSub }}>Đang tìm kiếm bài hát từ YouTube...</span>
+                    </div>
+                  ) : onlineSearchResults.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center rounded-3xl" style={{ background: C.tag, border: `1.5px dashed ${C.border}` }}>
+                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-3" style={{ background: 'rgba(255,65,108,0.15)', color: '#ff416c' }}>
+                        <i className="ri-search-eye-line"></i>
+                      </div>
+                      <h4 className="text-base font-bold mb-1" style={{ color: C.txt }}>Chưa có kết quả tìm kiếm</h4>
+                      <p className="text-xs max-w-sm" style={{ color: C.txtSub }}>
+                        Nhập tên bài hát hoặc ca sĩ yêu thích lên thanh tìm kiếm ở trên để bắt đầu khám phá nhạc online!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {onlineSearchResults.map(song => (
+                        <div
+                          key={song.id}
+                          className="group p-3 rounded-2xl transition-all duration-300 hover:scale-[1.02] flex flex-col justify-between shadow-md relative overflow-hidden"
+                          style={{ background: C.tag, border: `1.5px solid ${C.border}` }}
+                        >
+                          <div className="relative aspect-video rounded-xl overflow-hidden mb-3">
+                            <img src={song.thumbnail} alt={song.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-3">
+                              <button
+                                onClick={() => handlePlayOnlineSong(song)}
+                                className="w-11 h-11 rounded-full text-white flex items-center justify-center shadow-lg transition hover:scale-110 active:scale-95 cursor-pointer"
+                                style={{ background: C.primary, boxShadow: `0 4px 15px ${C.primaryGlow}` }}
+                                title="Phát ngay bài này"
+                              >
+                                <i className="ri-play-fill text-xl"></i>
+                              </button>
+                            </div>
+                            <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-black/75 text-white backdrop-blur-xs">
+                              {song.duration}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col flex-1 justify-between gap-2">
+                            <div>
+                              <h4 className="text-xs font-bold line-clamp-2 leading-snug" style={{ color: C.txt }} title={song.title}>
+                                {song.title}
+                              </h4>
+                              <p className="text-[11px] font-medium truncate mt-1" style={{ color: C.txtSub }}>
+                                {song.artist}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2 mt-2 pt-2 border-t" style={{ borderColor: C.border }}>
+                              <button
+                                onClick={() => handlePlayOnlineSong(song)}
+                                className="flex-1 py-2 px-2 rounded-xl text-[11px] font-bold text-white flex items-center justify-center gap-1.5 transition hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
+                                style={{ background: C.primary }}
+                              >
+                                <i className="ri-play-fill"></i> Nghe Ngay
+                              </button>
+                              <button
+                                onClick={() => handleAddOnlineSongToLibrary(song)}
+                                className="py-2 px-3 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition hover:scale-105 active:scale-95 cursor-pointer"
+                                style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}
+                                title="Lưu bài hát vào Thư viện nhạc"
+                              >
+                                <i className="ri-add-line"></i> Thêm
+                              </button>
+                              <button
+                                onClick={() => handleAddOnlineSongToQueue(song)}
+                                className="py-2 px-2.5 rounded-xl text-[11px] font-bold transition hover:scale-105 active:scale-95 cursor-pointer"
+                                style={{ background: C.btn, border: `1px solid ${C.border}`, color: C.txtSub }}
+                                title="Thêm bài hát vào hàng chờ"
+                              >
+                                <i className="ri-playlist-add-line"></i>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : tab === 'stats' && isAdmin ? (
               /* ── STATISTICS DASHBOARD ─────────────────── */
               <div className="flex flex-col gap-6 max-w-6xl mx-auto pb-10">
                 {/* Header */}
@@ -4995,7 +5264,7 @@ export default function App() {
         <div className="fixed inset-0 flex items-center justify-center z-[60] p-4"
           style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(14px)' }}
           onMouseDown={e => { if (e.target === e.currentTarget) { setAddModal(false); setAddErr(''); } }}>
-          <div className="w-full max-w-sm rounded-3xl p-8 shadow-2xl"
+          <div className={`w-full ${addTab === 'search' ? 'max-w-lg' : 'max-w-sm'} rounded-3xl p-6 sm:p-8 shadow-2xl transition-all`}
             style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
@@ -5008,19 +5277,28 @@ export default function App() {
             </div>
 
             {/* Source Tabs */}
-            <div className="flex gap-2 mb-5 p-1 rounded-2xl" style={{ background: C.tag }}>
+            <div className="flex gap-1.5 mb-5 p-1 rounded-2xl overflow-x-auto" style={{ background: C.tag }}>
+              <button
+                onClick={() => { setAddTab('search'); setAddErr(''); }}
+                className="flex-1 py-2 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition-all whitespace-nowrap"
+                style={addTab === 'search'
+                  ? { background: 'linear-gradient(135deg, #ff416c, #ff4b2b)', color: '#fff', boxShadow: '0 2px 12px rgba(255,65,108,0.4)' }
+                  : { color: C.txtSub }}
+              >
+                <i className="ri-search-eye-line"></i> Tìm Online
+              </button>
               <button
                 onClick={() => { setAddTab('youtube'); setAddErr(''); }}
-                className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
+                className="flex-1 py-2 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition-all whitespace-nowrap"
                 style={addTab === 'youtube'
                   ? { background: C.primary, color: '#fff', boxShadow: `0 2px 12px ${C.primaryGlow}` }
                   : { color: C.txtSub }}
               >
-                <i className="ri-youtube-fill"></i> Bài Hát
+                <i className="ri-youtube-fill"></i> Link Bài Hát
               </button>
               <button
                 onClick={() => { setAddTab('spotify'); setAddErr(''); }}
-                className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
+                className="flex-1 py-2 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition-all whitespace-nowrap"
                 style={addTab === 'spotify'
                   ? { background: '#1DB954', color: '#fff', boxShadow: '0 2px 12px rgba(29,185,84,0.4)' }
                   : { color: C.txtSub }}
@@ -5029,14 +5307,115 @@ export default function App() {
               </button>
               <button
                 onClick={() => { setAddTab('playlist'); setAddErr(''); }}
-                className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
+                className="flex-1 py-2 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition-all whitespace-nowrap"
                 style={addTab === 'playlist'
                   ? { background: '#f59e0b', color: '#fff', boxShadow: '0 2px 12px rgba(245, 158, 11, 0.4)' }
                   : { color: C.txtSub }}
               >
-                <i className="ri-play-list-2-fill"></i> Playlist (YT)
+                <i className="ri-play-list-2-fill"></i> Playlist
               </button>
             </div>
+
+            {/* Online Search form */}
+            {addTab === 'search' && (
+              <div className="flex flex-col gap-4">
+                <form onSubmit={(e) => { e.preventDefault(); handleOnlineSearch(); }} className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      placeholder="Tìm bài hát, ca sĩ, lời nhạc trên YouTube..."
+                      value={onlineSearchQuery}
+                      onChange={e => setOnlineSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-8 py-2.5 rounded-xl text-xs font-semibold outline-none transition"
+                      style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                      autoFocus
+                    />
+                    <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: C.txtFad }}></i>
+                    {onlineSearchQuery && (
+                      <button type="button" onClick={() => setOnlineSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs" style={{ color: C.txtFad }}>
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={onlineSearching}
+                    className="px-4 py-2.5 rounded-xl text-xs font-bold text-white shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer"
+                    style={{ background: 'linear-gradient(135deg, #ff416c, #ff4b2b)' }}
+                  >
+                    {onlineSearching ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-search-line"></i>}
+                    Tìm
+                  </button>
+                </form>
+
+                {/* Hot Tag recommendations */}
+                <div className="flex flex-wrap gap-1.5">
+                  {['Lofi Chill', 'Nhạc Trẻ Hot', 'Remix TikTok', 'Indie Việt'].map(tag => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => { setOnlineSearchQuery(tag); handleOnlineSearch(tag); }}
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-bold transition hover:scale-105 active:scale-95 cursor-pointer"
+                      style={{ background: C.tag, border: `1px solid ${C.border}`, color: C.txtSub }}
+                    >
+                      🔥 {tag}
+                    </button>
+                  ))}
+                </div>
+
+                {onlineSearchErr && <p className="text-xs font-semibold text-red-500">{onlineSearchErr}</p>}
+
+                {/* Search Results List */}
+                <div className="flex flex-col gap-2 max-h-64 overflow-y-auto custom-scrollbar pr-1">
+                  {onlineSearching ? (
+                    <div className="flex items-center justify-center py-8 gap-2 text-xs" style={{ color: C.txtFad }}>
+                      <i className="ri-loader-4-line text-lg animate-spin" style={{ color: '#ff416c' }}></i>
+                      Đang tìm bài hát trên YouTube...
+                    </div>
+                  ) : onlineSearchResults.length === 0 ? (
+                    <p className="text-xs text-center py-6" style={{ color: C.txtFad }}>Nhập từ khóa và bấm Tìm để tìm nhạc online.</p>
+                  ) : (
+                    onlineSearchResults.map(item => (
+                      <div key={item.id} className="flex items-center justify-between p-2 rounded-xl border transition hover:bg-black/10" style={{ background: C.tag, borderColor: C.border }}>
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <img src={item.thumbnail} alt={item.title} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-bold truncate" style={{ color: C.txt }}>{item.title}</span>
+                            <span className="text-[10px] truncate" style={{ color: C.txtSub }}>{item.artist} • {item.duration}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          <button
+                            type="button"
+                            onClick={() => handlePlayOnlineSong(item)}
+                            className="p-1.5 rounded-lg text-white text-xs shadow-xs cursor-pointer hover:scale-110 active:scale-95"
+                            style={{ background: C.primary }}
+                            title="Phát trực tiếp bài này"
+                          >
+                            <i className="ri-play-fill"></i>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAddOnlineSongToLibrary(item)}
+                            className="p-1.5 rounded-lg text-xs cursor-pointer hover:scale-110 active:scale-95"
+                            style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}
+                            title="Thêm bài hát này vào thư viện"
+                          >
+                            <i className="ri-add-line"></i>
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="flex justify-end mt-1">
+                  <button type="button" onClick={() => { setAddModal(false); setAddErr(''); }} className="px-5 py-2 rounded-xl text-xs font-bold cursor-pointer" style={btn}>
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* YouTube form */}
             {addTab === 'youtube' && (
