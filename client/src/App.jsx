@@ -1476,8 +1476,7 @@ export default function App() {
   const getCurrentTrackList = () => {
     // 1. If playingQueue state is active and valid (highest priority)
     if (playingQueue && playingQueue.length > 0) {
-      const validQueue = playingQueue.filter(qSong => songs.some(s => s.id === qSong.id));
-      if (validQueue.length > 0) return validQueue;
+      return playingQueue;
     }
 
     // 2. If currently viewing a specific playlist tab, use songs in that playlist
@@ -2583,6 +2582,52 @@ export default function App() {
     showToast(`Đang phát: "${resItem.title}"`, 'info', 'Đang phát nhạc 🎵');
   };
 
+  const handleAddToQueue = (resItem) => {
+    if (!resItem) return;
+    const formattedSong = {
+      id: resItem.id || (resItem.youtubeId ? 's_' + resItem.youtubeId : 's_' + Date.now()),
+      youtubeId: resItem.youtubeId || '',
+      youtubeUrl: resItem.youtubeUrl || (resItem.youtubeId ? `https://www.youtube.com/watch?v=${resItem.youtubeId}` : ''),
+      title: resItem.title || 'Bài hát',
+      artist: resItem.artist || 'Ca sĩ',
+      thumbnail: resItem.thumbnail || '/default-cover.png',
+      duration: resItem.duration || '0:00',
+      inLibrary: false
+    };
+
+    if (!track) {
+      play(formattedSong, [formattedSong]);
+      showToast(`Đang phát: "${formattedSong.title}"`, 'info', 'Hàng chờ phát 🎵');
+    } else {
+      setPlayingQueue(prevQueue => {
+        const currentList = prevQueue && prevQueue.length > 0 ? [...prevQueue] : [...getCurrentTrackList()];
+        const targetId = formattedSong.id;
+        const targetYtId = formattedSong.youtubeId;
+
+        const existingIdx = currentList.findIndex(s => 
+          (targetId && (s.id === targetId || s._id === targetId)) ||
+          (targetYtId && Boolean(s.youtubeId) && s.youtubeId === targetYtId)
+        );
+
+        let listWithoutTarget = currentList;
+        if (existingIdx >= 0) {
+          listWithoutTarget = currentList.filter((_, idx) => idx !== existingIdx);
+        }
+
+        const currentTrackIdx = listWithoutTarget.findIndex(s => 
+          (track.id && (s.id === track.id || s._id === track.id)) ||
+          (track.youtubeId && Boolean(s.youtubeId) && s.youtubeId === track.youtubeId)
+        );
+
+        const insertPos = currentTrackIdx >= 0 ? currentTrackIdx + 1 : listWithoutTarget.length;
+        listWithoutTarget.splice(insertPos, 0, formattedSong);
+        return listWithoutTarget;
+      });
+
+      showToast(`Đã thêm "${formattedSong.title}" vào hàng chờ phát!`, 'success', 'Hàng chờ phát 🎵');
+    }
+  };
+
   const handleAddOnlineSongToLibrary = async (resItem) => {
     if (!resItem) return;
     try {
@@ -2594,7 +2639,7 @@ export default function App() {
         let found = false;
         const updated = prevSongs.map(s => {
           const isMatch = (targetId && (s.id === targetId || s._id === targetId)) ||
-                          (targetYtId && Boolean(s.youtubeId) && s.youtubeId === targetYtId);
+                          (targetYtId && Boolean(targetYtId) && Boolean(s.youtubeId) && s.youtubeId === targetYtId);
           if (isMatch) {
             found = true;
             const newInLib = s.inLibrary === false ? true : false;
@@ -2629,7 +2674,7 @@ export default function App() {
         } else {
           const matchedSong = finalSongs.find(s => 
             (targetId && (s.id === targetId || s._id === targetId)) || 
-            (targetYtId && Boolean(s.youtubeId) && s.youtubeId === targetYtId)
+            (targetYtId && Boolean(targetYtId) && Boolean(s.youtubeId) && s.youtubeId === targetYtId)
           );
           if (user && matchedSong) {
             axios.put(`/api/music/${matchedSong.id || matchedSong._id}`, { inLibrary: matchedSong.inLibrary }).catch(() => {});
@@ -2652,31 +2697,19 @@ export default function App() {
 
       let existing = songs.find(s => 
         (targetId && (s.id === targetId || s._id === targetId)) ||
-        (targetYtId && Boolean(s.youtubeId) && s.youtubeId === targetYtId)
+        (targetYtId && Boolean(targetYtId) && Boolean(s.youtubeId) && s.youtubeId === targetYtId)
       );
 
-      let s = existing;
-      if (!s) {
-        s = {
-          id: resItem.id || (resItem.youtubeId ? 's_' + resItem.youtubeId : 's_' + Date.now()),
-          youtubeId: resItem.youtubeId || '',
-          youtubeUrl: resItem.youtubeUrl || '',
-          title: resItem.title || 'Bài hát',
-          artist: resItem.artist || 'Ca sĩ',
-          thumbnail: resItem.thumbnail || '/default-cover.png',
-          duration: resItem.duration || '0:00',
-          inLibrary: false
-        };
-        const uid = user?._id || 'guest';
-        setSongs(p => {
-          const updated = [s, ...p];
-          localStorage.setItem(songsKey(uid), JSON.stringify(updated));
-          if (user) {
-            axios.post('/api/music', { ...s, addedBy: user._id, inLibrary: false }).catch(() => {});
-          }
-          return updated;
-        });
-      }
+      const s = existing || {
+        id: resItem.id || (resItem.youtubeId ? 's_' + resItem.youtubeId : 's_' + Date.now()),
+        youtubeId: resItem.youtubeId || '',
+        youtubeUrl: resItem.youtubeUrl || (resItem.youtubeId ? `https://www.youtube.com/watch?v=${resItem.youtubeId}` : ''),
+        title: resItem.title || 'Bài hát',
+        artist: resItem.artist || 'Ca sĩ',
+        thumbnail: resItem.thumbnail || '/default-cover.png',
+        duration: resItem.duration || '0:00',
+        inLibrary: false
+      };
       setSongToAdd(s);
     } catch (err) {
       showToast('Lỗi khi mở tùy chọn lưu bài hát', 'error');
@@ -2942,6 +2975,25 @@ export default function App() {
       const songObj = typeof songId === 'object' ? songId : findSongById(songId);
       const targetId = songObj ? (songObj.id || songObj._id) : songId;
 
+      if (songObj && typeof songId === 'object') {
+        const uid = user?._id || 'guest';
+        setSongs(prevSongs => {
+          const exists = prevSongs.some(s => 
+            (songObj.id && (s.id === songObj.id || s._id === songObj.id)) ||
+            (songObj.youtubeId && Boolean(songObj.youtubeId) && Boolean(s.youtubeId) && s.youtubeId === songObj.youtubeId)
+          );
+          if (!exists) {
+            const updated = [songObj, ...prevSongs];
+            localStorage.setItem(songsKey(uid), JSON.stringify(updated));
+            if (user) {
+              axios.post('/api/music', { ...songObj, addedBy: user._id, inLibrary: false }).catch(() => {});
+            }
+            return updated;
+          }
+          return prevSongs;
+        });
+      }
+
       // Fallback local update first so UI updates instantly
       if (targetId && !songIds) {
         setPlaylists(p => p.map(pl => {
@@ -2953,6 +3005,7 @@ export default function App() {
           }
           return pl;
         }));
+        showToast('Đã thêm bài hát vào danh sách phát!', 'success', 'Playlist 🎉');
       }
 
       const payload = songIds ? { songIds } : { songId: targetId };
@@ -4034,16 +4087,6 @@ export default function App() {
                         >
                           <div className="relative aspect-video rounded-xl overflow-hidden mb-3">
                             <img src={song.thumbnail} alt={song.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-3">
-                              <button
-                                onClick={() => handlePlayOnlineSong(song)}
-                                className="w-11 h-11 rounded-full text-white flex items-center justify-center shadow-lg transition hover:scale-110 active:scale-95 cursor-pointer"
-                                style={{ background: C.primary, boxShadow: `0 4px 15px ${C.primaryGlow}` }}
-                                title="Phát ngay bài này"
-                              >
-                                <i className="ri-play-fill text-xl"></i>
-                              </button>
-                            </div>
                             <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-black/75 text-white backdrop-blur-xs">
                               {song.duration}
                             </span>
@@ -4059,14 +4102,25 @@ export default function App() {
                               </p>
                             </div>
 
-                            <div className="mt-2 pt-2 border-t" style={{ borderColor: C.border }}>
+                            <div className="mt-2 pt-2 border-t flex items-center gap-2" style={{ borderColor: C.border }}>
                               <button
+                                type="button"
                                 onClick={() => handleAddOnlineSongToPlaylist(song)}
-                                className="w-full py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition hover:scale-[1.02] active:scale-95 cursor-pointer shadow-md text-white"
-                                style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
+                                className="flex-1 py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition hover:scale-[1.02] active:scale-95 cursor-pointer shadow-md text-white whitespace-nowrap"
+                                style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)' }}
                                 title="Bấm để chọn nơi lưu bài hát (Thư viện cá nhân hoặc Playlist)"
                               >
-                                <i className="ri-add-line text-sm"></i> Thêm Bài Hát...
+                                <i className="ri-add-line text-sm"></i> Thêm Vào...
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleAddToQueue(song)}
+                                className="flex-1 py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition hover:scale-[1.02] active:scale-95 cursor-pointer shadow-md text-white whitespace-nowrap"
+                                style={{ background: 'rgba(255, 255, 255, 0.08)', border: `1.5px solid ${C.border}` }}
+                                title="Thêm bài hát vào danh sách phát chờ"
+                              >
+                                <i className="ri-playlist-add-line text-sm text-cyan-400"></i> Hàng Chờ
                               </button>
                             </div>
                           </div>
@@ -5521,15 +5575,24 @@ export default function App() {
                             <span className="text-[10px] truncate" style={{ color: C.txtSub }}>{item.artist} • {item.duration}</span>
                           </div>
                         </div>
-                        <div className="flex items-center shrink-0 ml-2">
+                        <div className="flex items-center shrink-0 ml-2 gap-1.5">
                           <button
                             type="button"
                             onClick={() => handleAddOnlineSongToPlaylist(item)}
-                            className="px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition hover:scale-105 active:scale-95 flex items-center gap-1 text-white shadow-xs"
-                            style={{ background: C.primary }}
+                            className="px-2.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition hover:scale-105 active:scale-95 flex items-center gap-1 text-white shadow-xs"
+                            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
                             title="Bấm để chọn nơi lưu bài hát (Thư viện cá nhân hoặc Playlist)"
                           >
                             <i className="ri-add-line"></i> Thêm Vào...
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAddToQueue(item)}
+                            className="px-2.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition hover:scale-105 active:scale-95 flex items-center gap-1 text-white shadow-xs"
+                            style={{ background: 'rgba(255,255,255,0.08)', border: `1.5px solid ${C.border}` }}
+                            title="Thêm bài hát vào danh sách phát chờ"
+                          >
+                            <i className="ri-playlist-add-line text-cyan-400"></i> Hàng Chờ
                           </button>
                         </div>
                       </div>
