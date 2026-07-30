@@ -4909,9 +4909,9 @@ export default function App() {
                           style={getSeasonalPlayBtnClass(themeKey) ? {} : { background: C.primary, boxShadow: `0 6px 20px ${C.primaryGlow}` }}
                         >
                           {track && list.some(s => s.id === track.id) && playing ? (
-                            buffering ? <i className="ri-loader-4-line text-2xl animate-spin" /> : <PauseIcon className="w-6 h-6" />
+                            buffering ? <i className="ri-loader-4-line text-2xl animate-spin" /> : <i className="ri-pause-fill text-2xl" />
                           ) : (
-                            <PlayIcon className="w-6 h-6" />
+                            <i className="ri-play-fill text-2xl ml-0.5" />
                           )}
                         </button>
                       )}

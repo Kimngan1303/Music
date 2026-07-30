@@ -1,3 +1,3 @@
 git add .
-git commit -m "Restore vercel.json and package.json to working configuration"
+git commit -m "Fix undefined PauseIcon and PlayIcon build error in App.jsx"
 git push
