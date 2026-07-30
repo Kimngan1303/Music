@@ -2683,49 +2683,6 @@ export default function App() {
     }
   };
 
-  const handleAddToPlaylist = async (playlistId, songId) => {
-    if (!playlistId || !songId) return;
-    try {
-      const pl = playlists.find(p => p._id === playlistId);
-      if (!pl) return;
-      const currentSongs = pl.songs || [];
-      if (currentSongs.includes(songId)) return;
-      const updatedSongs = [...currentSongs, songId];
-
-      setPlaylists(prev => {
-        const updated = prev.map(p => p._id === playlistId ? { ...p, songs: updatedSongs } : p);
-        const uid = user?._id || 'guest';
-        localStorage.setItem(playlistsKey(uid), JSON.stringify(updated));
-        return updated;
-      });
-
-      axios.put(`/api/playlists/${playlistId}/songs`, { songs: updatedSongs }).catch(() => {});
-      showToast(`Đã thêm bài hát vào playlist "${pl.name}"!`, 'success', 'Thêm vào Playlist 🎉');
-    } catch (err) {
-      showToast('Lỗi khi thêm bài hát vào playlist', 'error');
-    }
-  };
-
-  const handleRemoveFromPlaylist = async (playlistId, songId) => {
-    if (!playlistId || !songId) return;
-    try {
-      const pl = playlists.find(p => p._id === playlistId);
-      if (!pl) return;
-      const updatedSongs = (pl.songs || []).filter(id => id !== songId);
-
-      setPlaylists(prev => {
-        const updated = prev.map(p => p._id === playlistId ? { ...p, songs: updatedSongs } : p);
-        const uid = user?._id || 'guest';
-        localStorage.setItem(playlistsKey(uid), JSON.stringify(updated));
-        return updated;
-      });
-
-      axios.put(`/api/playlists/${playlistId}/songs`, { songs: updatedSongs }).catch(() => {});
-      showToast(`Đã xóa bài hát khỏi playlist "${pl.name}"`, 'info', 'Đã bỏ khỏi Playlist 🗑️');
-    } catch (err) {
-      showToast('Lỗi khi bỏ bài hát khỏi playlist', 'error');
-    }
-  };
 
   const handleCreatePlaylist = async e => {
     e.preventDefault();
