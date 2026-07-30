@@ -4087,7 +4087,17 @@ export default function App() {
                         >
                           <div className="relative aspect-video rounded-xl overflow-hidden mb-3">
                             <img src={song.thumbnail} alt={song.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
-                            <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-black/75 text-white backdrop-blur-xs">
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                              <button
+                                onClick={() => handlePlayOnlineSong(song)}
+                                className="w-11 h-11 rounded-full text-white flex items-center justify-center shadow-lg transition hover:scale-110 active:scale-95 cursor-pointer"
+                                style={{ background: C.primary, boxShadow: `0 4px 15px ${C.primaryGlow}` }}
+                                title="Phát ngay bài này"
+                              >
+                                <i className="ri-play-fill text-xl"></i>
+                              </button>
+                            </div>
+                            <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-black/75 text-white backdrop-blur-xs z-10">
                               {song.duration}
                             </span>
                           </div>
