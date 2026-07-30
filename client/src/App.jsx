@@ -2584,89 +2584,94 @@ export default function App() {
   };
 
   const handleAddOnlineSongToLibrary = async (resItem) => {
+    if (!resItem) return;
     try {
-      const existing = songs.find(s => s.youtubeId === resItem.youtubeId || s.id === resItem.id || s._id === resItem._id);
-      if (existing) {
-        if (existing.inLibrary !== false) {
-          // Toggle off (remove from library)
-          setSongs(p => p.map(s => (s.id === existing.id || s._id === existing._id) ? { ...s, inLibrary: false } : s));
-          if (user) {
-            axios.put(`/api/music/${existing.id || existing._id}`, { inLibrary: false }).catch(() => {});
+      const targetId = resItem.id || resItem._id;
+      const targetYtId = resItem.youtubeId;
+      const uid = user?._id || 'guest';
+
+      setSongs(prevSongs => {
+        let found = false;
+        const updated = prevSongs.map(s => {
+          const isMatch = (targetId && (s.id === targetId || s._id === targetId)) ||
+                          (targetYtId && Boolean(s.youtubeId) && s.youtubeId === targetYtId);
+          if (isMatch) {
+            found = true;
+            const newInLib = s.inLibrary === false ? true : false;
+            if (newInLib) {
+              showToast(`Đã thêm "${s.title}" vào thư viện cá nhân!`, 'success', 'Đã thêm vào thư viện 🎉');
+            } else {
+              showToast(`Đã xóa "${s.title}" khỏi thư viện cá nhân`, 'info', 'Đã bỏ khỏi thư viện 🗑️');
+            }
+            return { ...s, inLibrary: newInLib };
           }
-          showToast(`Đã xóa "${resItem.title}" khỏi thư viện cá nhân`, 'info', 'Đã bỏ khỏi thư viện 🗑️');
-          return;
+          return s;
+        });
+
+        let finalSongs = updated;
+        if (!found) {
+          const newSong = {
+            id: resItem.id || (resItem.youtubeId ? 's_' + resItem.youtubeId : 's_' + Date.now()),
+            youtubeId: resItem.youtubeId || '',
+            youtubeUrl: resItem.youtubeUrl || '',
+            title: resItem.title || 'Bài hát',
+            artist: resItem.artist || 'Ca sĩ',
+            thumbnail: resItem.thumbnail || '/default-cover.png',
+            duration: resItem.duration || '0:00',
+            inLibrary: true
+          };
+          finalSongs = [newSong, ...prevSongs];
+          showToast(`Đã thêm "${newSong.title}" vào thư viện cá nhân!`, 'success', 'Đã thêm vào thư viện 🎉');
+
+          if (user) {
+            axios.post('/api/music', { ...newSong, addedBy: user._id, inLibrary: true }).catch(() => {});
+          }
         } else {
-          // Toggle on (add to library)
-          setSongs(p => p.map(s => (s.id === existing.id || s._id === existing._id) ? { ...s, inLibrary: true } : s));
-          if (user) {
-            axios.put(`/api/music/${existing.id || existing._id}`, { inLibrary: true }).catch(() => {});
+          const matchedSong = finalSongs.find(s => 
+            (targetId && (s.id === targetId || s._id === targetId)) || 
+            (targetYtId && Boolean(s.youtubeId) && s.youtubeId === targetYtId)
+          );
+          if (user && matchedSong) {
+            axios.put(`/api/music/${matchedSong.id || matchedSong._id}`, { inLibrary: matchedSong.inLibrary }).catch(() => {});
           }
-          showToast(`Đã thêm "${resItem.title}" vào thư viện cá nhân!`, 'success', 'Đã thêm vào thư viện 🎉');
-          return;
         }
-      }
-      const isPlaylistTab = tab.startsWith('playlist_');
-      const s = {
-        id: 's' + resItem.youtubeId + Date.now(),
-        youtubeId: resItem.youtubeId,
-        youtubeUrl: resItem.youtubeUrl,
-        title: resItem.title,
-        artist: resItem.artist,
-        thumbnail: resItem.thumbnail,
-        duration: resItem.duration,
-        inLibrary: !isPlaylistTab
-      };
-      setSongs(p => {
-        const updated = [s, ...p];
-        if (user) {
-          localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
-          axios.post('/api/music', { ...s, addedBy: user._id, inLibrary: !isPlaylistTab }).catch(() => {});
-        }
-        return updated;
+
+        localStorage.setItem(songsKey(uid), JSON.stringify(finalSongs));
+        return finalSongs;
       });
-      if (isPlaylistTab) {
-        handleAddToPlaylist(tab.split('_')[1], s.id);
-      }
-      showToast(`Đã thêm bài hát "${resItem.title}" vào thư viện!`, 'success', 'Đã thêm vào thư viện 🎉');
     } catch (err) {
       showToast('Lỗi khi thêm bài hát vào thư viện', 'error');
     }
   };
 
-  const handleAddOnlineSongToQueue = (resItem) => {
-    const s = {
-      id: resItem.id || 's' + resItem.youtubeId,
-      youtubeId: resItem.youtubeId,
-      youtubeUrl: resItem.youtubeUrl,
-      title: resItem.title,
-      artist: resItem.artist,
-      thumbnail: resItem.thumbnail,
-      duration: resItem.duration,
-      inLibrary: false
-    };
-    setPlayingQueue(prev => [...prev, s]);
-    showToast(`Đã thêm "${resItem.title}" vào hàng chờ phát!`, 'success', 'Đã thêm vào hàng chờ 🎵');
-  };
-
   const handleAddOnlineSongToPlaylist = async (resItem) => {
+    if (!resItem) return;
     try {
-      let existing = songs.find(s => s.youtubeId === resItem.youtubeId || s.id === resItem.id || s._id === resItem._id);
+      const targetId = resItem.id || resItem._id;
+      const targetYtId = resItem.youtubeId;
+
+      let existing = songs.find(s => 
+        (targetId && (s.id === targetId || s._id === targetId)) ||
+        (targetYtId && Boolean(s.youtubeId) && s.youtubeId === targetYtId)
+      );
+
       let s = existing;
       if (!s) {
         s = {
-          id: 's' + resItem.youtubeId + Date.now(),
-          youtubeId: resItem.youtubeId,
-          youtubeUrl: resItem.youtubeUrl,
-          title: resItem.title,
-          artist: resItem.artist,
-          thumbnail: resItem.thumbnail,
-          duration: resItem.duration,
+          id: resItem.id || (resItem.youtubeId ? 's_' + resItem.youtubeId : 's_' + Date.now()),
+          youtubeId: resItem.youtubeId || '',
+          youtubeUrl: resItem.youtubeUrl || '',
+          title: resItem.title || 'Bài hát',
+          artist: resItem.artist || 'Ca sĩ',
+          thumbnail: resItem.thumbnail || '/default-cover.png',
+          duration: resItem.duration || '0:00',
           inLibrary: false
         };
+        const uid = user?._id || 'guest';
         setSongs(p => {
           const updated = [s, ...p];
+          localStorage.setItem(songsKey(uid), JSON.stringify(updated));
           if (user) {
-            localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
             axios.post('/api/music', { ...s, addedBy: user._id, inLibrary: false }).catch(() => {});
           }
           return updated;
@@ -2675,6 +2680,50 @@ export default function App() {
       setSongToAdd(s);
     } catch (err) {
       showToast('Lỗi khi mở tùy chọn lưu bài hát', 'error');
+    }
+  };
+
+  const handleAddToPlaylist = async (playlistId, songId) => {
+    if (!playlistId || !songId) return;
+    try {
+      const pl = playlists.find(p => p._id === playlistId);
+      if (!pl) return;
+      const currentSongs = pl.songs || [];
+      if (currentSongs.includes(songId)) return;
+      const updatedSongs = [...currentSongs, songId];
+
+      setPlaylists(prev => {
+        const updated = prev.map(p => p._id === playlistId ? { ...p, songs: updatedSongs } : p);
+        const uid = user?._id || 'guest';
+        localStorage.setItem(playlistsKey(uid), JSON.stringify(updated));
+        return updated;
+      });
+
+      axios.put(`/api/playlists/${playlistId}/songs`, { songs: updatedSongs }).catch(() => {});
+      showToast(`Đã thêm bài hát vào playlist "${pl.name}"!`, 'success', 'Thêm vào Playlist 🎉');
+    } catch (err) {
+      showToast('Lỗi khi thêm bài hát vào playlist', 'error');
+    }
+  };
+
+  const handleRemoveFromPlaylist = async (playlistId, songId) => {
+    if (!playlistId || !songId) return;
+    try {
+      const pl = playlists.find(p => p._id === playlistId);
+      if (!pl) return;
+      const updatedSongs = (pl.songs || []).filter(id => id !== songId);
+
+      setPlaylists(prev => {
+        const updated = prev.map(p => p._id === playlistId ? { ...p, songs: updatedSongs } : p);
+        const uid = user?._id || 'guest';
+        localStorage.setItem(playlistsKey(uid), JSON.stringify(updated));
+        return updated;
+      });
+
+      axios.put(`/api/playlists/${playlistId}/songs`, { songs: updatedSongs }).catch(() => {});
+      showToast(`Đã xóa bài hát khỏi playlist "${pl.name}"`, 'info', 'Đã bỏ khỏi Playlist 🗑️');
+    } catch (err) {
+      showToast('Lỗi khi bỏ bài hát khỏi playlist', 'error');
     }
   };
 
@@ -4053,29 +4102,14 @@ export default function App() {
                               </p>
                             </div>
 
-                            <div className="flex items-center gap-1.5 mt-2 pt-2 border-t" style={{ borderColor: C.border }}>
-                              <button
-                                onClick={() => handlePlayOnlineSong(song)}
-                                className="flex-1 py-2 px-2 rounded-xl text-[11px] font-bold text-white flex items-center justify-center gap-1 transition hover:scale-105 active:scale-95 cursor-pointer shadow-sm whitespace-nowrap"
-                                style={{ background: C.primary }}
-                              >
-                                <i className="ri-play-fill"></i> Phát Ngay
-                              </button>
+                            <div className="mt-2 pt-2 border-t" style={{ borderColor: C.border }}>
                               <button
                                 onClick={() => handleAddOnlineSongToPlaylist(song)}
-                                className="flex-1 py-2 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap"
-                                style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}
+                                className="w-full py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition hover:scale-[1.02] active:scale-95 cursor-pointer shadow-md text-white"
+                                style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
                                 title="Bấm để chọn nơi lưu bài hát (Thư viện cá nhân hoặc Playlist)"
                               >
-                                <i className="ri-add-line text-sm"></i> Thêm Vào...
-                              </button>
-                              <button
-                                onClick={() => handleAddOnlineSongToQueue(song)}
-                                className="py-2 px-2.5 rounded-xl text-[11px] font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1 shrink-0 whitespace-nowrap"
-                                style={{ background: C.btn, border: `1px solid ${C.border}`, color: C.txtSub }}
-                                title="Thêm bài hát này vào hàng chờ phát"
-                              >
-                                <i className="ri-playlist-add-line text-sm"></i> Hàng Chờ
+                                <i className="ri-add-line text-sm"></i> Thêm Bài Hát...
                               </button>
                             </div>
                           </div>
@@ -5530,33 +5564,15 @@ export default function App() {
                             <span className="text-[10px] truncate" style={{ color: C.txtSub }}>{item.artist} • {item.duration}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                          <button
-                            type="button"
-                            onClick={() => handlePlayOnlineSong(item)}
-                            className="p-1.5 px-2 rounded-lg text-white text-xs font-bold shadow-xs cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1"
-                            style={{ background: C.primary }}
-                            title="Phát ngay bài này"
-                          >
-                            <i className="ri-play-fill"></i> Phát
-                          </button>
+                        <div className="flex items-center shrink-0 ml-2">
                           <button
                             type="button"
                             onClick={() => handleAddOnlineSongToPlaylist(item)}
-                            className="px-2 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1"
-                            style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition hover:scale-105 active:scale-95 flex items-center gap-1 text-white shadow-xs"
+                            style={{ background: C.primary }}
                             title="Bấm để chọn nơi lưu bài hát (Thư viện cá nhân hoặc Playlist)"
                           >
                             <i className="ri-add-line"></i> Thêm Vào...
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAddOnlineSongToQueue(item)}
-                            className="px-2 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1"
-                            style={{ background: C.btn, border: `1px solid ${C.border}`, color: C.txtSub }}
-                            title="Thêm bài hát vào hàng chờ phát"
-                          >
-                            <i className="ri-playlist-add-line"></i> Hàng Chờ
                           </button>
                         </div>
                       </div>
@@ -5727,7 +5743,12 @@ export default function App() {
                 <span className="text-[11px] font-extrabold uppercase tracking-wider px-1" style={{ color: C.txtFad }}>1. Thư Viện Cá Nhân</span>
                 {(() => {
                   const targetSongId = songToAdd.id || songToAdd._id;
-                  const inLibrary = songs.some(s => (s.id === targetSongId || s._id === targetSongId || s.youtubeId === songToAdd.youtubeId) && s.inLibrary !== false);
+                  const targetYtId = songToAdd.youtubeId;
+                  const inLibrary = songs.some(s => 
+                    ((targetSongId && (s.id === targetSongId || s._id === targetSongId)) || 
+                     (targetYtId && Boolean(s.youtubeId) && s.youtubeId === targetYtId)) && 
+                    s.inLibrary !== false
+                  );
                   return (
                     <button
                       onClick={() => handleAddOnlineSongToLibrary(songToAdd)}
@@ -5767,7 +5788,12 @@ export default function App() {
                   <p className="text-xs text-center py-3" style={{ color: C.txtSub }}>Bạn chưa có playlist nào. Hãy bấm "Tạo Mới" ở trên!</p>
                 ) : playlists.map(p => {
                   const targetSongId = songToAdd.id || songToAdd._id;
-                  const inPlaylist = (p.songs || []).includes(targetSongId) || (songToAdd.id && (p.songs || []).includes(songToAdd.id)) || (songToAdd._id && (p.songs || []).includes(songToAdd._id));
+                  const targetYtId = songToAdd.youtubeId;
+                  const inPlaylist = (p.songs || []).some(sId => {
+                    if (targetSongId && sId === targetSongId) return true;
+                    const matchedSong = songs.find(s => s.id === sId || s._id === sId);
+                    return Boolean(targetYtId) && Boolean(matchedSong?.youtubeId) && matchedSong.youtubeId === targetYtId;
+                  });
                   return (
                     <button key={p._id} onClick={() => inPlaylist ? handleRemoveFromPlaylist(p._id, targetSongId) : handleAddToPlaylist(p._id, targetSongId)}
                       className="flex items-center justify-between px-4 py-3 rounded-2xl transition-all cursor-pointer hover:scale-[1.01] active:scale-95 text-left"
