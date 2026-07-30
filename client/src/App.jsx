@@ -981,7 +981,10 @@ export default function App() {
   const adminFormAvatarInputRef = useRef(null);
 
 
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(''); // Header global online search query
+  const [localFilterQuery, setLocalFilterQuery] = useState(''); // Spotify-style local song filter query
+  const [sidebarQuery, setSidebarQuery] = useState(''); // Spotify-style sidebar playlist filter query
+  const [showSidebarSearch, setShowSidebarSearch] = useState(false);
   const [curTime, setCurTime] = useState(0);
   const [dur, setDur] = useState(0);
   const [vol, setVol] = useState(() => {
@@ -1462,7 +1465,7 @@ export default function App() {
   };
 
   const list = getBaseList()
-    .filter(s => s.title.toLowerCase().includes(query.toLowerCase()) || s.artist.toLowerCase().includes(query.toLowerCase()));
+    .filter(s => !localFilterQuery || s.title.toLowerCase().includes(localFilterQuery.toLowerCase()) || s.artist.toLowerCase().includes(localFilterQuery.toLowerCase()));
 
   const totalSongPages = Math.ceil(list.length / SONGS_PER_PAGE) || 1;
   const currentSongPage = Math.min(Math.max(1, songPage), totalSongPages);
@@ -2582,10 +2585,25 @@ export default function App() {
 
   const handleAddOnlineSongToLibrary = async (resItem) => {
     try {
-      const existing = songs.find(s => s.youtubeId === resItem.youtubeId);
+      const existing = songs.find(s => s.youtubeId === resItem.youtubeId || s.id === resItem.id || s._id === resItem._id);
       if (existing) {
-        showToast(`Bài hát "${resItem.title}" đã có trong thư viện của bạn!`, 'info');
-        return;
+        if (existing.inLibrary !== false) {
+          // Toggle off (remove from library)
+          setSongs(p => p.map(s => (s.id === existing.id || s._id === existing._id) ? { ...s, inLibrary: false } : s));
+          if (user) {
+            axios.put(`/api/music/${existing.id || existing._id}`, { inLibrary: false }).catch(() => {});
+          }
+          showToast(`Đã xóa "${resItem.title}" khỏi thư viện cá nhân`, 'info', 'Đã bỏ khỏi thư viện 🗑️');
+          return;
+        } else {
+          // Toggle on (add to library)
+          setSongs(p => p.map(s => (s.id === existing.id || s._id === existing._id) ? { ...s, inLibrary: true } : s));
+          if (user) {
+            axios.put(`/api/music/${existing.id || existing._id}`, { inLibrary: true }).catch(() => {});
+          }
+          showToast(`Đã thêm "${resItem.title}" vào thư viện cá nhân!`, 'success', 'Đã thêm vào thư viện 🎉');
+          return;
+        }
       }
       const isPlaylistTab = tab.startsWith('playlist_');
       const s = {
@@ -2609,7 +2627,7 @@ export default function App() {
       if (isPlaylistTab) {
         handleAddToPlaylist(tab.split('_')[1], s.id);
       }
-      showToast(`Đã thêm bài hát "${resItem.title}" vào thư viện!`, 'success');
+      showToast(`Đã thêm bài hát "${resItem.title}" vào thư viện!`, 'success', 'Đã thêm vào thư viện 🎉');
     } catch (err) {
       showToast('Lỗi khi thêm bài hát vào thư viện', 'error');
     }
@@ -2627,12 +2645,12 @@ export default function App() {
       inLibrary: false
     };
     setPlayingQueue(prev => [...prev, s]);
-    showToast(`Đã thêm "${resItem.title}" vào hàng chờ!`, 'success');
+    showToast(`Đã thêm "${resItem.title}" vào hàng chờ phát!`, 'success', 'Đã thêm vào hàng chờ 🎵');
   };
 
   const handleAddOnlineSongToPlaylist = async (resItem) => {
     try {
-      let existing = songs.find(s => s.youtubeId === resItem.youtubeId);
+      let existing = songs.find(s => s.youtubeId === resItem.youtubeId || s.id === resItem.id || s._id === resItem._id);
       let s = existing;
       if (!s) {
         s = {
@@ -2656,7 +2674,7 @@ export default function App() {
       }
       setSongToAdd(s);
     } catch (err) {
-      showToast('Lỗi khi mở danh sách phát', 'error');
+      showToast('Lỗi khi mở tùy chọn lưu bài hát', 'error');
     }
   };
 
@@ -3298,14 +3316,48 @@ export default function App() {
 
             <div className="mt-4 mb-2 flex items-center justify-between px-3">
               <p style={{ fontFamily: F.brand, fontSize: '11px', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.txtFad }}>Danh sách phát</p>
-              <button onClick={() => setPlaylistModal(true)} title="Tạo danh sách phát mới"
-                className="w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer"
-                style={{ background: C.tag, color: C.txt, border: `1px solid ${C.border}` }}>
-                <i className="ri-add-line text-xs"></i>
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setShowSidebarSearch(!showSidebarSearch)}
+                  title="Lọc danh sách phát (Spotify style)"
+                  className="w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                  style={{ background: showSidebarSearch ? C.primarySolid : C.tag, color: showSidebarSearch ? '#fff' : C.txt, border: `1px solid ${C.border}` }}
+                >
+                  <i className="ri-search-line text-xs"></i>
+                </button>
+                <button onClick={() => setPlaylistModal(true)} title="Tạo danh sách phát mới"
+                  className="w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                  style={{ background: C.tag, color: C.txt, border: `1px solid ${C.border}` }}>
+                  <i className="ri-add-line text-xs"></i>
+                </button>
+              </div>
             </div>
 
-            {playlists.slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)).map(p => {
+            {showSidebarSearch && (
+              <div className="px-2 mb-2">
+                <div className="relative">
+                  <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-xs" style={{ color: C.txtFad }}></i>
+                  <input
+                    type="text"
+                    placeholder="Lọc playlist..."
+                    value={sidebarQuery}
+                    onChange={e => setSidebarQuery(e.target.value)}
+                    className="w-full pl-7 pr-6 py-1.5 rounded-xl text-xs outline-none transition"
+                    style={{ background: C.tag, border: `1px solid ${C.border}`, color: C.txt }}
+                    autoFocus
+                  />
+                  {sidebarQuery && (
+                    <button onClick={() => setSidebarQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold" style={{ color: C.txtFad }}>
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {playlists
+              .filter(p => !sidebarQuery || p.name.toLowerCase().includes(sidebarQuery.toLowerCase()))
+              .slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)).map(p => {
               const tabKey = `playlist_${p._id}`;
               const active = tab === tabKey;
               const isHovered = hoverTab === tabKey;
@@ -3402,15 +3454,56 @@ export default function App() {
                 <i className="ri-menu-line"></i>
               </button>
 
-              {/* Search */}
-              <div className="relative w-full max-w-[140px] sm:max-w-[180px] md:w-60 z-10">
-                <i className="ri-search-line absolute left-3 top-2 text-xs md:text-sm md:left-3.5 md:top-2.5" style={{ color: C.txtFad }}></i>
-                <input type="text" placeholder="Tìm kiếm..."
-                  value={query} onChange={e => setQuery(e.target.value)}
-                  className="w-full py-1.5 md:py-2 pl-8 md:pl-10 pr-3 md:pr-4 text-xs md:text-sm rounded-full outline-none transition"
+              {/* Header Global Online Search */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (query.trim()) {
+                    setTab('online_search');
+                    setOnlineSearchQuery(query);
+                    handleOnlineSearch(query);
+                  }
+                }}
+                className="relative w-full max-w-[150px] sm:max-w-[200px] md:w-64 z-10"
+              >
+                <i
+                  className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-xs md:text-sm cursor-pointer"
+                  style={{ color: C.txtFad }}
+                  onClick={() => {
+                    if (query.trim()) {
+                      setTab('online_search');
+                      setOnlineSearchQuery(query);
+                      handleOnlineSearch(query);
+                    }
+                  }}
+                ></i>
+                <input
+                  type="text"
+                  placeholder="🔍 Tìm nhạc online YouTube..."
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && query.trim()) {
+                      e.preventDefault();
+                      setTab('online_search');
+                      setOnlineSearchQuery(query);
+                      handleOnlineSearch(query);
+                    }
+                  }}
+                  className="w-full py-1.5 md:py-2 pl-8 md:pl-9 pr-7 text-xs md:text-sm rounded-full outline-none transition"
                   style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
                 />
-              </div>
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => setQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold"
+                    style={{ color: C.txtFad }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </form>
 
               {/* Floating Sticky Play Button + Playlist Name (Chỉ hiện khi lướt xuống hết banner > 280px) */}
               {mainScrollTop > 280 && (activePlaylist || tab === 'favorites' || tab === 'library') && (
@@ -3960,40 +4053,30 @@ export default function App() {
                               </p>
                             </div>
 
-                            <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t" style={{ borderColor: C.border }}>
+                            <div className="flex items-center gap-1.5 mt-2 pt-2 border-t" style={{ borderColor: C.border }}>
                               <button
                                 onClick={() => handlePlayOnlineSong(song)}
-                                className="w-full py-2 px-2 rounded-xl text-[11px] font-bold text-white flex items-center justify-center gap-1.5 transition hover:scale-[1.02] active:scale-95 cursor-pointer shadow-sm"
+                                className="flex-1 py-2 px-2 rounded-xl text-[11px] font-bold text-white flex items-center justify-center gap-1 transition hover:scale-105 active:scale-95 cursor-pointer shadow-sm whitespace-nowrap"
                                 style={{ background: C.primary }}
                               >
                                 <i className="ri-play-fill"></i> Phát Ngay
                               </button>
-                              <div className="flex items-center gap-1.5 w-full">
-                                <button
-                                  onClick={() => handleAddOnlineSongToLibrary(song)}
-                                  className="flex-1 py-1.5 px-2 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1 transition hover:scale-105 active:scale-95 cursor-pointer"
-                                  style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}
-                                  title="Lưu bài hát vào Thư viện cá nhân"
-                                >
-                                  <i className="ri-music-2-line"></i> Thư viện
-                                </button>
-                                <button
-                                  onClick={() => handleAddOnlineSongToPlaylist(song)}
-                                  className="flex-1 py-1.5 px-2 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1 transition hover:scale-105 active:scale-95 cursor-pointer"
-                                  style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' }}
-                                  title="Thêm bài hát vào Playlist (Danh sách phát)"
-                                >
-                                  <i className="ri-folder-music-line"></i> Playlist
-                                </button>
-                                <button
-                                  onClick={() => handleAddOnlineSongToQueue(song)}
-                                  className="py-1.5 px-2 rounded-xl text-[10px] font-bold transition hover:scale-105 active:scale-95 cursor-pointer"
-                                  style={{ background: C.btn, border: `1px solid ${C.border}`, color: C.txtSub }}
-                                  title="Thêm vào hàng chờ"
-                                >
-                                  <i className="ri-playlist-add-line"></i>
-                                </button>
-                              </div>
+                              <button
+                                onClick={() => handleAddOnlineSongToPlaylist(song)}
+                                className="flex-1 py-2 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap"
+                                style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}
+                                title="Bấm để chọn nơi lưu bài hát (Thư viện cá nhân hoặc Playlist)"
+                              >
+                                <i className="ri-add-line text-sm"></i> Thêm Vào...
+                              </button>
+                              <button
+                                onClick={() => handleAddOnlineSongToQueue(song)}
+                                className="py-2 px-2.5 rounded-xl text-[11px] font-bold transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1 shrink-0 whitespace-nowrap"
+                                style={{ background: C.btn, border: `1px solid ${C.border}`, color: C.txtSub }}
+                                title="Thêm bài hát này vào hàng chờ phát"
+                              >
+                                <i className="ri-playlist-add-line text-sm"></i> Hàng Chờ
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -4799,6 +4882,24 @@ export default function App() {
                         </button>
                       )}
 
+                      {/* Spotify-style Local Search / Filter Bar */}
+                      <div className="relative flex-1 max-w-xs min-w-[200px]">
+                        <i className="ri-search-line absolute left-3.5 top-1/2 -translate-y-1/2 text-xs" style={{ color: C.txtFad }}></i>
+                        <input
+                          type="text"
+                          placeholder="🔍 Lọc bài hát trong danh sách này..."
+                          value={localFilterQuery}
+                          onChange={e => { setLocalFilterQuery(e.target.value); setSongPage(1); }}
+                          className="w-full pl-9 pr-7 py-2.5 rounded-2xl text-xs font-semibold outline-none transition"
+                          style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                        />
+                        {localFilterQuery && (
+                          <button onClick={() => setLocalFilterQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold" style={{ color: C.txtFad }}>
+                            ✕
+                          </button>
+                        )}
+                      </div>
+
                       {list.length > 0 && (
                         <button
                           onClick={random}
@@ -5429,33 +5530,33 @@ export default function App() {
                             <span className="text-[10px] truncate" style={{ color: C.txtSub }}>{item.artist} • {item.duration}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0 ml-2">
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
                           <button
                             type="button"
                             onClick={() => handlePlayOnlineSong(item)}
-                            className="p-1.5 rounded-lg text-white text-xs shadow-xs cursor-pointer hover:scale-110 active:scale-95 flex items-center justify-center"
+                            className="p-1.5 px-2 rounded-lg text-white text-xs font-bold shadow-xs cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1"
                             style={{ background: C.primary }}
                             title="Phát ngay bài này"
                           >
-                            <i className="ri-play-fill"></i>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAddOnlineSongToLibrary(item)}
-                            className="px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1"
-                            style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}
-                            title="Lưu bài hát vào Thư viện cá nhân"
-                          >
-                            <i className="ri-music-2-line"></i> Thư viện
+                            <i className="ri-play-fill"></i> Phát
                           </button>
                           <button
                             type="button"
                             onClick={() => handleAddOnlineSongToPlaylist(item)}
-                            className="px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1"
-                            style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' }}
-                            title="Thêm bài hát vào Playlist (Danh sách phát)"
+                            className="px-2 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1"
+                            style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}
+                            title="Bấm để chọn nơi lưu bài hát (Thư viện cá nhân hoặc Playlist)"
                           >
-                            <i className="ri-folder-music-line"></i> Playlist
+                            <i className="ri-add-line"></i> Thêm Vào...
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAddOnlineSongToQueue(item)}
+                            className="px-2 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1"
+                            style={{ background: C.btn, border: `1px solid ${C.border}`, color: C.txtSub }}
+                            title="Thêm bài hát vào hàng chờ phát"
+                          >
+                            <i className="ri-playlist-add-line"></i> Hàng Chờ
                           </button>
                         </div>
                       </div>
@@ -5598,37 +5699,99 @@ export default function App() {
         </div>
       )}
 
-      {/* ── ADD TO PLAYLIST MODAL ─────────────────────── */}
+      {/* ── UNIFIED ADD TO LIBRARY / PLAYLIST MODAL ─────────────────────── */}
       {songToAdd && (
         <div className="fixed inset-0 flex items-center justify-center z-[60] p-4"
-          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(14px)' }}
+          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(14px)' }}
           onMouseDown={e => { if (e.target === e.currentTarget) setSongToAdd(null); }}>
-          <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl"
-            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
-            <h3 className="mb-4" style={{ fontFamily: F.heading, fontSize: '18px', fontWeight: 700, color: C.txt }}>
-              Thêm vào danh sách phát
-            </h3>
+          <div className="w-full max-w-md rounded-3xl p-6 shadow-2xl transition-all"
+            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+            
+            {/* Target Song Info Header */}
+            <div className="flex items-center gap-3 pb-4 mb-4 border-b" style={{ borderColor: C.border }}>
+              <img src={songToAdd.thumbnail} alt={songToAdd.title} className="w-12 h-12 rounded-xl object-cover shrink-0 shadow-md" />
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-rose-500">Thêm bài hát vào...</span>
+                <h4 className="text-xs font-bold truncate" style={{ color: C.txt }}>{songToAdd.title}</h4>
+                <p className="text-[11px] truncate" style={{ color: C.txtSub }}>{songToAdd.artist}</p>
+              </div>
+              <button onClick={() => setSongToAdd(null)} className="w-8 h-8 rounded-full flex items-center justify-center transition hover:opacity-70 cursor-pointer" style={{ background: C.tag, color: C.txtFad }}>
+                <i className="ri-close-line text-lg"></i>
+              </button>
+            </div>
 
-            <div className="flex flex-col gap-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
-              {playlists.length === 0 ? (
-                <p className="text-sm text-center py-4" style={{ color: C.txtSub }}>Bạn chưa có playlist nào.</p>
-              ) : playlists.map(p => {
-                const targetSongId = songToAdd.id || songToAdd._id;
-                const inPlaylist = (p.songs || []).includes(targetSongId) || (songToAdd.id && (p.songs || []).includes(songToAdd.id)) || (songToAdd._id && (p.songs || []).includes(songToAdd._id));
-                return (
-                  <button key={p._id} onClick={() => inPlaylist ? handleRemoveFromPlaylist(p._id, targetSongId) : handleAddToPlaylist(p._id, targetSongId)}
-                    className="flex items-center justify-between px-4 py-3 rounded-xl transition-all hover:opacity-80 active:scale-[0.98] active:opacity-60"
-                    style={{ background: C.tag, border: `1px solid ${inPlaylist ? C.primarySolid : C.border}` }}>
-                    <span className="text-sm font-semibold truncate" style={{ color: inPlaylist ? C.primarySolid : C.txt }}>{p.name}</span>
-                    <i className={inPlaylist ? "ri-check-line text-lg" : "ri-add-line text-lg"} style={{ color: inPlaylist ? C.primarySolid : C.txtSub }}></i>
+            <div className="flex flex-col gap-3 max-h-80 overflow-y-auto custom-scrollbar pr-1">
+              
+              {/* Option 1: Thư viện cá nhân */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider px-1" style={{ color: C.txtFad }}>1. Thư Viện Cá Nhân</span>
+                {(() => {
+                  const targetSongId = songToAdd.id || songToAdd._id;
+                  const inLibrary = songs.some(s => (s.id === targetSongId || s._id === targetSongId || s.youtubeId === songToAdd.youtubeId) && s.inLibrary !== false);
+                  return (
+                    <button
+                      onClick={() => handleAddOnlineSongToLibrary(songToAdd)}
+                      className="flex items-center justify-between px-4 py-3 rounded-2xl transition-all cursor-pointer hover:scale-[1.01] active:scale-95 text-left"
+                      style={{ background: C.tag, border: `1.5px solid ${inLibrary ? '#22c55e' : C.border}` }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs" style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}>
+                          <i className="ri-music-2-fill text-base"></i>
+                        </div>
+                        <div className="flex flex-col text-left">
+                          <span className="text-xs font-bold" style={{ color: inLibrary ? '#22c55e' : C.txt }}>Thư viện của tôi</span>
+                          <span className="text-[10px]" style={{ color: C.txtSub }}>{inLibrary ? '✓ Đã có trong thư viện cá nhân' : 'Bấm để lưu vào thư viện cá nhân'}</span>
+                        </div>
+                      </div>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${inLibrary ? 'bg-green-500 text-white' : 'border border-gray-400 text-transparent'}`}>
+                        <i className="ri-check-line"></i>
+                      </div>
+                    </button>
+                  );
+                })()}
+              </div>
+
+              {/* Option 2: Danh sách phát (Playlists) */}
+              <div className="flex flex-col gap-1.5 mt-2">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider" style={{ color: C.txtFad }}>2. Các Danh Sách Phát (Playlists)</span>
+                  <button
+                    onClick={() => { setPlaylistModal(true); }}
+                    className="text-[11px] font-bold text-rose-500 hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <i className="ri-add-circle-line"></i> Tạo Mới
                   </button>
-                );
-              })}
+                </div>
+
+                {playlists.length === 0 ? (
+                  <p className="text-xs text-center py-3" style={{ color: C.txtSub }}>Bạn chưa có playlist nào. Hãy bấm "Tạo Mới" ở trên!</p>
+                ) : playlists.map(p => {
+                  const targetSongId = songToAdd.id || songToAdd._id;
+                  const inPlaylist = (p.songs || []).includes(targetSongId) || (songToAdd.id && (p.songs || []).includes(songToAdd.id)) || (songToAdd._id && (p.songs || []).includes(songToAdd._id));
+                  return (
+                    <button key={p._id} onClick={() => inPlaylist ? handleRemoveFromPlaylist(p._id, targetSongId) : handleAddToPlaylist(p._id, targetSongId)}
+                      className="flex items-center justify-between px-4 py-3 rounded-2xl transition-all cursor-pointer hover:scale-[1.01] active:scale-95 text-left"
+                      style={{ background: C.tag, border: `1.5px solid ${inPlaylist ? C.primarySolid : C.border}` }}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs" style={{ background: C.primary }}>
+                          <i className="ri-folder-music-fill text-base"></i>
+                        </div>
+                        <span className="text-xs font-bold truncate" style={{ color: inPlaylist ? C.primarySolid : C.txt }}>{p.name}</span>
+                      </div>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${inPlaylist ? 'text-white' : 'border border-gray-400 text-transparent'}`}
+                        style={inPlaylist ? { background: C.primarySolid } : {}}>
+                        <i className="ri-check-line"></i>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
             </div>
 
             <button onClick={() => setSongToAdd(null)}
-              className="mt-4 w-full py-2.5 rounded-xl text-sm font-bold" style={btn}>
-              Đóng
+              className="mt-4 w-full py-2.5 rounded-xl text-xs font-bold cursor-pointer transition active:scale-95" style={btn}>
+              Xong / Đóng
             </button>
           </div>
         </div>
