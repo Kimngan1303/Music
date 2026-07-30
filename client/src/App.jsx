@@ -1087,11 +1087,16 @@ export default function App() {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success', title: '' });
 
   const showToast = (message, type = 'success', title = '') => {
+    let defaultTitle = 'Thành công 🎉';
+    if (type === 'error') defaultTitle = 'Thông báo lỗi ⚠️';
+    else if (type === 'info') defaultTitle = 'Đang phát nhạc 🎵';
+    else if (type === 'warning') defaultTitle = 'Lưu ý ⚠️';
+
     setToast({
       show: true,
       message,
       type,
-      title: title || (type === 'success' ? 'Thành công 🎉' : 'Thông báo lỗi ⚠️')
+      title: title || defaultTitle
     });
   };
 
@@ -2572,7 +2577,7 @@ export default function App() {
       duration: item.duration,
       inLibrary: false
     })));
-    showToast(`Đang phát: "${resItem.title}"`, 'info');
+    showToast(`Đang phát: "${resItem.title}"`, 'info', 'Đang phát nhạc 🎵');
   };
 
   const handleAddOnlineSongToLibrary = async (resItem) => {
@@ -2623,6 +2628,36 @@ export default function App() {
     };
     setPlayingQueue(prev => [...prev, s]);
     showToast(`Đã thêm "${resItem.title}" vào hàng chờ!`, 'success');
+  };
+
+  const handleAddOnlineSongToPlaylist = async (resItem) => {
+    try {
+      let existing = songs.find(s => s.youtubeId === resItem.youtubeId);
+      let s = existing;
+      if (!s) {
+        s = {
+          id: 's' + resItem.youtubeId + Date.now(),
+          youtubeId: resItem.youtubeId,
+          youtubeUrl: resItem.youtubeUrl,
+          title: resItem.title,
+          artist: resItem.artist,
+          thumbnail: resItem.thumbnail,
+          duration: resItem.duration,
+          inLibrary: false
+        };
+        setSongs(p => {
+          const updated = [s, ...p];
+          if (user) {
+            localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
+            axios.post('/api/music', { ...s, addedBy: user._id, inLibrary: false }).catch(() => {});
+          }
+          return updated;
+        });
+      }
+      setSongToAdd(s);
+    } catch (err) {
+      showToast('Lỗi khi mở danh sách phát', 'error');
+    }
   };
 
   const handleCreatePlaylist = async e => {
@@ -3925,30 +3960,40 @@ export default function App() {
                               </p>
                             </div>
 
-                            <div className="flex items-center gap-2 mt-2 pt-2 border-t" style={{ borderColor: C.border }}>
+                            <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t" style={{ borderColor: C.border }}>
                               <button
                                 onClick={() => handlePlayOnlineSong(song)}
-                                className="flex-1 py-2 px-2 rounded-xl text-[11px] font-bold text-white flex items-center justify-center gap-1.5 transition hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
+                                className="w-full py-2 px-2 rounded-xl text-[11px] font-bold text-white flex items-center justify-center gap-1.5 transition hover:scale-[1.02] active:scale-95 cursor-pointer shadow-sm"
                                 style={{ background: C.primary }}
                               >
-                                <i className="ri-play-fill"></i> Nghe Ngay
+                                <i className="ri-play-fill"></i> Phát Ngay
                               </button>
-                              <button
-                                onClick={() => handleAddOnlineSongToLibrary(song)}
-                                className="py-2 px-3 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition hover:scale-105 active:scale-95 cursor-pointer"
-                                style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}
-                                title="Lưu bài hát vào Thư viện nhạc"
-                              >
-                                <i className="ri-add-line"></i> Thêm
-                              </button>
-                              <button
-                                onClick={() => handleAddOnlineSongToQueue(song)}
-                                className="py-2 px-2.5 rounded-xl text-[11px] font-bold transition hover:scale-105 active:scale-95 cursor-pointer"
-                                style={{ background: C.btn, border: `1px solid ${C.border}`, color: C.txtSub }}
-                                title="Thêm bài hát vào hàng chờ"
-                              >
-                                <i className="ri-playlist-add-line"></i>
-                              </button>
+                              <div className="flex items-center gap-1.5 w-full">
+                                <button
+                                  onClick={() => handleAddOnlineSongToLibrary(song)}
+                                  className="flex-1 py-1.5 px-2 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1 transition hover:scale-105 active:scale-95 cursor-pointer"
+                                  style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}
+                                  title="Lưu bài hát vào Thư viện cá nhân"
+                                >
+                                  <i className="ri-music-2-line"></i> Thư viện
+                                </button>
+                                <button
+                                  onClick={() => handleAddOnlineSongToPlaylist(song)}
+                                  className="flex-1 py-1.5 px-2 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1 transition hover:scale-105 active:scale-95 cursor-pointer"
+                                  style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' }}
+                                  title="Thêm bài hát vào Playlist (Danh sách phát)"
+                                >
+                                  <i className="ri-folder-music-line"></i> Playlist
+                                </button>
+                                <button
+                                  onClick={() => handleAddOnlineSongToQueue(song)}
+                                  className="py-1.5 px-2 rounded-xl text-[10px] font-bold transition hover:scale-105 active:scale-95 cursor-pointer"
+                                  style={{ background: C.btn, border: `1px solid ${C.border}`, color: C.txtSub }}
+                                  title="Thêm vào hàng chờ"
+                                >
+                                  <i className="ri-playlist-add-line"></i>
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -5384,24 +5429,33 @@ export default function App() {
                             <span className="text-[10px] truncate" style={{ color: C.txtSub }}>{item.artist} • {item.duration}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <div className="flex items-center gap-1 shrink-0 ml-2">
                           <button
                             type="button"
                             onClick={() => handlePlayOnlineSong(item)}
-                            className="p-1.5 rounded-lg text-white text-xs shadow-xs cursor-pointer hover:scale-110 active:scale-95"
+                            className="p-1.5 rounded-lg text-white text-xs shadow-xs cursor-pointer hover:scale-110 active:scale-95 flex items-center justify-center"
                             style={{ background: C.primary }}
-                            title="Phát trực tiếp bài này"
+                            title="Phát ngay bài này"
                           >
                             <i className="ri-play-fill"></i>
                           </button>
                           <button
                             type="button"
                             onClick={() => handleAddOnlineSongToLibrary(item)}
-                            className="p-1.5 rounded-lg text-xs cursor-pointer hover:scale-110 active:scale-95"
+                            className="px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1"
                             style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}
-                            title="Thêm bài hát này vào thư viện"
+                            title="Lưu bài hát vào Thư viện cá nhân"
                           >
-                            <i className="ri-add-line"></i>
+                            <i className="ri-music-2-line"></i> Thư viện
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAddOnlineSongToPlaylist(item)}
+                            className="px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1"
+                            style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' }}
+                            title="Thêm bài hát vào Playlist (Danh sách phát)"
+                          >
+                            <i className="ri-folder-music-line"></i> Playlist
                           </button>
                         </div>
                       </div>
@@ -6442,7 +6496,9 @@ export default function App() {
                 ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30'
                 : toast.type === 'error'
                 ? 'bg-rose-500/20 text-rose-500 border border-rose-500/30'
-                : 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
+                : toast.type === 'warning'
+                ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
+                : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
             }`}
           >
             <i className={
@@ -6450,7 +6506,9 @@ export default function App() {
                 ? 'ri-checkbox-circle-fill'
                 : toast.type === 'error'
                 ? 'ri-error-warning-fill'
-                : 'ri-information-fill'
+                : toast.type === 'warning'
+                ? 'ri-alert-fill'
+                : 'ri-disc-fill spin-slow'
             }></i>
           </div>
 
