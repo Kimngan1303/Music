@@ -1,3 +1,3 @@
 git add .
-git commit -m "Fix Vercel deployment dependencies and local song search & library add fixes"
+git commit -m "Restore vercel.json and package.json to working configuration"
 git push

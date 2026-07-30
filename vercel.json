@@ -2,10 +2,10 @@
   "version": 2,
   "buildCommand": "cd client && npm install && npm run build",
   "outputDirectory": "client/dist",
-  "installCommand": "npm install && cd server && npm install && cd ../client && npm install",
+  "installCommand": "cd server && npm install",
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/index.js" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "env": {
     "NODE_ENV": "production"
