@@ -951,6 +951,8 @@ export default function App() {
 
   const [playlistModal, setPlaylistModal] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
+  const isCreatingPlaylistRef = useRef(false);
   const [songToAdd, setSongToAdd] = useState(null); // Which song is currently selected to be added to a playlist
 
   // Context Menu (Right Click) & Edit Playlist Details State
@@ -2728,6 +2730,11 @@ export default function App() {
     const playlistName = newPlaylistName.trim();
     if (!playlistName) return;
 
+    // Prevent double submission / rapid Enter keypress
+    if (isCreatingPlaylistRef.current) return;
+    isCreatingPlaylistRef.current = true;
+    setIsCreatingPlaylist(true);
+
     const uid = user?._id || 'guest';
     const tempId = 'pl_' + Date.now();
     let newPl = {
@@ -2753,10 +2760,17 @@ export default function App() {
       }
     } catch (err) {
       console.error("Server playlist creation fallback to local:", err);
+    } finally {
+      isCreatingPlaylistRef.current = false;
+      setIsCreatingPlaylist(false);
     }
 
     // Always update local playlists state & localStorage instantly
     setPlaylists(p => {
+      // Extra safety check: prevent duplicate insertion of exact same object
+      if (p.some(item => (item._id && item._id === newPl._id) || (item.name === newPl.name && Math.abs(Date.now() - new Date(item.createdAt || 0).getTime()) < 3000))) {
+        return p;
+      }
       const up = [newPl, ...p];
       localStorage.setItem(playlistsKey(uid), JSON.stringify(up));
       return up;
@@ -5753,7 +5767,7 @@ export default function App() {
       {playlistModal && (
         <div className="fixed inset-0 flex items-center justify-center z-[80] p-4"
           style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(16px)' }}
-          onMouseDown={e => { if (e.target === e.currentTarget) setPlaylistModal(false); }}>
+          onMouseDown={e => { if (e.target === e.currentTarget && !isCreatingPlaylist) setPlaylistModal(false); }}>
           <div className="w-full max-w-sm rounded-3xl p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
             style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 25px 60px rgba(0,0,0,0.3)' }}>
             <h3 className="flex items-center gap-2 mb-5" style={{ fontFamily: F.heading, fontSize: '20px', fontWeight: 700, color: C.txt }}>
@@ -5764,20 +5778,27 @@ export default function App() {
               <div>
                 <label className="block text-xs font-bold mb-1.5" style={{ color: C.txtSub }}>Tên danh sách phát</label>
                 <input type="text" placeholder="Nhạc chill cuối tuần..." value={newPlaylistName} onChange={e => setNewPlaylistName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
+                  className="w-full px-4 py-2.5 rounded-xl text-sm outline-none transition disabled:opacity-50"
                   style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
-                  autoFocus required
+                  autoFocus required disabled={isCreatingPlaylist}
                 />
               </div>
               <div className="flex gap-3 mt-1">
-                <button type="button" onClick={() => setPlaylistModal(false)}
-                  className="w-28 shrink-0 py-2.5 rounded-xl text-sm font-bold" style={btn}>
+                <button type="button" disabled={isCreatingPlaylist} onClick={() => setPlaylistModal(false)}
+                  className="w-28 shrink-0 py-2.5 rounded-xl text-sm font-bold disabled:opacity-50" style={btn}>
                   Hủy
                 </button>
-                <button type="submit"
-                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg"
+                <button type="submit" disabled={isCreatingPlaylist}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
                   style={{ background: C.primary, boxShadow: `0 6px 18px ${C.primaryGlow}` }}>
-                  Tạo mới
+                  {isCreatingPlaylist ? (
+                    <>
+                      <i className="ri-loader-4-line animate-spin text-base"></i>
+                      <span>Đang tạo...</span>
+                    </>
+                  ) : (
+                    'Tạo mới'
+                  )}
                 </button>
               </div>
             </form>
