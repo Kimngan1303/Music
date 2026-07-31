@@ -1197,14 +1197,37 @@ export default function App() {
       console.warn("Backend lyrics API fallback to direct LRCLIB...");
     }
 
-    // 2. Direct Frontend LRCLIB fallback search (tries short core word queries)
+    // 2. Direct Frontend LRCLIB fallback search (with Artist vs Title position detection)
     try {
-      const baseT = targetTrack.title.split(/–|—|-|\(ft|\(feat|ft\.|feat\./i)[0].replace(/[\(\[\{].*?[\)\]\}]/g, '').trim();
-      const words = baseT.split(' ').filter(Boolean);
-      const shortT = words.length <= 3 ? words.join(' ') : (words.length <= 6 ? words.slice(0, 4).join(' ') : words.slice(0, 5).join(' '));
-      const queries = [shortT, baseT].filter((v, i, a) => v && a.indexOf(v) === i);
+      const cleanT = (targetTrack.title || '').replace(/[\(\[\{](official|mv|video|audio|lyric|remix|lofi|tiktok).*?[\)\]\}]/gi, '').trim();
+      const parts = cleanT.split(/–|—|-|:|\|/).map(p => p.trim()).filter(Boolean);
+      const cleanA = (targetTrack.artist || '').toLowerCase();
 
-      for (const qStr of queries) {
+      let candidates = [];
+      if (parts.length >= 2) {
+        if (cleanA && parts[0].toLowerCase().includes(cleanA)) {
+          candidates.push(parts.slice(1).join(' ')); // Right side is song title
+          candidates.push(parts[0]);
+        } else {
+          candidates.push(parts[0]); // Left side is song title
+          candidates.push(parts.slice(1).join(' '));
+        }
+      } else {
+        candidates.push(cleanT);
+      }
+
+      const queries = [];
+      for (const cand of candidates) {
+        const base = cand.replace(/[\(\[\{].*?[\)\]\}]/g, '').replace(/ft\..*|feat\..*/gi, '').trim();
+        const words = base.split(' ').filter(Boolean);
+        const shortT = words.length <= 3 ? words.join(' ') : (words.length <= 6 ? words.slice(0, 4).join(' ') : words.slice(0, 5).join(' '));
+        if (shortT) queries.push(shortT);
+        if (base) queries.push(base);
+      }
+
+      const uniqueQueries = queries.filter((v, i, a) => v && a.indexOf(v) === i);
+
+      for (const qStr of uniqueQueries) {
         const lrclibDirectRes = await axios.get(`https://lrclib.net/api/search?q=${encodeURIComponent(qStr)}`);
         if (lrclibDirectRes.data && Array.isArray(lrclibDirectRes.data) && lrclibDirectRes.data.length > 0) {
           const match = lrclibDirectRes.data.find(item => item.syncedLyrics && item.syncedLyrics.trim()) ||

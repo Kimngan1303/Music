@@ -318,31 +318,58 @@ const cleanSearchTerm = (str) => {
     .trim();
 };
 
-const extractBaseTitle = (title) => {
-  if (!title) return '';
-  let base = title.split(/–|—|-|\(ft|\(feat|ft\.|feat\./i)[0];
-  base = base.replace(/[\(\[\{].*?[\)\]\}]/g, '').trim();
-  return base || title;
-};
+const parseSongTitleAndArtist = (rawTitle, rawArtist) => {
+  const cleanArtist = (rawArtist || '').replace(/official|channel|creator/gi, '').trim();
+  const cleanTitleStr = (rawTitle || '').replace(/[\(\[\{](official|mv|video|audio|lyric|remix|lofi|tiktok).*?[\)\]\}]/gi, '').trim();
 
-const getShortTitle = (title) => {
-  if (!title) return '';
-  const base = extractBaseTitle(title);
-  const words = base.split(' ').filter(Boolean);
-  if (words.length <= 3) {
-    return words.join(' ');
-  } else if (words.length <= 6) {
-    return words.slice(0, 4).join(' '); // 4 words
+  let candidateTitles = [];
+  let candidateArtists = cleanArtist ? [cleanArtist] : [];
+
+  const parts = cleanTitleStr.split(/–|—|-|:|\|/).map(p => p.trim()).filter(Boolean);
+
+  if (parts.length >= 2) {
+    const left = parts[0];
+    const right = parts.slice(1).join(' ');
+
+    const lowerArtist = cleanArtist.toLowerCase();
+    const lowerLeft = left.toLowerCase();
+    const lowerRight = right.toLowerCase();
+
+    if (lowerArtist && (lowerLeft.includes(lowerArtist) || lowerArtist.includes(lowerLeft))) {
+      // Artist is on the left -> Title is on the right! (e.g. "MCK - Nếu Như Ta Chẳng Còn")
+      candidateTitles.push(right);
+      candidateTitles.push(left); // fallback
+      candidateArtists.push(left);
+    } else if (lowerArtist && (lowerRight.includes(lowerArtist) || lowerArtist.includes(lowerRight))) {
+      // Title is on the left -> Artist is on the right! (e.g. "Nếu Như Ta Chẳng Còn - MCK")
+      candidateTitles.push(left);
+      candidateTitles.push(right); // fallback
+      candidateArtists.push(right);
+    } else {
+      // Unknown orientation: If left has fewer words than right, right is more likely title
+      const leftWords = left.split(' ').filter(Boolean).length;
+      const rightWords = right.split(' ').filter(Boolean).length;
+
+      if (leftWords <= 2 && rightWords > 2) {
+        candidateTitles.push(right);
+        candidateTitles.push(left);
+      } else {
+        candidateTitles.push(left);
+        candidateTitles.push(right);
+      }
+      candidateArtists.push(left);
+      candidateArtists.push(right);
+    }
   } else {
-    return words.slice(0, 5).join(' '); // 5 words
+    candidateTitles.push(cleanTitleStr);
   }
-};
 
-const extractBaseArtist = (artist) => {
-  if (!artist) return '';
-  let base = artist.split(/\/|&|,|feat|ft\./i)[0];
-  base = base.replace(/official|creator|channel/gi, '').trim();
-  return base || artist;
+  candidateTitles.push(cleanTitleStr);
+
+  return {
+    candidateTitles: candidateTitles.filter((v, i, a) => v && a.indexOf(v) === i),
+    candidateArtists: candidateArtists.filter((v, i, a) => v && a.indexOf(v) === i)
+  };
 };
 
 const getLyrics = async (req, res) => {
@@ -352,23 +379,32 @@ const getLyrics = async (req, res) => {
       return res.status(400).json({ message: 'Thiếu tên bài hát.' });
     }
 
-    const baseTitle = extractBaseTitle(title);
-    const shortTitle = getShortTitle(title);
-    const baseArtist = extractBaseArtist(artist || '');
-    const cleanTitle = cleanSearchTerm(title);
-    const cleanArtist = cleanSearchTerm(artist || '');
+    const { candidateTitles, candidateArtists } = parseSongTitleAndArtist(title, artist);
+    const searchQueries = [];
 
-    // List of search queries to try sequentially on LRCLIB (short core words first!)
-    const searchQueries = [
-      shortTitle, // e.g. "Nếu Như Ta Chẳng"
-      `${shortTitle} ${baseArtist}`, // e.g. "Nếu Như Ta Chẳng MCK"
-      baseTitle, // e.g. "Nếu Như Ta Chẳng Còn"
-      `${baseTitle} ${baseArtist}`,
-      cleanTitle,
-      `${cleanTitle} ${cleanArtist}`
-    ].filter((q, idx, arr) => q && q.trim().length > 0 && arr.indexOf(q) === idx);
+    // For each candidate title, generate short core words (3-5 words) and full clean title
+    for (const candTitle of candidateTitles) {
+      const cleanT = candTitle.replace(/[\(\[\{].*?[\)\]\}]/g, '').replace(/ft\..*|feat\..*/gi, '').trim();
+      const words = cleanT.split(' ').filter(Boolean);
+      
+      const shortT = words.length <= 3 
+        ? words.join(' ') 
+        : (words.length <= 6 ? words.slice(0, 4).join(' ') : words.slice(0, 5).join(' '));
 
-    for (const query of searchQueries) {
+      if (shortT) searchQueries.push(shortT);
+      
+      for (const candArtist of candidateArtists) {
+        const baseArt = candArtist.split(/\/|&|,|feat|ft\./i)[0].trim();
+        if (shortT && baseArt) searchQueries.push(`${shortT} ${baseArt}`);
+        if (cleanT && baseArt) searchQueries.push(`${cleanT} ${baseArt}`);
+      }
+
+      if (cleanT) searchQueries.push(cleanT);
+    }
+
+    const searchQueriesList = searchQueries.filter((q, idx, arr) => q && q.trim().length > 0 && arr.indexOf(q) === idx);
+
+    for (const query of searchQueriesList) {
       try {
         const searchRes = await axios.get('https://lrclib.net/api/search', {
           params: { q: query.trim() },
