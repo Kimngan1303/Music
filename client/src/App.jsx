@@ -5927,7 +5927,7 @@ export default function App() {
         }}>
 
         {/* Track Info */}
-        <div className="flex items-center gap-2 md:gap-4 w-full md:w-64 md:flex-none min-w-0 justify-start">
+        <div className="flex items-center gap-2 md:gap-4 w-full md:w-80 lg:w-96 xl:w-[420px] md:flex-none min-w-0 justify-start">
           {track ? (
             <>
               <div className="relative shrink-0">
@@ -5946,18 +5946,20 @@ export default function App() {
                   </div>
                 )}
               </div>
-              <div className="flex flex-col overflow-hidden">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[11px] md:text-sm font-bold truncate" style={{ color: C.txt }}>{track.title}</span>
-                  {buffering && (
-                    <span className="shrink-0 px-1.5 py-0.5 text-[8px] font-extrabold rounded-md text-amber-300 bg-amber-500/20 border border-amber-500/30 flex items-center gap-1 animate-pulse whitespace-nowrap">
-                      <i className="ri-loader-4-line animate-spin text-[10px]"></i>
-                      Mạng yếu...
-                    </span>
-                  )}
+              <Tooltip text={`${track.title} • ${track.artist}`}>
+                <div className="flex flex-col overflow-hidden cursor-pointer min-w-0 text-left" title={`${track.title} - ${track.artist}`}>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[11px] md:text-sm font-bold truncate hover:underline" style={{ color: C.txt }}>{track.title}</span>
+                    {buffering && (
+                      <span className="shrink-0 px-1.5 py-0.5 text-[8px] font-extrabold rounded-md text-amber-300 bg-amber-500/20 border border-amber-500/30 flex items-center gap-1 animate-pulse whitespace-nowrap">
+                        <i className="ri-loader-4-line animate-spin text-[10px]"></i>
+                        Mạng yếu...
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[9px] md:text-xs truncate" style={{ color: C.txtSub }}>{track.artist}</span>
                 </div>
-                <span className="text-[9px] md:text-xs truncate" style={{ color: C.txtSub }}>{track.artist}</span>
-              </div>
+              </Tooltip>
             </>
           ) : (
             <div className="flex items-center gap-1.5 md:gap-3">
@@ -6579,10 +6581,12 @@ export default function App() {
                 <div className="relative z-10 flex-1 flex flex-col justify-between p-2.5 gap-1 min-h-0 bg-black/40 backdrop-blur-[2px]">
 
                   {/* Title & Artist */}
-                  <div className="text-center min-w-0 shrink-0">
-                    <h4 className="text-xs font-extrabold truncate text-white leading-tight">{track.title}</h4>
-                    <p className="text-[10px] text-white/70 truncate">{track.artist}</p>
-                  </div>
+                  <Tooltip text={`${track.title} • ${track.artist}`}>
+                    <div className="text-center min-w-0 shrink-0 cursor-pointer" title={`${track.title} - ${track.artist}`}>
+                      <h4 className="text-xs font-extrabold truncate text-white leading-tight">{track.title}</h4>
+                      <p className="text-[10px] text-white/70 truncate">{track.artist}</p>
+                    </div>
+                  </Tooltip>
 
                   {/* Main Action Buttons Row */}
                   <div className="flex items-center justify-center gap-2 md:gap-3 text-white my-auto">
