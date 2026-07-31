@@ -1,3 +1,3 @@
 git add .
-git commit -m "Fix undefined PauseIcon and PlayIcon build error in App.jsx"
+git commit -m "Update lyrics feature and secure environment variables"
 git push

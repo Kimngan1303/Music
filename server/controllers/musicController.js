@@ -372,6 +372,49 @@ const parseSongTitleAndArtist = (rawTitle, rawArtist) => {
   };
 };
 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+
+const parseTitleWithAI = async (videoTitle, videoArtist) => {
+  if (!GEMINI_API_KEY) return null;
+
+  try {
+    const prompt = `You are a music metadata parser. Extract the exact core song title (track_name) and main performing artist (artist_name) from this raw video title and channel name.
+Output ONLY a JSON object: {"track_name": "Song Title", "artist_name": "Artist Name"}
+No markdown code blocks, no explanation.
+
+Video Title: "${videoTitle}"
+Channel Name: "${videoArtist || ''}"`;
+
+    const res = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 150,
+          responseMimeType: "application/json"
+        }
+      },
+      { timeout: 4000 }
+    );
+
+    const replyText = res.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (replyText) {
+      const cleanJsonStr = replyText.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(cleanJsonStr);
+      if (parsed && parsed.track_name) {
+        return {
+          track_name: parsed.track_name.trim(),
+          artist_name: (parsed.artist_name || '').trim()
+        };
+      }
+    }
+  } catch (err) {
+    console.warn("Gemini AI title parsing warning:", err.message);
+  }
+  return null;
+};
+
 const getLyrics = async (req, res) => {
   try {
     const { title, artist } = req.query;
@@ -379,6 +422,66 @@ const getLyrics = async (req, res) => {
       return res.status(400).json({ message: 'Thiếu tên bài hát.' });
     }
 
+    // ── LAYER 1: GEMINI AI POWERED EXACT METADATA EXTRACTION ───────────────
+    try {
+      const aiResult = await parseTitleWithAI(title, artist);
+      if (aiResult && aiResult.track_name) {
+        console.log(`🤖 Gemini AI Extracted: "${aiResult.track_name}" by "${aiResult.artist_name}"`);
+
+        // Try LRCLIB exact get first
+        try {
+          const getRes = await axios.get('https://lrclib.net/api/get', {
+            params: {
+              track_name: aiResult.track_name,
+              artist_name: aiResult.artist_name || undefined
+            },
+            timeout: 4000
+          });
+          if (getRes.data && (getRes.data.syncedLyrics || getRes.data.plainLyrics)) {
+            return res.json({
+              syncedLyrics: getRes.data.syncedLyrics || '',
+              plainLyrics: getRes.data.plainLyrics || '',
+              isSynced: Boolean(getRes.data.syncedLyrics && getRes.data.syncedLyrics.trim()),
+              source: `Gemini AI Exact ("${aiResult.track_name}")`
+            });
+          }
+        } catch (e) { }
+
+        // Try LRCLIB search query with AI clean title
+        const aiQueries = [
+          `${aiResult.track_name} ${aiResult.artist_name}`.trim(),
+          aiResult.track_name
+        ];
+
+        for (const aiQ of aiQueries) {
+          if (!aiQ) continue;
+          try {
+            const searchRes = await axios.get('https://lrclib.net/api/search', {
+              params: { q: aiQ },
+              timeout: 4000
+            });
+            if (searchRes.data && Array.isArray(searchRes.data) && searchRes.data.length > 0) {
+              const bestMatch = searchRes.data.find(item => item.syncedLyrics && item.syncedLyrics.trim()) || 
+                                searchRes.data.find(item => item.plainLyrics && item.plainLyrics.trim()) || 
+                                searchRes.data[0];
+
+              if (bestMatch && (bestMatch.syncedLyrics || bestMatch.plainLyrics)) {
+                return res.json({
+                  syncedLyrics: bestMatch.syncedLyrics || '',
+                  plainLyrics: bestMatch.plainLyrics || '',
+                  isSynced: Boolean(bestMatch.syncedLyrics && bestMatch.syncedLyrics.trim()),
+                  source: `Gemini AI Search ("${aiQ}")`
+                });
+              }
+            }
+          } catch (e) { }
+        }
+      }
+    } catch (e) {
+      console.warn("AI Layer fallback to Multi-pass algorithm:", e.message);
+    }
+
+    // ── LAYER 2: MULTI-PASS ALGORITHM FALLBACK ──────────────────────────────
     const { candidateTitles, candidateArtists } = parseSongTitleAndArtist(title, artist);
     const searchQueries = [];
 

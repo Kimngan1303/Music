@@ -1197,7 +1197,46 @@ export default function App() {
       console.warn("Backend lyrics API fallback to direct LRCLIB...");
     }
 
-    // 2. Direct Frontend LRCLIB fallback search (with Artist vs Title position detection)
+    // 2. Direct Frontend Gemini AI & LRCLIB fallback search
+    try {
+      const geminiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+      if (geminiKey) {
+        const promptText = `Extract exact track_name and artist_name as JSON {"track_name": "...", "artist_name": "..."} from title "${targetTrack.title}" and artist "${targetTrack.artist || ''}". Output JSON only.`;
+        
+        const aiRes = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+          contents: [{ parts: [{ text: promptText }] }],
+          generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+        }, { timeout: 3500 });
+
+        const reply = aiRes.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (reply) {
+          const parsed = JSON.parse(reply.replace(/```json|```/g, '').trim());
+          if (parsed?.track_name) {
+            const aiQuery = `${parsed.track_name} ${parsed.artist_name || ''}`.trim();
+            const lrclibDirectRes = await axios.get(`https://lrclib.net/api/search?q=${encodeURIComponent(aiQuery)}`);
+            if (lrclibDirectRes.data && Array.isArray(lrclibDirectRes.data) && lrclibDirectRes.data.length > 0) {
+              const match = lrclibDirectRes.data.find(item => item.syncedLyrics && item.syncedLyrics.trim()) ||
+                            lrclibDirectRes.data.find(item => item.plainLyrics && item.plainLyrics.trim()) ||
+                            lrclibDirectRes.data[0];
+              if (match && (match.syncedLyrics || match.plainLyrics)) {
+                const synced = parseLrc(match.syncedLyrics);
+                setLyricsData({
+                  synced,
+                  plain: match.plainLyrics || match.syncedLyrics || '',
+                  isSynced: synced.length > 0,
+                  isCustom: false
+                });
+                setCustomLyricsInput(match.syncedLyrics || match.plainLyrics || '');
+                setLyricsLoading(false);
+                return;
+              }
+            }
+          }
+        }
+      }
+    } catch (e) { }
+
+    // 3. Direct Frontend LRCLIB fallback search (with Artist vs Title position detection)
     try {
       const cleanT = (targetTrack.title || '').replace(/[\(\[\{](official|mv|video|audio|lyric|remix|lofi|tiktok).*?[\)\]\}]/gi, '').trim();
       const parts = cleanT.split(/–|—|-|:|\|/).map(p => p.trim()).filter(Boolean);
