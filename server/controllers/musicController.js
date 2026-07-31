@@ -497,7 +497,9 @@ const fetchLyricsFromHopAmChuan = async (title, artist) => {
           while ((lMatch = lineRegex.exec(lyricHtml)) !== null) {
             const lineContent = lMatch[1];
             let cleanLine = lineContent.replace(/<span class="hopamchuan_chord_inline">[\s\S]*?<\/span>/gi, '');
-            cleanLine = cleanLine.replace(/<[^>]+>/g, '').replace(/&nbsp;/gi, ' ').trim();
+            cleanLine = cleanLine.replace(/<[^>]+>/g, '').replace(/&nbsp;/gi, ' ');
+            // Remove any leftover chord bracket characters ] and [
+            cleanLine = cleanLine.replace(/[\[\]]/g, '').trim();
             
             if (cleanLine && !cleanLine.toLowerCase().startsWith('tone ') && !cleanLine.toLowerCase().startsWith('vòng hợp âm:')) {
               lines.push(cleanLine);
