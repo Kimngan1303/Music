@@ -6761,54 +6761,32 @@ export default function App() {
         </div>
       )}
 
-      {/* ── KARAOKE / LYRICS MODAL ────────────────────────────────────────── */}
+      {/* ── KARAOKE / LYRICS MODAL (REDESIGNED MATCHING USER REFERENCE IMAGE) ────────────────── */}
       {lyricsModal && track && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 md:p-6"
-          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(20px)' }}
+          style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(30px)' }}
           onMouseDown={e => { if (e.target === e.currentTarget) setLyricsModal(false); }}>
 
-          <div className="relative w-full max-w-2xl h-[85vh] max-h-[720px] rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200 border border-white/10"
-            style={{ background: C.isDark ? '#0f172a' : '#1e1b4b', color: '#fff' }}>
+          <div className="relative w-full max-w-6xl h-[92vh] max-h-[820px] rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200 border border-white/15"
+            style={{ background: 'linear-gradient(135deg, rgba(15,23,42,0.85), rgba(30,27,75,0.85))', color: '#fff' }}>
 
-            {/* Background album cover artwork blurred */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-25">
-              <img src={track.thumbnail} alt="" className="w-full h-full object-cover blur-3xl scale-125" />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80" />
+            {/* Ultra-blurred full background artwork */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
+              <img src={track.thumbnail} alt="" className="w-full h-full object-cover blur-3xl scale-125 saturate-150" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/70" />
             </div>
 
-            {/* Header */}
-            <div className="relative z-10 flex items-center justify-between p-4 md:p-6 border-b border-white/10 shrink-0 bg-black/30 backdrop-blur-md">
-              <div className="flex items-center gap-3 min-w-0">
-                <img src={track.thumbnail} alt={track.title} className="w-12 h-12 md:w-14 md:h-14 rounded-2xl object-cover shadow-lg shrink-0 border border-white/15" />
-                <div className="flex flex-col min-w-0">
-                  <h3 className="text-sm md:text-base font-extrabold truncate text-white leading-tight">{track.title}</h3>
-                  <p className="text-xs text-white/70 truncate">{track.artist}</p>
-                  
-                  {/* Status Badge */}
-                  <div className="flex items-center gap-2 mt-1">
-                    {lyricsData?.isSynced ? (
-                      <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                        <i className="ri-mic-fill text-xs animate-pulse"></i> Karaoke Tự Chạy theo Lời
-                      </span>
-                    ) : lyricsData?.plain ? (
-                      <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                        <i className="ri-file-text-line text-xs"></i> Lời Đọc Tĩnh (Bản Remix / Không bộ đếm)
-                      </span>
-                    ) : null}
-                    
-                    {lyricsData?.isCustom && (
-                      <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                        ✨ Lời Tự Nhập
-                      </span>
-                    )}
-                  </div>
-                </div>
+            {/* Top Bar Action Buttons */}
+            <div className="relative z-20 flex items-center justify-between p-4 md:px-8 border-b border-white/10 shrink-0 bg-black/20 backdrop-blur-md">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+                <span className="text-xs font-bold uppercase tracking-wider text-white/80">Lyrics & Karaoke View</span>
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => setLyricsEditMode(!lyricsEditMode)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-white/10 hover:bg-white/20 text-white border border-white/15"
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-white/10 hover:bg-white/20 text-white border border-white/15 shadow-sm active:scale-95"
                   title="Tự dán hoặc chỉnh sửa lời bài hát"
                 >
                   <i className={lyricsEditMode ? "ri-close-line" : "ri-edit-box-line"}></i>
@@ -6816,24 +6794,23 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setLyricsModal(false)}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center transition bg-white/10 hover:bg-white/20 text-white cursor-pointer"
+                  className="w-9 h-9 rounded-xl flex items-center justify-center transition bg-white/10 hover:bg-white/20 text-white cursor-pointer border border-white/15 active:scale-95"
                 >
                   <i className="ri-close-line text-xl"></i>
                 </button>
               </div>
             </div>
 
-            {/* Main Lyrics Body Container */}
-            <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8 flex flex-col items-center min-h-0 text-center">
-
+            {/* 3-Column Layout Container */}
+            <div className="relative z-10 flex-1 overflow-hidden p-4 md:p-8 min-h-0">
               {lyricsLoading ? (
-                <div className="my-auto flex flex-col items-center gap-3">
+                <div className="h-full flex flex-col items-center justify-center gap-3">
                   <i className="ri-loader-4-line text-4xl animate-spin text-cyan-400"></i>
                   <p className="text-sm font-bold text-white/80">Đang tìm lời bài hát tự động...</p>
                 </div>
               ) : lyricsEditMode ? (
                 /* Edit Custom Lyrics Mode */
-                <div className="w-full flex flex-col gap-4 max-w-lg my-auto text-left">
+                <div className="w-full flex flex-col gap-4 max-w-lg mx-auto h-full justify-center text-left py-4">
                   <div>
                     <h4 className="text-sm font-bold mb-1 text-white flex items-center gap-2">
                       <i className="ri-edit-line text-cyan-400"></i> Tự Nhập Lời Bài Hát
@@ -6842,80 +6819,133 @@ export default function App() {
                       Bạn có thể dán định dạng định giờ LRC `[00:12.34] Lời hát...` để chạy Karaoke, hoặc dán văn bản thường để tự đọc.
                     </p>
                     <textarea
-                      rows={10}
+                      rows={12}
                       value={customLyricsInput}
                       onChange={e => setCustomLyricsInput(e.target.value)}
                       placeholder="Dán lời bài hát tại đây..."
-                      className="w-full p-4 rounded-2xl text-xs outline-none bg-black/40 border border-white/20 text-white custom-scrollbar focus:border-cyan-400 font-mono"
+                      className="w-full p-4 rounded-2xl text-xs outline-none bg-black/50 border border-white/20 text-white custom-scrollbar focus:border-cyan-400 font-mono"
                     />
                   </div>
                   <div className="flex justify-end gap-3">
                     <button
                       onClick={() => setLyricsEditMode(false)}
-                      className="px-4 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white"
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white cursor-pointer"
                     >
                       Hủy
                     </button>
                     <button
                       onClick={handleSaveCustomLyrics}
-                      className="px-5 py-2 rounded-xl text-xs font-bold text-white shadow-lg flex items-center gap-1.5"
+                      className="px-5 py-2 rounded-xl text-xs font-bold text-white shadow-lg flex items-center gap-1.5 cursor-pointer"
                       style={{ background: C.primary }}
                     >
                       <i className="ri-save-line"></i> Lưu Lời Bài Hát
                     </button>
                   </div>
                 </div>
-              ) : lyricsData?.isSynced && lyricsData.synced.length > 0 ? (
-                /* Synced Karaoke Mode */
-                <div ref={lyricsContainerRef} className="w-full flex flex-col items-center gap-5 my-auto py-12">
-                  {lyricsData.synced.map((line, idx) => {
-                    const isActive = activeLyricIndex === idx;
-                    return (
-                      <div
-                        key={idx}
-                        ref={isActive ? activeLyricRef : null}
-                        onClick={() => seek(line.time)}
-                        className={`transition-all duration-300 cursor-pointer px-4 py-2 rounded-2xl hover:scale-105 active:scale-95 max-w-xl select-none ${
-                          isActive
-                            ? 'text-lg md:text-2xl font-black scale-110 drop-shadow-[0_0_20px_rgba(56,189,248,0.8)]'
-                            : 'text-sm md:text-base font-semibold opacity-40 hover:opacity-80'
-                        }`}
-                        style={{
-                          color: isActive ? (C.primarySolid || '#38bdf8') : '#ffffff',
-                          textShadow: isActive ? `0 0 16px ${C.primaryGlow || 'rgba(56,189,248,0.6)'}` : 'none'
-                        }}
-                      >
-                        {line.text}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : lyricsData?.plain ? (
-                /* Plain Text Non-Synced Mode (For Remix / Songs without LRC timing) */
-                <div className="w-full max-w-xl text-center my-auto py-8 whitespace-pre-wrap leading-relaxed text-sm md:text-base font-medium opacity-90 text-white/90">
-                  {lyricsData.plain}
-                </div>
               ) : (
-                /* Empty / Not Found State */
-                <div className="my-auto flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 rounded-3xl bg-white/10 flex items-center justify-center text-3xl text-white/60 mb-1">
-                    <i className="ri-music-2-line"></i>
+                /* 3-Column Layout (Left Title, Center Video Cover, Right Lyrics) */
+                <div className="h-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+                  
+                  {/* Left Column: Artist Name & Large Bold Song Title (like OVERTHINK in reference image) */}
+                  <div className="lg:col-span-3 flex flex-col justify-center items-center lg:items-start text-center lg:text-left space-y-3 shrink-0">
+                    <div>
+                      <p className="text-xs md:text-sm font-medium text-white/70 tracking-wide mb-1.5">
+                        {track.artist || 'Nhiều ca sĩ'}
+                      </p>
+                      <h2 className="text-2xl md:text-4xl lg:text-5xl font-black text-white tracking-tight uppercase leading-tight drop-shadow-xl font-mono">
+                        {track.title}
+                      </h2>
+                    </div>
+
+                    {/* Status Badges */}
+                    <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 pt-2">
+                      {lyricsData?.isSynced ? (
+                        <span className="px-2.5 py-1 text-[11px] font-extrabold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
+                          <i className="ri-mic-fill text-xs animate-pulse"></i> Karaoke Tự Chạy theo Lời
+                        </span>
+                      ) : lyricsData?.plain ? (
+                        <span className="px-2.5 py-1 text-[11px] font-extrabold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5 shadow-sm">
+                          <i className="ri-file-text-line text-xs"></i> Lời Đọc Tĩnh (Không bộ đếm)
+                        </span>
+                      ) : null}
+
+                      {lyricsData?.isCustom && (
+                        <span className="px-2.5 py-1 text-[11px] font-extrabold rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                          ✨ Lời Tự Nhập
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <h4 className="text-sm font-bold text-white">Chưa có lời bài hát cho bài này</h4>
-                  <p className="text-xs text-white/60 max-w-xs mb-2">
-                    Các bản Remix hoặc nhạc chế thường không tìm thấy lời tự động. Bạn có thể bấm nút dưới để tự thêm lời!
-                  </p>
-                  <button
-                    onClick={() => setLyricsEditMode(true)}
-                    className="px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-lg flex items-center gap-2 cursor-pointer transition hover:scale-105"
-                    style={{ background: C.primary }}
-                  >
-                    <i className="ri-edit-box-line"></i> Tự Nhập Lời Cho Bài Hát Này
-                  </button>
+
+                  {/* Center Column: Video Thumbnail Cover Art (like center image in reference picture) */}
+                  <div className="lg:col-span-4 flex justify-center items-center my-2 lg:my-0">
+                    <div className="relative group max-w-[250px] sm:max-w-[290px] lg:max-w-[360px] w-full aspect-square">
+                      <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-cyan-500 to-purple-600 opacity-30 group-hover:opacity-60 blur-xl transition duration-500"></div>
+                      <img
+                        src={track.thumbnail}
+                        alt={track.title}
+                        className="relative w-full h-full object-cover rounded-3xl shadow-2xl border border-white/20 transition duration-300 transform group-hover:scale-[1.02]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Column: Lyrics List (like right side in reference picture) */}
+                  <div className="lg:col-span-5 h-full max-h-[350px] lg:max-h-full overflow-y-auto custom-scrollbar flex flex-col justify-start pr-2 lg:pr-4 py-4 text-left">
+                    {lyricsData?.isSynced && lyricsData.synced.length > 0 ? (
+                      /* Synced Karaoke Mode */
+                      <div ref={lyricsContainerRef} className="w-full flex flex-col gap-4 my-auto py-8">
+                        {lyricsData.synced.map((line, idx) => {
+                          const isActive = activeLyricIndex === idx;
+                          return (
+                            <div
+                              key={idx}
+                              ref={isActive ? activeLyricRef : null}
+                              onClick={() => seek(line.time)}
+                              className={`transition-all duration-300 cursor-pointer select-none py-1.5 px-3 rounded-xl hover:bg-white/10 ${
+                                isActive
+                                  ? 'text-base md:text-xl lg:text-2xl font-black italic scale-105 origin-left text-white drop-shadow-[0_0_18px_rgba(56,189,248,0.9)] bg-white/10 border-l-4 border-cyan-400 pl-4'
+                                  : 'text-xs md:text-sm font-semibold opacity-50 hover:opacity-90 text-white/80'
+                              }`}
+                              style={{
+                                color: isActive ? '#ffffff' : 'rgba(255,255,255,0.7)',
+                                textShadow: isActive ? '0 0 16px rgba(56,189,248,0.8), 0 0 30px rgba(168,85,247,0.5)' : 'none'
+                              }}
+                            >
+                              {line.text}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : lyricsData?.plain ? (
+                      /* Plain Text Mode */
+                      <div className="w-full my-auto py-4 whitespace-pre-wrap leading-relaxed text-xs md:text-sm font-medium opacity-90 text-white/90">
+                        {lyricsData.plain}
+                      </div>
+                    ) : (
+                      /* Empty State */
+                      <div className="my-auto flex flex-col items-center lg:items-start text-center lg:text-left gap-3 py-6">
+                        <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-2xl text-white/60">
+                          <i className="ri-music-2-line"></i>
+                        </div>
+                        <h4 className="text-sm font-bold text-white">Chưa có lời bài hát cho bài này</h4>
+                        <p className="text-xs text-white/60 max-w-xs">
+                          Bạn có thể bấm nút dưới để tự nhập lời nhạc hoặc lời Karaoke tùy chỉnh.
+                        </p>
+                        <button
+                          onClick={() => setLyricsEditMode(true)}
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg flex items-center gap-2 cursor-pointer transition hover:scale-105 mt-1"
+                          style={{ background: C.primary }}
+                        >
+                          <i className="ri-edit-box-line"></i> Tự Nhập Lời Nhạc
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               )}
-
             </div>
+
           </div>
         </div>
       )}
