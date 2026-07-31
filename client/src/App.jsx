@@ -992,106 +992,6 @@ export default function App() {
   const lyricsContainerRef = useRef(null);
   const activeLyricRef = useRef(null);
 
-  // Fetch Lyrics for current track
-  const fetchLyrics = async (targetTrack) => {
-    if (!targetTrack) return;
-    setLyricsLoading(true);
-    setLyricsErr('');
-    setLyricsData(null);
-    setActiveLyricIndex(-1);
-
-    const uid = user?._id || 'guest';
-    const localCustomKey = `aura_lyrics_${uid}_${targetTrack.id || targetTrack._id || targetTrack.youtubeId}`;
-    const savedCustom = localStorage.getItem(localCustomKey);
-
-    if (savedCustom) {
-      const parsedLrc = parseLrc(savedCustom);
-      const isSynced = parsedLrc.length > 0;
-      setLyricsData({
-        synced: parsedLrc,
-        plain: savedCustom,
-        isSynced,
-        isCustom: true
-      });
-      setCustomLyricsInput(savedCustom);
-      setLyricsLoading(false);
-      return;
-    }
-
-    try {
-      const res = await axios.get(`/api/music/lyrics?title=${encodeURIComponent(targetTrack.title)}&artist=${encodeURIComponent(targetTrack.artist || '')}`);
-      if (res.data) {
-        const synced = parseLrc(res.data.syncedLyrics);
-        const isSynced = synced.length > 0;
-        setLyricsData({
-          synced,
-          plain: res.data.plainLyrics || res.data.syncedLyrics || '',
-          isSynced,
-          isCustom: false
-        });
-        setCustomLyricsInput(res.data.syncedLyrics || res.data.plainLyrics || '');
-      }
-    } catch (err) {
-      console.warn("Could not fetch lyrics automatically:", err);
-      setLyricsErr('Không tìm thấy lời bài hát tự động. Bạn có thể tự dán lời bài hát!');
-    } finally {
-      setLyricsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (lyricsModal && track) {
-      fetchLyrics(track);
-    }
-  }, [track?.id, track?.youtubeId, lyricsModal]);
-
-  // Auto-highlight & auto-scroll lyric line during playback
-  useEffect(() => {
-    if (!lyricsData || !lyricsData.isSynced || lyricsData.synced.length === 0) return;
-    const synced = lyricsData.synced;
-
-    let currentIndex = -1;
-    for (let i = 0; i < synced.length; i++) {
-      if (curTime >= synced[i].time - 0.3) {
-        currentIndex = i;
-      } else {
-        break;
-      }
-    }
-
-    if (currentIndex !== activeLyricIndex) {
-      setActiveLyricIndex(currentIndex);
-      if (activeLyricRef.current) {
-        activeLyricRef.current.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        });
-      }
-    }
-  }, [curTime, lyricsData]);
-
-  const handleSaveCustomLyrics = () => {
-    if (!track) return;
-    const uid = user?._id || 'guest';
-    const localCustomKey = `aura_lyrics_${uid}_${track.id || track._id || track.youtubeId}`;
-
-    if (!customLyricsInput.trim()) {
-      localStorage.removeItem(localCustomKey);
-      fetchLyrics(track);
-    } else {
-      localStorage.setItem(localCustomKey, customLyricsInput.trim());
-      const parsedLrc = parseLrc(customLyricsInput.trim());
-      setLyricsData({
-        synced: parsedLrc,
-        plain: customLyricsInput.trim(),
-        isSynced: parsedLrc.length > 0,
-        isCustom: true
-      });
-      showToast('Đã lưu lời bài hát tùy chỉnh!', 'success', 'Lời Bài Hát 🎵');
-    }
-    setLyricsEditMode(false);
-  };
-
   // Context Menu (Right Click) & Edit Playlist Details State
   const [contextMenu, setContextMenu] = useState(null); // { x, y, playlist }
   const [editPlaylistModal, setEditPlaylistModal] = useState(null); // playlist being edited
@@ -1250,6 +1150,106 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [toast.show]);
+
+  // Fetch Lyrics for current track
+  const fetchLyrics = async (targetTrack) => {
+    if (!targetTrack) return;
+    setLyricsLoading(true);
+    setLyricsErr('');
+    setLyricsData(null);
+    setActiveLyricIndex(-1);
+
+    const uid = user?._id || 'guest';
+    const localCustomKey = `aura_lyrics_${uid}_${targetTrack.id || targetTrack._id || targetTrack.youtubeId}`;
+    const savedCustom = localStorage.getItem(localCustomKey);
+
+    if (savedCustom) {
+      const parsedLrc = parseLrc(savedCustom);
+      const isSynced = parsedLrc.length > 0;
+      setLyricsData({
+        synced: parsedLrc,
+        plain: savedCustom,
+        isSynced,
+        isCustom: true
+      });
+      setCustomLyricsInput(savedCustom);
+      setLyricsLoading(false);
+      return;
+    }
+
+    try {
+      const res = await axios.get(`/api/music/lyrics?title=${encodeURIComponent(targetTrack.title)}&artist=${encodeURIComponent(targetTrack.artist || '')}`);
+      if (res.data) {
+        const synced = parseLrc(res.data.syncedLyrics);
+        const isSynced = synced.length > 0;
+        setLyricsData({
+          synced,
+          plain: res.data.plainLyrics || res.data.syncedLyrics || '',
+          isSynced,
+          isCustom: false
+        });
+        setCustomLyricsInput(res.data.syncedLyrics || res.data.plainLyrics || '');
+      }
+    } catch (err) {
+      console.warn("Could not fetch lyrics automatically:", err);
+      setLyricsErr('Không tìm thấy lời bài hát tự động. Bạn có thể tự dán lời bài hát!');
+    } finally {
+      setLyricsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (lyricsModal && track) {
+      fetchLyrics(track);
+    }
+  }, [track?.id, track?.youtubeId, lyricsModal]);
+
+  // Auto-highlight & auto-scroll lyric line during playback
+  useEffect(() => {
+    if (!lyricsData || !lyricsData.isSynced || lyricsData.synced.length === 0) return;
+    const synced = lyricsData.synced;
+
+    let currentIndex = -1;
+    for (let i = 0; i < synced.length; i++) {
+      if (curTime >= synced[i].time - 0.3) {
+        currentIndex = i;
+      } else {
+        break;
+      }
+    }
+
+    if (currentIndex !== activeLyricIndex) {
+      setActiveLyricIndex(currentIndex);
+      if (activeLyricRef.current) {
+        activeLyricRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
+    }
+  }, [curTime, lyricsData]);
+
+  const handleSaveCustomLyrics = () => {
+    if (!track) return;
+    const uid = user?._id || 'guest';
+    const localCustomKey = `aura_lyrics_${uid}_${track.id || track._id || track.youtubeId}`;
+
+    if (!customLyricsInput.trim()) {
+      localStorage.removeItem(localCustomKey);
+      fetchLyrics(track);
+    } else {
+      localStorage.setItem(localCustomKey, customLyricsInput.trim());
+      const parsedLrc = parseLrc(customLyricsInput.trim());
+      setLyricsData({
+        synced: parsedLrc,
+        plain: customLyricsInput.trim(),
+        isSynced: parsedLrc.length > 0,
+        isCustom: true
+      });
+      showToast('Đã lưu lời bài hát tùy chỉnh!', 'success', 'Lời Bài Hát 🎵');
+    }
+    setLyricsEditMode(false);
+  };
 
   // Helper to compress avatar image to ~15KB - 25KB WebP/JPEG (max 250x250)
   const compressImage = (file, maxWidth = 250, maxHeight = 250, quality = 0.82) => {
@@ -2389,7 +2389,11 @@ export default function App() {
     }
   }, [track, songs]);
 
-  const seek = e => { const t = +e.target.value; setCurTime(t); yt.current?.seekTo?.(t, true); };
+  const seek = val => {
+    const t = typeof val === 'number' ? val : +(val?.target?.value || 0);
+    setCurTime(t);
+    yt.current?.seekTo?.(t, true);
+  };
   const changeVol = e => {
     const v = +e.target.value;
     setVol(v);
@@ -6775,7 +6779,7 @@ export default function App() {
                       <div
                         key={idx}
                         ref={isActive ? activeLyricRef : null}
-                        onClick={() => seek({ target: { value: line.time } })}
+                        onClick={() => seek(line.time)}
                         className={`transition-all duration-300 cursor-pointer px-4 py-2 rounded-2xl hover:scale-105 active:scale-95 max-w-xl select-none ${
                           isActive
                             ? 'text-lg md:text-2xl font-black scale-110 drop-shadow-[0_0_20px_rgba(56,189,248,0.8)]'
