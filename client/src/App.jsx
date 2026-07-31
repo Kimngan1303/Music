@@ -2298,18 +2298,23 @@ export default function App() {
   };
 
   const deleteSong = id => {
+    if (!id) return;
+    const uid = user?._id || 'guest';
     setSongs(p => {
-      const updated = p.filter(s => s.id !== id);
-      if (user) localStorage.setItem(songsKey(user._id), JSON.stringify(updated));
+      const updated = p.filter(s => s.id !== id && s._id !== id);
+      localStorage.setItem(songsKey(uid), JSON.stringify(updated));
       return updated;
     });
     setFavs(p => {
       const updated = p.filter(x => x !== id);
+      localStorage.setItem(favsKey(uid), JSON.stringify(updated));
       if (user) {
-        localStorage.setItem(favsKey(user._id), JSON.stringify(updated));
-        axios.put('/api/auth/profile', { favorites: updated }, {
-          headers: { Authorization: `Bearer ${user.token}` }
-        }).catch(() => { });
+        const token = user.token || localStorage.getItem('aura_token');
+        if (token) {
+          axios.put('/api/auth/profile', { favorites: updated }, {
+            headers: { Authorization: `Bearer ${token}` }
+          }).catch(() => { });
+        }
       }
       return updated;
     });
@@ -2318,14 +2323,15 @@ export default function App() {
         ...pl,
         songs: (pl.songs || []).filter(sId => sId !== id)
       }));
-      if (user) localStorage.setItem(playlistsKey(user._id), JSON.stringify(updated));
+      localStorage.setItem(playlistsKey(uid), JSON.stringify(updated));
       return updated;
     });
-    if (track?.id === id) {
+    if (track && (track.id === id || track._id === id)) {
       setTrack(null);
       setPlaying(false);
-      yt.current?.stopVideo?.();
+      try { yt.current?.stopVideo?.(); } catch (e) { }
     }
+    showToast('Đã xóa bài hát thành công', 'info', 'Đã xóa 🗑️');
     axios.delete('/api/music/' + id).catch(() => { });
   };
 
@@ -2718,79 +2724,107 @@ export default function App() {
 
 
   const handleCreatePlaylist = async e => {
-    e.preventDefault();
-    if (!newPlaylistName.trim() || !user) return;
-    try {
-      const res = await axios.post('/api/playlists', { name: newPlaylistName, userId: user._id });
-      const newPl = res.data;
-      setPlaylists(p => {
-        const up = [newPl, ...p];
-        localStorage.setItem(playlistsKey(user._id), JSON.stringify(up));
-        return up;
-      });
-      setPlaylistModal(false);
-      setNewPlaylistName('');
+    if (e) e.preventDefault();
+    const playlistName = newPlaylistName.trim();
+    if (!playlistName) return;
 
-      // Nếu đang trong quá trình chọn thêm bài hát vào playlist, tự động thêm luôn bài hát này vào playlist vừa tạo
-      if (songToAdd) {
-        handleAddToPlaylist(newPl._id, songToAdd);
-      } else {
-        setTab(`playlist_${newPl._id}`);
+    const uid = user?._id || 'guest';
+    const tempId = 'pl_' + Date.now();
+    let newPl = {
+      _id: tempId,
+      id: tempId,
+      name: playlistName,
+      description: '',
+      cover: '',
+      songs: [],
+      userId: uid,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      if (user) {
+        const token = user.token || localStorage.getItem('aura_token');
+        const res = await axios.post('/api/playlists', { name: playlistName, userId: user._id }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data && (res.data._id || res.data.id)) {
+          newPl = res.data;
+        }
       }
     } catch (err) {
-      console.error(err);
-      alert('Lỗi tạo playlist: ' + (err.response?.data?.message || err.message));
+      console.error("Server playlist creation fallback to local:", err);
+    }
+
+    // Always update local playlists state & localStorage instantly
+    setPlaylists(p => {
+      const up = [newPl, ...p];
+      localStorage.setItem(playlistsKey(uid), JSON.stringify(up));
+      return up;
+    });
+
+    // Close modal & reset input
+    setPlaylistModal(false);
+    setNewPlaylistName('');
+
+    // Show toast notification
+    showToast(`Đã tạo playlist "${playlistName}" thành công!`, 'success', 'Tạo Playlist 🎉');
+
+    // Handle songToAdd context
+    if (songToAdd) {
+      handleAddToPlaylist(newPl._id || newPl.id, songToAdd);
+      setSongToAdd(null);
+    } else {
+      setTab(`playlist_${newPl._id || newPl.id}`);
     }
   };
 
   const executeDeletePlaylist = async id => {
+    if (!id) return;
+    const uid = user?._id || 'guest';
     try {
-      const targetPlaylist = playlists.find(p => p._id === id);
+      const targetPlaylist = playlists.find(p => p._id === id || p.id === id);
       const targetSongIds = targetPlaylist?.songs || [];
 
-      await axios.delete(`/api/playlists/${id}`);
-      const updatedPlaylists = playlists.filter(x => x._id !== id);
+      // Always remove from local state & localStorage immediately
+      const updatedPlaylists = playlists.filter(x => x._id !== id && x.id !== id);
       setPlaylists(updatedPlaylists);
+      localStorage.setItem(playlistsKey(uid), JSON.stringify(updatedPlaylists));
+
+      if (tab === `playlist_${id}`) setTab('home');
+      setContextMenu(null);
+      showToast(`Đã xóa danh sách phát "${targetPlaylist?.name || ''}"!`, 'info', 'Đã xóa 🗑️');
+
+      // Async backend call
       if (user) {
-        localStorage.setItem(playlistsKey(user._id), JSON.stringify(updatedPlaylists));
+        const token = user.token || localStorage.getItem('aura_token');
+        axios.delete(`/api/playlists/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => {
+          axios.delete(`/api/playlists/${id}`).catch(() => { });
+        });
       }
 
       // Check for songs that belonged ONLY to this deleted playlist and are not in library
       const remainingPlaylistSongIds = new Set(updatedPlaylists.flatMap(p => p.songs || []));
       const songsToRemove = targetSongIds.filter(sId => {
-        const songObj = songs.find(s => s.id === sId);
+        const songObj = songs.find(s => s.id === sId || s._id === sId);
         return songObj && songObj.inLibrary === false && !remainingPlaylistSongIds.has(sId);
       });
 
-      let updatedSongs = songs;
       if (songsToRemove.length > 0) {
-        updatedSongs = songs.filter(s => !songsToRemove.includes(s.id));
-        setSongs(updatedSongs);
-        if (user) {
-          localStorage.setItem(songsKey(user._id), JSON.stringify(updatedSongs));
-        }
+        setSongs(prevSongs => {
+          const updatedSongs = prevSongs.filter(s => !songsToRemove.includes(s.id) && !songsToRemove.includes(s._id));
+          localStorage.setItem(songsKey(uid), JSON.stringify(updatedSongs));
+          return updatedSongs;
+        });
       }
-
-      // Sync & clean up favorites list to remove any song IDs that no longer exist
-      setFavs(prevFavs => {
-        const updatedFavs = prevFavs.filter(favId => updatedSongs.some(s => s.id === favId));
-        if (user) {
-          localStorage.setItem(favsKey(user._id), JSON.stringify(updatedFavs));
-          const token = user.token || localStorage.getItem('aura_token');
-          if (token) {
-            axios.put('/api/auth/profile', { favorites: updatedFavs }, {
-              headers: { Authorization: `Bearer ${token}` }
-            }).catch(() => { });
-          }
-        }
-        return updatedFavs;
-      });
-
-      if (tab === `playlist_${id}`) setTab('home');
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error("Error deleting playlist:", err);
+    }
   };
 
   const confirmDeletePlaylist = (id, name) => {
+    setContextMenu(null);
     setConfirmModal({
       title: 'Xóa Danh Sách Phát',
       message: `Bạn có chắc chắn muốn xóa danh sách phát "${name}" không? Tất cả các thiết lập của danh sách phát này sẽ bị xóa.`,
