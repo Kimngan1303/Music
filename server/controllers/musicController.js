@@ -417,66 +417,101 @@ Channel Name: "${videoArtist || ''}"`;
 
 /**
  * Scrape Vietnamese lyrics directly from HopAmChuan (hopamchuan.com)
- * @param {string} query 
- * @returns {Promise<string|null>}
+ * @param {string} title 
+ * @param {string} artist 
+ * @returns {Promise<{lyrics: string, url: string}|null>}
  */
-const fetchLyricsFromHopAmChuan = async (query) => {
-  if (!query || !query.trim()) return null;
+const fetchLyricsFromHopAmChuan = async (title, artist) => {
+  if (!title || !title.trim()) return null;
 
   try {
-    const cleanQ = query.replace(/[\(\[\{].*?[\)\]\}]/g, '').replace(/ft\..*|feat\..*/gi, '').trim();
-    const searchUrl = `https://hopamchuan.com/search?q=${encodeURIComponent(cleanQ)}`;
-    
-    const searchRes = await axios.get(searchUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7'
-      },
-      timeout: 5000
-    });
+    const cleanT = title.replace(/[\(\[\{].*?[\)\]\}]/g, '').replace(/ft\..*|feat\..*/gi, '').trim();
+    const parts = cleanT.split(/–|—|-|:|\|/).map(p => p.trim()).filter(Boolean);
+    const cleanA = (artist || '').split(/\/|&|,|feat|ft\./i)[0].trim();
 
-    const html = searchRes.data;
-    const songLinkMatch = html.match(/href="(https:\/\/hopamchuan\.com\/song\/[^"]+)"\s+class="song-title"/i) ||
-                          html.match(/href="(\/song\/[^"]+)"\s+class="song-title"/i);
-
-    if (!songLinkMatch) return null;
-
-    let songUrl = songLinkMatch[1];
-    if (songUrl.startsWith('/')) {
-      songUrl = `https://hopamchuan.com${songUrl}`;
-    }
-
-    const detailRes = await axios.get(songUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7'
-      },
-      timeout: 5000
-    });
-
-    const detailHtml = detailRes.data;
-    const lyricDivMatch = detailHtml.match(/<div id="song-lyric"[^>]*>([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/i) ||
-                          detailHtml.match(/<div id="song-lyric"[^>]*>([\s\S]*?)<div id="song-leftover-space"/i);
-
-    if (!lyricDivMatch) return null;
-
-    const lyricHtml = lyricDivMatch[1];
-    const lines = [];
-    const lineRegex = /<div class="chord_lyric_line[^"]*">([\s\S]*?)<\/div>/gi;
-    let match;
-
-    while ((match = lineRegex.exec(lyricHtml)) !== null) {
-      const lineContent = match[1];
-      let cleanLine = lineContent.replace(/<span class="hopamchuan_chord_inline">[\s\S]*?<\/span>/gi, '');
-      cleanLine = cleanLine.replace(/<[^>]+>/g, '').replace(/&nbsp;/gi, ' ').trim();
-      
-      if (cleanLine && !cleanLine.toLowerCase().startsWith('tone ')) {
-        lines.push(cleanLine);
+    let candidateTitles = [];
+    if (parts.length >= 2) {
+      if (cleanA && parts[0].toLowerCase().includes(cleanA.toLowerCase())) {
+        candidateTitles.push(parts[1]);
+      } else {
+        candidateTitles.push(parts[0]);
       }
+      candidateTitles.push(parts.join(' '));
+    } else {
+      candidateTitles.push(cleanT);
     }
 
-    if (lines.length > 0) {
-      return lines.join('\n');
+    const queries = [];
+    for (const cand of candidateTitles) {
+      if (!cand) continue;
+      queries.push(cand);
+      if (cleanA) queries.push(`${cand} ${cleanA}`);
+    }
+
+    const uniqueQueries = queries.filter((v, i, a) => v && a.indexOf(v) === i);
+
+    for (const qStr of uniqueQueries) {
+      try {
+        const searchUrl = `https://hopamchuan.com/search?q=${encodeURIComponent(qStr)}&mode=song`;
+        const searchRes = await axios.get(searchUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7'
+          },
+          timeout: 4000
+        });
+
+        const html = searchRes.data;
+
+        if (!html.includes('song-title')) continue;
+
+        const songItemRegex = /href="([^"]+\/song\/[^"]+)"\s+class="song-title">\s*([^<]+)<\/a>/gi;
+        let match;
+
+        while ((match = songItemRegex.exec(html)) !== null) {
+          let songUrl = match[1];
+
+          if (songUrl.startsWith('/')) {
+            songUrl = `https://hopamchuan.com${songUrl}`;
+          }
+
+          const detailRes = await axios.get(songUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7'
+            },
+            timeout: 4000
+          });
+
+          const detailHtml = detailRes.data;
+          const lyricDivMatch = detailHtml.match(/<div id="song-lyric"[^>]*>([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/i) ||
+                                detailHtml.match(/<div id="song-lyric"[^>]*>([\s\S]*?)<div id="song-leftover-space"/i);
+
+          if (!lyricDivMatch) continue;
+
+          const lyricHtml = lyricDivMatch[1];
+          const lines = [];
+          const lineRegex = /<div class="chord_lyric_line[^"]*">([\s\S]*?)<\/div>/gi;
+          let lMatch;
+
+          while ((lMatch = lineRegex.exec(lyricHtml)) !== null) {
+            const lineContent = lMatch[1];
+            let cleanLine = lineContent.replace(/<span class="hopamchuan_chord_inline">[\s\S]*?<\/span>/gi, '');
+            cleanLine = cleanLine.replace(/<[^>]+>/g, '').replace(/&nbsp;/gi, ' ').trim();
+            
+            if (cleanLine && !cleanLine.toLowerCase().startsWith('tone ') && !cleanLine.toLowerCase().startsWith('vòng hợp âm:')) {
+              lines.push(cleanLine);
+            }
+          }
+
+          if (lines.length > 0) {
+            return {
+              lyrics: lines.join('\n'),
+              url: songUrl
+            };
+          }
+        }
+      } catch (e) {}
     }
   } catch (err) {
     console.warn("HopAmChuan scrape warning:", err.message);
@@ -493,9 +528,9 @@ const getLyrics = async (req, res) => {
 
     // ── PRIORITY LAYER 0: HOPAMCHUAN.COM VIETNAMESE LYRICS SEARCH ─────────
     try {
-      const hopAmChuanLyrics = await fetchLyricsFromHopAmChuan(title);
-      if (hopAmChuanLyrics) {
-        console.log(`🎶 Found Vietnamese Lyrics from HopAmChuan.com for "${title}"`);
+      const hopAmChuanRes = await fetchLyricsFromHopAmChuan(title, artist);
+      if (hopAmChuanRes && hopAmChuanRes.lyrics) {
+        console.log(`🎶 Found Vietnamese Lyrics from HopAmChuan.com (${hopAmChuanRes.url})`);
         let syncedLrc = '';
         try {
           const cleanT = title.replace(/[\(\[\{].*?[\)\]\}]/g, '').trim();
@@ -507,9 +542,10 @@ const getLyrics = async (req, res) => {
 
         return res.json({
           syncedLyrics: syncedLrc,
-          plainLyrics: hopAmChuanLyrics,
+          plainLyrics: hopAmChuanRes.lyrics,
           isSynced: Boolean(syncedLrc && syncedLrc.trim()),
-          source: 'HopAmChuan.com (Hợp Âm Chuẩn)'
+          source: 'HopAmChuan.com (Hợp Âm Chuẩn)',
+          url: hopAmChuanRes.url
         });
       }
     } catch (e) {
