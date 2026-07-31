@@ -1253,7 +1253,7 @@ export default function App() {
         if (res.data?.totalActiveTime !== undefined) {
           setUser(prev => prev ? ({ ...prev, totalActiveTime: res.data.totalActiveTime }) : prev);
         }
-      }).catch(() => {});
+      }).catch(() => { });
     };
 
     sendHeartbeat(); // ping immediately on login/mount
@@ -1343,14 +1343,14 @@ export default function App() {
         if (Array.isArray(res.data)) {
           setPublicLeaderboard(res.data.slice(0, 10));
         }
-      }).catch(() => {}).finally(() => setLeaderboardLoading(false));
+      }).catch(() => { }).finally(() => setLeaderboardLoading(false));
     };
     const fetchPopular = () => {
       axios.get('/api/music/popular').then(res => {
         if (Array.isArray(res.data) && res.data.length > 0) {
           setPopularSongs(res.data);
         }
-      }).catch(() => {});
+      }).catch(() => { });
     };
 
     fetchLeaderboard();
@@ -1436,7 +1436,7 @@ export default function App() {
     if (safeFavs.length === 0) return false;
     if (typeof sOrId === 'object') {
       return Boolean(
-        (sOrId.id && safeFavs.includes(sOrId.id)) || 
+        (sOrId.id && safeFavs.includes(sOrId.id)) ||
         (sOrId._id && safeFavs.includes(sOrId._id))
       );
     }
@@ -1447,8 +1447,8 @@ export default function App() {
     if (!id) return null;
     if (typeof id === 'object') return id;
     const idStr = String(id);
-    return allKnownSongs.find(s => 
-      (s && s.id && String(s.id) === idStr) || 
+    return allKnownSongs.find(s =>
+      (s && s.id && String(s.id) === idStr) ||
       (s && s._id && String(s._id) === idStr) ||
       (s && s.youtubeId && String(s.youtubeId) === idStr)
     ) || null;
@@ -1676,7 +1676,7 @@ export default function App() {
           if (token) {
             axios.put('/api/auth/profile', { favorites: updatedFavs }, {
               headers: { Authorization: `Bearer ${token}` }
-            }).catch(() => {});
+            }).catch(() => { });
           }
         }
         return updatedFavs;
@@ -1731,7 +1731,7 @@ export default function App() {
         const parsed = JSON.parse(saved);
         if (parsed.width >= 240 && parsed.height >= 260) return parsed;
       }
-    } catch (e) {}
+    } catch (e) { }
     return { width: 320, height: 340 };
   };
 
@@ -1740,7 +1740,7 @@ export default function App() {
     if ('documentPictureInPicture' in window) {
       try {
         if (pipWindowRef.current) {
-          try { pipWindowRef.current.close(); } catch (e) {}
+          try { pipWindowRef.current.close(); } catch (e) { }
           updatePipWindow(null);
           return;
         }
@@ -1758,7 +1758,7 @@ export default function App() {
           try {
             const newSize = { width: pipWin.innerWidth, height: pipWin.innerHeight };
             localStorage.setItem('aura_pip_size', JSON.stringify(newSize));
-          } catch (e) {}
+          } catch (e) { }
         });
         setPipHeight(pipWin.innerHeight || initialSize.height);
 
@@ -1848,7 +1848,7 @@ export default function App() {
         try {
           const iframeVideo = iframe.contentWindow?.document?.querySelector('video');
           if (iframeVideo) videoEl = iframeVideo;
-        } catch (e) {}
+        } catch (e) { }
       }
 
       // 2. Try any video element on page
@@ -1865,8 +1865,8 @@ export default function App() {
               const stream = mobileCanvasRef.current.captureStream(15);
               mobileVideoRef.current.srcObject = stream;
             }
-            await mobileVideoRef.current.play().catch(() => {});
-          } catch (e) {}
+            await mobileVideoRef.current.play().catch(() => { });
+          } catch (e) { }
         }
         videoEl = mobileVideoRef.current;
       }
@@ -1900,9 +1900,9 @@ export default function App() {
       if (document.hidden && playing && track) {
         // Tab is hidden / inactive -> Auto launch floating mini player window if not open
         if ('documentPictureInPicture' in window && !pipWindowRef.current) {
-          try { await togglePipWindow(); } catch (e) {}
+          try { await togglePipWindow(); } catch (e) { }
         } else if (!pipWindowRef.current && !mobilePipActiveRef.current) {
-          try { await triggerMobilePip(); } catch (e) {}
+          try { await triggerMobilePip(); } catch (e) { }
         }
       }
     };
@@ -1934,7 +1934,7 @@ export default function App() {
               playbackRate: 1,
               position: Math.min(Math.max(0, curTime), dur)
             });
-          } catch (e) {}
+          } catch (e) { }
         }
 
         navigator.mediaSession.setActionHandler('play', () => togglePlay());
@@ -2101,7 +2101,7 @@ export default function App() {
     // Increment global play count in DB
     const trkId = trk.id || trk.youtubeId || trk._id;
     if (trkId) {
-      axios.post(`/api/music/${trkId}/listen`).catch(() => {});
+      axios.post(`/api/music/${trkId}/listen`).catch(() => { });
     }
 
     if (queue && Array.isArray(queue) && queue.length > 0) {
@@ -2604,7 +2604,7 @@ export default function App() {
         const targetId = formattedSong.id;
         const targetYtId = formattedSong.youtubeId;
 
-        const existingIdx = currentList.findIndex(s => 
+        const existingIdx = currentList.findIndex(s =>
           (targetId && (s.id === targetId || s._id === targetId)) ||
           (targetYtId && Boolean(s.youtubeId) && s.youtubeId === targetYtId)
         );
@@ -2614,7 +2614,7 @@ export default function App() {
           listWithoutTarget = currentList.filter((_, idx) => idx !== existingIdx);
         }
 
-        const currentTrackIdx = listWithoutTarget.findIndex(s => 
+        const currentTrackIdx = listWithoutTarget.findIndex(s =>
           (track.id && (s.id === track.id || s._id === track.id)) ||
           (track.youtubeId && Boolean(s.youtubeId) && s.youtubeId === track.youtubeId)
         );
@@ -2639,7 +2639,7 @@ export default function App() {
         let found = false;
         const updated = prevSongs.map(s => {
           const isMatch = (targetId && (s.id === targetId || s._id === targetId)) ||
-                          (targetYtId && Boolean(targetYtId) && Boolean(s.youtubeId) && s.youtubeId === targetYtId);
+            (targetYtId && Boolean(targetYtId) && Boolean(s.youtubeId) && s.youtubeId === targetYtId);
           if (isMatch) {
             found = true;
             const newInLib = s.inLibrary === false ? true : false;
@@ -2669,15 +2669,15 @@ export default function App() {
           showToast(`Đã thêm "${newSong.title}" vào thư viện cá nhân!`, 'success', 'Đã thêm vào thư viện 🎉');
 
           if (user) {
-            axios.post('/api/music', { ...newSong, addedBy: user._id, inLibrary: true }).catch(() => {});
+            axios.post('/api/music', { ...newSong, addedBy: user._id, inLibrary: true }).catch(() => { });
           }
         } else {
-          const matchedSong = finalSongs.find(s => 
-            (targetId && (s.id === targetId || s._id === targetId)) || 
+          const matchedSong = finalSongs.find(s =>
+            (targetId && (s.id === targetId || s._id === targetId)) ||
             (targetYtId && Boolean(targetYtId) && Boolean(s.youtubeId) && s.youtubeId === targetYtId)
           );
           if (user && matchedSong) {
-            axios.put(`/api/music/${matchedSong.id || matchedSong._id}`, { inLibrary: matchedSong.inLibrary }).catch(() => {});
+            axios.put(`/api/music/${matchedSong.id || matchedSong._id}`, { inLibrary: matchedSong.inLibrary }).catch(() => { });
           }
         }
 
@@ -2695,7 +2695,7 @@ export default function App() {
       const targetId = resItem.id || resItem._id;
       const targetYtId = resItem.youtubeId;
 
-      let existing = songs.find(s => 
+      let existing = songs.find(s =>
         (targetId && (s.id === targetId || s._id === targetId)) ||
         (targetYtId && Boolean(targetYtId) && Boolean(s.youtubeId) && s.youtubeId === targetYtId)
       );
@@ -2773,7 +2773,7 @@ export default function App() {
           if (token) {
             axios.put('/api/auth/profile', { favorites: updatedFavs }, {
               headers: { Authorization: `Bearer ${token}` }
-            }).catch(() => {});
+            }).catch(() => { });
           }
         }
         return updatedFavs;
@@ -2978,7 +2978,7 @@ export default function App() {
       if (songObj && typeof songId === 'object') {
         const uid = user?._id || 'guest';
         setSongs(prevSongs => {
-          const exists = prevSongs.some(s => 
+          const exists = prevSongs.some(s =>
             (songObj.id && (s.id === songObj.id || s._id === songObj.id)) ||
             (songObj.youtubeId && Boolean(songObj.youtubeId) && Boolean(s.youtubeId) && s.youtubeId === songObj.youtubeId)
           );
@@ -2986,7 +2986,7 @@ export default function App() {
             const updated = [songObj, ...prevSongs];
             localStorage.setItem(songsKey(uid), JSON.stringify(updated));
             if (user) {
-              axios.post('/api/music', { ...songObj, addedBy: user._id, inLibrary: false }).catch(() => {});
+              axios.post('/api/music', { ...songObj, addedBy: user._id, inLibrary: false }).catch(() => { });
             }
             return updated;
           }
@@ -3417,74 +3417,74 @@ export default function App() {
             {playlists
               .filter(p => !sidebarQuery || p.name.toLowerCase().includes(sidebarQuery.toLowerCase()))
               .slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)).map(p => {
-              const tabKey = `playlist_${p._id}`;
-              const active = tab === tabKey;
-              const isHovered = hoverTab === tabKey;
-              const isHighlighted = active || isHovered;
+                const tabKey = `playlist_${p._id}`;
+                const active = tab === tabKey;
+                const isHovered = hoverTab === tabKey;
+                const isHighlighted = active || isHovered;
 
-              const validPlaylistSongs = (p.songs || []).map(sId => songs.find(s => s.id === sId)).filter(Boolean);
-              const firstSong = validPlaylistSongs[0];
-              const coverThumb = p.cover || firstSong?.thumbnail;
+                const validPlaylistSongs = (p.songs || []).map(sId => songs.find(s => s.id === sId)).filter(Boolean);
+                const firstSong = validPlaylistSongs[0];
+                const coverThumb = p.cover || firstSong?.thumbnail;
 
-              return (
-                <button
-                  key={p._id}
-                  onClick={() => { setTab(tabKey); setIsMobileMenuOpen(false); }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    setContextMenu({
-                      x: Math.min(e.clientX, window.innerWidth - 230),
-                      y: Math.min(e.clientY, window.innerHeight - 200),
-                      playlist: p
-                    });
-                  }}
-                  onMouseEnter={() => setHoverTab(tabKey)}
-                  onMouseLeave={() => setHoverTab(null)}
-                  title={`Mở danh sách phát: ${p.name} (Bấm chuột phải để hiện menu tùy chọn)`}
-                  className="flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-200 text-left shrink-0 cursor-pointer active:scale-95 relative"
-                  style={isHighlighted
-                    ? {
-                      background: C.tag,
-                      color: C.txt,
-                      border: `1.5px solid ${active ? (C.borderSel || C.primarySolid) : (C.borderSel || C.primarySolid)}`,
-                      boxShadow: isHovered
-                        ? `0 8px 24px ${C.primaryGlow || 'rgba(0,0,0,0.25)'}, 0 2px 10px rgba(0,0,0,0.15)`
-                        : `0 4px 16px ${C.primaryGlow || 'rgba(0,0,0,0.15)'}`
+                return (
+                  <button
+                    key={p._id}
+                    onClick={() => { setTab(tabKey); setIsMobileMenuOpen(false); }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setContextMenu({
+                        x: Math.min(e.clientX, window.innerWidth - 230),
+                        y: Math.min(e.clientY, window.innerHeight - 200),
+                        playlist: p
+                      });
+                    }}
+                    onMouseEnter={() => setHoverTab(tabKey)}
+                    onMouseLeave={() => setHoverTab(null)}
+                    title={`Mở danh sách phát: ${p.name} (Bấm chuột phải để hiện menu tùy chọn)`}
+                    className="flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-200 text-left shrink-0 cursor-pointer active:scale-95 relative"
+                    style={isHighlighted
+                      ? {
+                        background: C.tag,
+                        color: C.txt,
+                        border: `1.5px solid ${active ? (C.borderSel || C.primarySolid) : (C.borderSel || C.primarySolid)}`,
+                        boxShadow: isHovered
+                          ? `0 8px 24px ${C.primaryGlow || 'rgba(0,0,0,0.25)'}, 0 2px 10px rgba(0,0,0,0.15)`
+                          : `0 4px 16px ${C.primaryGlow || 'rgba(0,0,0,0.15)'}`
+                      }
+                      : {
+                        background: 'transparent',
+                        color: C.txtSub,
+                        border: '1.5px solid transparent'
+                      }
                     }
-                    : {
-                      background: 'transparent',
-                      color: C.txtSub,
-                      border: '1.5px solid transparent'
-                    }
-                  }
-                >
-                  {coverThumb ? (
-                    <img
-                      src={coverThumb}
-                      alt={p.name}
-                      className="w-11 h-11 rounded-xl object-cover shrink-0 shadow-sm"
-                      style={{ border: `1.5px solid ${isHighlighted ? (C.borderSel || C.primarySolid) : C.border}` }}
-                    />
-                  ) : (
-                    <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm"
-                      style={{ background: isHighlighted ? C.primary : 'linear-gradient(135deg, #475569, #334155)' }}
-                    >
-                      <i className={isHighlighted ? "ri-folder-music-fill text-lg" : "ri-folder-music-line text-lg"}></i>
+                  >
+                    {coverThumb ? (
+                      <img
+                        src={coverThumb}
+                        alt={p.name}
+                        className="w-11 h-11 rounded-xl object-cover shrink-0 shadow-sm"
+                        style={{ border: `1.5px solid ${isHighlighted ? (C.borderSel || C.primarySolid) : C.border}` }}
+                      />
+                    ) : (
+                      <div
+                        className="w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm"
+                        style={{ background: isHighlighted ? C.primary : 'linear-gradient(135deg, #475569, #334155)' }}
+                      >
+                        <i className={isHighlighted ? "ri-folder-music-fill text-lg" : "ri-folder-music-line text-lg"}></i>
+                      </div>
+                    )}
+                    <div className="flex flex-col min-w-0 flex-1 leading-tight">
+                      <span className="text-sm font-bold truncate flex items-center gap-1" style={{ color: isHighlighted ? C.primarySolid : C.txt }}>
+                        {p.name}
+                      </span>
+                      <span className="text-[11px] font-medium truncate mt-0.5 flex items-center gap-1" style={{ color: C.txtSub }}>
+                        {p.pinned && <i className="ri-pushpin-fill text-[11px] text-green-500 shrink-0"></i>}
+                        Playlist • {validPlaylistSongs.length} bài
+                      </span>
                     </div>
-                  )}
-                  <div className="flex flex-col min-w-0 flex-1 leading-tight">
-                    <span className="text-sm font-bold truncate flex items-center gap-1" style={{ color: isHighlighted ? C.primarySolid : C.txt }}>
-                      {p.name}
-                    </span>
-                    <span className="text-[11px] font-medium truncate mt-0.5 flex items-center gap-1" style={{ color: C.txtSub }}>
-                      {p.pinned && <i className="ri-pushpin-fill text-[11px] text-green-500 shrink-0"></i>}
-                      Playlist • {validPlaylistSongs.length} bài
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
           </nav>
 
           {/* Sidebar footer card */}
@@ -4033,7 +4033,7 @@ export default function App() {
                   {/* Hot Tags preset */}
                   <div className="relative z-10 flex items-center gap-2 mt-4 flex-wrap">
                     <span className="text-xs font-bold" style={{ color: C.txtSub }}>Gợi ý hot:</span>
-                    {['Lofi Chill tiếng Việt', 'Nhạc Trẻ Remix TikTok 2026', 'Sơn Tùng M-TP', 'Chi Chill Lofi', 'Piano Thư Giãn Học Bài', 'Nhạc Đám Cưới Hợp Âm'].map(tag => (
+                    {['Lofi Chill tiếng Việt', 'Nhạc Trẻ Remix TikTok 2026', 'Nhạc Chill Lofi', 'Sơn Tùng', 'MCK'].map(tag => (
                       <button
                         key={tag}
                         onClick={() => { setOnlineSearchQuery(tag); handleOnlineSearch(tag); }}
@@ -4189,107 +4189,107 @@ export default function App() {
 
                   {/* ── DAILY ACTIVE USERS CHART ── */}
                   <div className="p-5 rounded-2xl shadow-sm flex flex-col gap-4" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <i className="ri-line-chart-line text-lg" style={{ color: '#06b6d4' }} />
-                          <h3 className="text-base font-bold" style={{ color: C.txt }}>Lượng Người Dùng Hoạt Động Theo Ngày (30 ngày)</h3>
-                        </div>
-                        <span className="text-[11px] font-semibold flex items-center gap-1.5 px-3 py-1 rounded-full text-cyan-400 bg-cyan-500/10 border border-cyan-500/20">
-                          <i className="ri-cursor-fill text-xs animate-bounce" /> Nhấp vào điểm ngày trên biểu đồ để xem chi tiết
-                        </span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <i className="ri-line-chart-line text-lg" style={{ color: '#06b6d4' }} />
+                        <h3 className="text-base font-bold" style={{ color: C.txt }}>Lượng Người Dùng Hoạt Động Theo Ngày (30 ngày)</h3>
                       </div>
+                      <span className="text-[11px] font-semibold flex items-center gap-1.5 px-3 py-1 rounded-full text-cyan-400 bg-cyan-500/10 border border-cyan-500/20">
+                        <i className="ri-cursor-fill text-xs animate-bounce" /> Nhấp vào điểm ngày trên biểu đồ để xem chi tiết
+                      </span>
+                    </div>
 
-                      <div className="h-72 w-full">
-                        {statsData.dailyActiveUsersChart?.length === 0 ? (
-                          <div className="h-full flex items-center justify-center">
-                            <p className="text-sm" style={{ color: C.txtSub }}>Chưa có dữ liệu hoạt động</p>
-                          </div>
-                        ) : (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart 
-                              data={statsData.dailyActiveUsersChart} 
-                              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                              onClick={(e) => {
-                                if (e && e.activePayload && e.activePayload[0]) {
-                                  setSelectedDayStat(e.activePayload[0].payload);
+                    <div className="h-72 w-full">
+                      {statsData.dailyActiveUsersChart?.length === 0 ? (
+                        <div className="h-full flex items-center justify-center">
+                          <p className="text-sm" style={{ color: C.txtSub }}>Chưa có dữ liệu hoạt động</p>
+                        </div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart
+                            data={statsData.dailyActiveUsersChart}
+                            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                            onClick={(e) => {
+                              if (e && e.activePayload && e.activePayload[0]) {
+                                setSelectedDayStat(e.activePayload[0].payload);
+                              }
+                            }}
+                          >
+                            <defs>
+                              <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
+                            <XAxis
+                              dataKey="date"
+                              stroke={C.txtSub}
+                              fontSize={11}
+                              tickLine={false}
+                              axisLine={false}
+                              tickFormatter={(val) => {
+                                const d = new Date(val);
+                                return `${d.getDate()}/${d.getMonth() + 1}`;
+                              }}
+                            />
+                            <YAxis
+                              stroke={C.txtSub}
+                              fontSize={11}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <RechartsTooltip
+                              contentStyle={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: '12px', color: C.txt }}
+                              itemStyle={{ color: '#06b6d4', fontWeight: 'bold' }}
+                              labelStyle={{ color: C.txtSub, marginBottom: '4px' }}
+                              formatter={(value) => [`${value} người dùng (Nhấp để xem danh sách)`, 'Hoạt động']}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="count"
+                              name="Người dùng"
+                              stroke="#06b6d4"
+                              strokeWidth={3}
+                              fillOpacity={1}
+                              fill="url(#colorActive)"
+                              activeDot={{
+                                r: 8,
+                                style: { cursor: 'pointer' },
+                                onClick: (e, payload) => {
+                                  if (payload && payload.payload) {
+                                    setSelectedDayStat(payload.payload);
+                                  }
                                 }
                               }}
-                            >
-                              <defs>
-                                <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-                                </linearGradient>
-                              </defs>
-                              <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
-                              <XAxis 
-                                dataKey="date" 
-                                stroke={C.txtSub} 
-                                fontSize={11}
-                                tickLine={false}
-                                axisLine={false}
-                                tickFormatter={(val) => {
-                                  const d = new Date(val);
-                                  return `${d.getDate()}/${d.getMonth()+1}`;
-                                }}
-                              />
-                              <YAxis 
-                                stroke={C.txtSub} 
-                                fontSize={11}
-                                tickLine={false}
-                                axisLine={false}
-                              />
-                              <RechartsTooltip 
-                                contentStyle={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: '12px', color: C.txt }}
-                                itemStyle={{ color: '#06b6d4', fontWeight: 'bold' }}
-                                labelStyle={{ color: C.txtSub, marginBottom: '4px' }}
-                                formatter={(value) => [`${value} người dùng (Nhấp để xem danh sách)`, 'Hoạt động']}
-                              />
-                              <Area 
-                                type="monotone" 
-                                dataKey="count" 
-                                name="Người dùng" 
-                                stroke="#06b6d4" 
-                                strokeWidth={3} 
-                                fillOpacity={1} 
-                                fill="url(#colorActive)"
-                                activeDot={{ 
-                                  r: 8, 
-                                  style: { cursor: 'pointer' },
-                                  onClick: (e, payload) => {
-                                    if (payload && payload.payload) {
-                                      setSelectedDayStat(payload.payload);
-                                    }
-                                  } 
-                                }} 
-                              />
-                            </AreaChart>
-                          </ResponsiveContainer>
-                        )}
-                      </div>
-
-                      {/* Quick Date Selector Chips */}
-                      {statsData.dailyActiveUsersChart?.length > 0 && (
-                        <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pt-2 pb-1">
-                          <span className="text-[11px] font-bold shrink-0" style={{ color: C.txtFad }}>Danh sách các ngày:</span>
-                          {statsData.dailyActiveUsersChart.slice(-14).map((d) => (
-                            <button
-                              key={d.date}
-                              onClick={() => setSelectedDayStat(d)}
-                              className="px-3 py-1 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 hover:scale-105 active:scale-95 cursor-pointer"
-                              style={{
-                                background: C.surface,
-                                border: `1px solid ${C.border}`,
-                                color: C.txt
-                              }}
-                            >
-                              <span style={{ color: '#06b6d4' }}>{d.date.split('-').slice(1).join('/')}</span>
-                              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-cyan-500/15 text-cyan-400 font-extrabold">{d.count} ng/dùng</span>
-                            </button>
-                          ))}
-                        </div>
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
                       )}
                     </div>
+
+                    {/* Quick Date Selector Chips */}
+                    {statsData.dailyActiveUsersChart?.length > 0 && (
+                      <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pt-2 pb-1">
+                        <span className="text-[11px] font-bold shrink-0" style={{ color: C.txtFad }}>Danh sách các ngày:</span>
+                        {statsData.dailyActiveUsersChart.slice(-14).map((d) => (
+                          <button
+                            key={d.date}
+                            onClick={() => setSelectedDayStat(d)}
+                            className="px-3 py-1 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 hover:scale-105 active:scale-95 cursor-pointer"
+                            style={{
+                              background: C.surface,
+                              border: `1px solid ${C.border}`,
+                              color: C.txt
+                            }}
+                          >
+                            <span style={{ color: '#06b6d4' }}>{d.date.split('-').slice(1).join('/')}</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-cyan-500/15 text-cyan-400 font-extrabold">{d.count} ng/dùng</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   {/* ── TOP ACTIVE USERS ── */}
                   <div className="p-5 rounded-2xl shadow-sm" style={{ background: C.tag, border: `1px solid ${C.border}` }}>
@@ -4313,8 +4313,8 @@ export default function App() {
                           <div className="flex items-center gap-2 shrink-0">
                             <i className="ri-time-line" style={{ color: '#f59e0b' }}></i>
                             <span className="text-sm font-bold" style={{ color: C.txt }}>
-                              {u.totalActiveTime < 60 
-                                ? `${u.totalActiveTime} giây` 
+                              {u.totalActiveTime < 60
+                                ? `${u.totalActiveTime} giây`
                                 : u.totalActiveTime < 3600
                                   ? `${Math.floor(u.totalActiveTime / 60)} phút ${u.totalActiveTime % 60} giây`
                                   : `${Math.floor(u.totalActiveTime / 3600)} giờ ${Math.floor((u.totalActiveTime % 3600) / 60)} phút`
@@ -4570,228 +4570,228 @@ export default function App() {
                       </span>
                     </h1>
                     <p className="text-sm md:text-base mb-6 md:mb-8 leading-relaxed max-w-md" style={{ color: C.txtSub }}>
-                    Trang nhạc được tạo riêng cho bạn — khám phá, tạo danh sách phát và đắm chìm vào không gian âm nhạc không giới hạn.
-                  </p>
-                  <button onClick={() => setTab('library')}
-                    className="flex items-center gap-2 px-8 py-4 rounded-full text-base font-bold text-white transition-all shadow-lg hover:scale-105 hover:-translate-y-1"
-                    style={{ background: C.primary, boxShadow: `0 6px 20px ${C.primaryGlow}` }}
-                  >
-                    <i className="ri-music-2-line text-xl"></i> Khám Phá Thư Viện
-                  </button>
-                </div>
-              </div>
-
-              {/* ── 2-COLUMN SECTION: LEADERBOARD (LEFT 65%) & POPULAR SONGS (RIGHT 35%) ── */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8 w-full">
-                
-                {/* LEFT (7 Cols): BẢNG XẾP HẠNG THỜI GIAN SỬ DỤNG (TOP 10 NGƯỜI DÙNG) */}
-                <div className="lg:col-span-7 flex flex-col gap-4 p-5 md:p-6 rounded-3xl border shadow-sm transition-all"
-                  style={{ background: C.surface, borderColor: C.border }}>
-                  
-                  <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: C.border }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl shadow-sm"
-                        style={{ background: 'linear-gradient(135deg, #f59e0b, #ec4899)', color: '#fff' }}>
-                        🏆
-                      </div>
-                      <div>
-                        <h2 className="text-lg md:text-xl font-bold flex items-center gap-2" style={{ color: C.txt, fontFamily: F.heading }}>
-                          Bảng Xếp Hạng Online
-                        </h2>
-                        <p className="text-xs" style={{ color: C.txtSub }}>
-                          Top 10 thành viên tích lũy thời gian nghe nhạc &amp; hoạt động nhiều nhất
-                        </p>
-                      </div>
-                    </div>
-                    <span className="hidden sm:inline-block text-[10px] font-extrabold px-3 py-1 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30">
-                      ⚡ Cập nhật liên tục
-                    </span>
+                      Trang nhạc được tạo riêng cho bạn — khám phá, tạo danh sách phát và đắm chìm vào không gian âm nhạc không giới hạn.
+                    </p>
+                    <button onClick={() => setTab('library')}
+                      className="flex items-center gap-2 px-8 py-4 rounded-full text-base font-bold text-white transition-all shadow-lg hover:scale-105 hover:-translate-y-1"
+                      style={{ background: C.primary, boxShadow: `0 6px 20px ${C.primaryGlow}` }}
+                    >
+                      <i className="ri-music-2-line text-xl"></i> Khám Phá Thư Viện
+                    </button>
                   </div>
+                </div>
 
-                  {/* Leaderboard List (Tối đa Top 10 người dùng, không hiện Role) */}
-                  <div className="flex flex-col gap-2.5 max-h-[460px] overflow-y-auto custom-scrollbar pr-1">
-                    {(() => {
-                      const safeLb = (Array.isArray(publicLeaderboard) ? publicLeaderboard : []).filter(Boolean).slice(0, 10);
-                      if (leaderboardLoading && safeLb.length === 0) {
-                        return (
-                          <div className="py-12 text-center text-xs flex flex-col items-center justify-center gap-2 animate-pulse" style={{ color: C.txtSub }}>
-                            <i className="ri-trophy-line text-3xl" style={{ color: C.primarySolid }}></i>
-                            <span>Đang tải bảng xếp hạng...</span>
-                          </div>
-                        );
-                      }
-                      if (!leaderboardLoading && safeLb.length === 0) {
-                        return (
-                          <div className="py-12 text-center text-xs" style={{ color: C.txtFad }}>
-                            Chưa có dữ liệu xếp hạng...
-                          </div>
-                        );
-                      }
-                      return safeLb.map((lbUser, idx) => {
-                        const badge = getLeaderboardBadge(lbUser?.totalActiveTime || 0);
-                        const isTop1 = idx === 0;
-                        const isTop2 = idx === 1;
-                        const isTop3 = idx === 2;
+                {/* ── 2-COLUMN SECTION: LEADERBOARD (LEFT 65%) & POPULAR SONGS (RIGHT 35%) ── */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8 w-full">
 
-                        return (
-                          <div key={lbUser?._id || idx}
-                            className="flex items-center gap-3 p-3 rounded-2xl border transition-all duration-200 hover:scale-[1.01]"
-                            style={{
-                              background: isTop1 ? 'rgba(245, 158, 11, 0.08)' : (isTop2 ? 'rgba(148, 163, 184, 0.08)' : (isTop3 ? 'rgba(217, 119, 6, 0.06)' : (C.isDark ? 'rgba(30,41,59,0.4)' : '#f8fafc'))),
-                              borderColor: isTop1 ? '#f59e0b' : (isTop2 ? '#94a3b8' : (isTop3 ? '#b45309' : C.border))
-                            }}>
-                            
-                            {/* Rank Medal */}
-                            <div className="w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-xs"
+                  {/* LEFT (7 Cols): BẢNG XẾP HẠNG THỜI GIAN SỬ DỤNG (TOP 10 NGƯỜI DÙNG) */}
+                  <div className="lg:col-span-7 flex flex-col gap-4 p-5 md:p-6 rounded-3xl border shadow-sm transition-all"
+                    style={{ background: C.surface, borderColor: C.border }}>
+
+                    <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: C.border }}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl shadow-sm"
+                          style={{ background: 'linear-gradient(135deg, #f59e0b, #ec4899)', color: '#fff' }}>
+                          🏆
+                        </div>
+                        <div>
+                          <h2 className="text-lg md:text-xl font-bold flex items-center gap-2" style={{ color: C.txt, fontFamily: F.heading }}>
+                            Bảng Xếp Hạng Online
+                          </h2>
+                          <p className="text-xs" style={{ color: C.txtSub }}>
+                            Top 10 thành viên tích lũy thời gian nghe nhạc &amp; hoạt động nhiều nhất
+                          </p>
+                        </div>
+                      </div>
+                      <span className="hidden sm:inline-block text-[10px] font-extrabold px-3 py-1 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                        ⚡ Cập nhật liên tục
+                      </span>
+                    </div>
+
+                    {/* Leaderboard List (Tối đa Top 10 người dùng, không hiện Role) */}
+                    <div className="flex flex-col gap-2.5 max-h-[460px] overflow-y-auto custom-scrollbar pr-1">
+                      {(() => {
+                        const safeLb = (Array.isArray(publicLeaderboard) ? publicLeaderboard : []).filter(Boolean).slice(0, 10);
+                        if (leaderboardLoading && safeLb.length === 0) {
+                          return (
+                            <div className="py-12 text-center text-xs flex flex-col items-center justify-center gap-2 animate-pulse" style={{ color: C.txtSub }}>
+                              <i className="ri-trophy-line text-3xl" style={{ color: C.primarySolid }}></i>
+                              <span>Đang tải bảng xếp hạng...</span>
+                            </div>
+                          );
+                        }
+                        if (!leaderboardLoading && safeLb.length === 0) {
+                          return (
+                            <div className="py-12 text-center text-xs" style={{ color: C.txtFad }}>
+                              Chưa có dữ liệu xếp hạng...
+                            </div>
+                          );
+                        }
+                        return safeLb.map((lbUser, idx) => {
+                          const badge = getLeaderboardBadge(lbUser?.totalActiveTime || 0);
+                          const isTop1 = idx === 0;
+                          const isTop2 = idx === 1;
+                          const isTop3 = idx === 2;
+
+                          return (
+                            <div key={lbUser?._id || idx}
+                              className="flex items-center gap-3 p-3 rounded-2xl border transition-all duration-200 hover:scale-[1.01]"
                               style={{
-                                background: isTop1 ? 'linear-gradient(135deg,#f59e0b,#fbbf24)' : (isTop2 ? 'linear-gradient(135deg,#94a3b8,#cbd5e1)' : (isTop3 ? 'linear-gradient(135deg,#b45309,#d97706)' : C.tag)),
-                                color: isTop1 || isTop2 || isTop3 ? '#fff' : C.txtSub
+                                background: isTop1 ? 'rgba(245, 158, 11, 0.08)' : (isTop2 ? 'rgba(148, 163, 184, 0.08)' : (isTop3 ? 'rgba(217, 119, 6, 0.06)' : (C.isDark ? 'rgba(30,41,59,0.4)' : '#f8fafc'))),
+                                borderColor: isTop1 ? '#f59e0b' : (isTop2 ? '#94a3b8' : (isTop3 ? '#b45309' : C.border))
                               }}>
-                              {isTop1 ? '🥇' : (isTop2 ? '🥈' : (isTop3 ? '🥉' : `#${idx + 1}`))}
-                            </div>
 
-                            {/* Avatar */}
-                            <img src={lbUser?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
-                              alt={lbUser?.name || 'User'}
-                              className="w-10 h-10 rounded-full object-cover shrink-0 border-2"
-                              style={{ borderColor: isTop1 ? '#f59e0b' : C.border }}
-                            />
+                              {/* Rank Medal */}
+                              <div className="w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-xs"
+                                style={{
+                                  background: isTop1 ? 'linear-gradient(135deg,#f59e0b,#fbbf24)' : (isTop2 ? 'linear-gradient(135deg,#94a3b8,#cbd5e1)' : (isTop3 ? 'linear-gradient(135deg,#b45309,#d97706)' : C.tag)),
+                                  color: isTop1 || isTop2 || isTop3 ? '#fff' : C.txtSub
+                                }}>
+                                {isTop1 ? '🥇' : (isTop2 ? '🥈' : (isTop3 ? '🥉' : `#${idx + 1}`))}
+                              </div>
 
-                            {/* User Details (Không hiện Role) */}
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <span className="text-xs font-bold truncate" style={{ color: C.txt }}>
-                                {lbUser?.name || 'Thành viên'}
+                              {/* Avatar */}
+                              <img src={lbUser?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                                alt={lbUser?.name || 'User'}
+                                className="w-10 h-10 rounded-full object-cover shrink-0 border-2"
+                                style={{ borderColor: isTop1 ? '#f59e0b' : C.border }}
+                              />
+
+                              {/* User Details (Không hiện Role) */}
+                              <div className="flex flex-col flex-1 min-w-0">
+                                <span className="text-xs font-bold truncate" style={{ color: C.txt }}>
+                                  {lbUser?.name || 'Thành viên'}
+                                </span>
+                                <span className="text-[11px] font-semibold flex items-center gap-1" style={{ color: C.primarySolid }}>
+                                  <i className="ri-time-line text-xs"></i> {fmtActiveTime(lbUser?.totalActiveTime || 0)}
+                                </span>
+                              </div>
+
+                              {/* Unlocked Title Badge */}
+                              <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full shrink-0 border"
+                                style={{ background: badge.bg, color: badge.color, borderColor: badge.color + '40' }}>
+                                {badge.label}
                               </span>
-                              <span className="text-[11px] font-semibold flex items-center gap-1" style={{ color: C.primarySolid }}>
-                                <i className="ri-time-line text-xs"></i> {fmtActiveTime(lbUser?.totalActiveTime || 0)}
-                              </span>
                             </div>
-
-                            {/* Unlocked Title Badge */}
-                            <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full shrink-0 border"
-                              style={{ background: badge.bg, color: badge.color, borderColor: badge.color + '40' }}>
-                              {badge.label}
-                            </span>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </div>
-
-                {/* RIGHT (5 Cols): TOP BÀI HÁT ĐƯỢC NGHE NHIỀU NHẤT CỦA TOÀN BỘ HỆ THỐNG */}
-                <div className="lg:col-span-5 flex flex-col gap-4 p-5 md:p-6 rounded-3xl border shadow-sm transition-all"
-                  style={{ background: C.surface, borderColor: C.border }}>
-                  
-                  <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: C.border }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl shadow-sm"
-                        style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)', color: '#fff' }}>
-                        🔥
-                      </div>
-                      <div>
-                        <h2 className="text-lg md:text-xl font-bold flex items-center gap-2" style={{ color: C.txt, fontFamily: F.heading }}>
-                          Bài Hát Thịnh Hành
-                        </h2>
-                        <p className="text-xs" style={{ color: C.txtSub }}>
-                          Được nghe nhiều nhất bởi toàn bộ người dùng
-                        </p>
-                      </div>
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
 
-                  {/* Popular Songs List (Dynamic from all users' listening history) */}
-                  <div className="flex flex-col gap-2.5 max-h-[460px] overflow-y-auto custom-scrollbar pr-1">
-                    {(() => {
-                      const displayQueue = (Array.isArray(popularSongs) && popularSongs.length > 0 ? popularSongs : (Array.isArray(songs) ? songs : [])).filter(Boolean);
-                      if (displayQueue.length === 0) {
-                        return (
-                          <div className="py-12 text-center text-xs" style={{ color: C.txtFad }}>
-                            Chưa có bài hát nào trên hệ thống.
-                          </div>
-                        );
-                      }
-                      return displayQueue.slice(0, 15).map((s, idx) => {
-                        if (!s) return null;
-                        const isPlayingThis = Boolean(track && (track.id === s.id || track._id === s._id || (s.youtubeId && track.youtubeId === s.youtubeId)) && playing);
-                        return (
-                          <div key={s.id || s._id || idx}
-                            className="flex items-center gap-3 p-2.5 rounded-2xl border transition-all duration-200 group hover:scale-[1.01]"
-                            style={{
-                              background: isPlayingThis ? C.tag : (C.isDark ? 'rgba(30,41,59,0.4)' : '#f8fafc'),
-                              borderColor: isPlayingThis ? C.primarySolid : C.border
-                            }}>
-                            
-                            {/* Song Thumbnail & Play Overlay */}
-                            <div className="relative w-11 h-11 rounded-xl overflow-hidden shrink-0 group/img cursor-pointer"
-                              onClick={() => {
-                                if (isPlayingThis) {
-                                  togglePlay();
-                                } else {
-                                  play(s, displayQueue);
-                                }
+                  {/* RIGHT (5 Cols): TOP BÀI HÁT ĐƯỢC NGHE NHIỀU NHẤT CỦA TOÀN BỘ HỆ THỐNG */}
+                  <div className="lg:col-span-5 flex flex-col gap-4 p-5 md:p-6 rounded-3xl border shadow-sm transition-all"
+                    style={{ background: C.surface, borderColor: C.border }}>
+
+                    <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: C.border }}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl shadow-sm"
+                          style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)', color: '#fff' }}>
+                          🔥
+                        </div>
+                        <div>
+                          <h2 className="text-lg md:text-xl font-bold flex items-center gap-2" style={{ color: C.txt, fontFamily: F.heading }}>
+                            Bài Hát Thịnh Hành
+                          </h2>
+                          <p className="text-xs" style={{ color: C.txtSub }}>
+                            Được nghe nhiều nhất bởi toàn bộ người dùng
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Popular Songs List (Dynamic from all users' listening history) */}
+                    <div className="flex flex-col gap-2.5 max-h-[460px] overflow-y-auto custom-scrollbar pr-1">
+                      {(() => {
+                        const displayQueue = (Array.isArray(popularSongs) && popularSongs.length > 0 ? popularSongs : (Array.isArray(songs) ? songs : [])).filter(Boolean);
+                        if (displayQueue.length === 0) {
+                          return (
+                            <div className="py-12 text-center text-xs" style={{ color: C.txtFad }}>
+                              Chưa có bài hát nào trên hệ thống.
+                            </div>
+                          );
+                        }
+                        return displayQueue.slice(0, 15).map((s, idx) => {
+                          if (!s) return null;
+                          const isPlayingThis = Boolean(track && (track.id === s.id || track._id === s._id || (s.youtubeId && track.youtubeId === s.youtubeId)) && playing);
+                          return (
+                            <div key={s.id || s._id || idx}
+                              className="flex items-center gap-3 p-2.5 rounded-2xl border transition-all duration-200 group hover:scale-[1.01]"
+                              style={{
+                                background: isPlayingThis ? C.tag : (C.isDark ? 'rgba(30,41,59,0.4)' : '#f8fafc'),
+                                borderColor: isPlayingThis ? C.primarySolid : C.border
                               }}>
-                              <img src={s.thumbnail || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150&auto=format&fit=crop&q=80"} alt={s.title || 'Song'} className="w-full h-full object-cover" />
-                              <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlayingThis ? 'opacity-100' : 'opacity-0 group-hover/img:opacity-100'}`}>
-                                {isPlayingThis ? (
-                                  <i className="ri-pause-fill text-white text-lg animate-pulse" />
-                                ) : (
-                                  <i className="ri-play-fill text-white text-lg ml-0.5" />
-                                )}
-                              </div>
-                            </div>
 
-                            {/* Song Info */}
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <span className="text-xs font-bold truncate cursor-pointer hover:underline"
-                                style={{ color: isPlayingThis ? C.primarySolid : C.txt }}
-                                onClick={() => play(s, displayQueue)}>
-                                {s.title || 'Bài Hát'}
-                              </span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[11px] truncate" style={{ color: C.txtSub }}>
-                                  {s.artist || 'Nghệ sĩ'}
+                              {/* Song Thumbnail & Play Overlay */}
+                              <div className="relative w-11 h-11 rounded-xl overflow-hidden shrink-0 group/img cursor-pointer"
+                                onClick={() => {
+                                  if (isPlayingThis) {
+                                    togglePlay();
+                                  } else {
+                                    play(s, displayQueue);
+                                  }
+                                }}>
+                                <img src={s.thumbnail || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150&auto=format&fit=crop&q=80"} alt={s.title || 'Song'} className="w-full h-full object-cover" />
+                                <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlayingThis ? 'opacity-100' : 'opacity-0 group-hover/img:opacity-100'}`}>
+                                  {isPlayingThis ? (
+                                    <i className="ri-pause-fill text-white text-lg animate-pulse" />
+                                  ) : (
+                                    <i className="ri-play-fill text-white text-lg ml-0.5" />
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Song Info */}
+                              <div className="flex flex-col flex-1 min-w-0">
+                                <span className="text-xs font-bold truncate cursor-pointer hover:underline"
+                                  style={{ color: isPlayingThis ? C.primarySolid : C.txt }}
+                                  onClick={() => play(s, displayQueue)}>
+                                  {s.title || 'Bài Hát'}
                                 </span>
-                                {s.playCount > 0 && (
-                                  <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-red-500/15 text-red-500 border border-red-500/20 shrink-0">
-                                    🔥 {s.playCount} lượt nghe
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] truncate" style={{ color: C.txtSub }}>
+                                    {s.artist || 'Nghệ sĩ'}
                                   </span>
-                                )}
+                                  {s.playCount > 0 && (
+                                    <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-red-500/15 text-red-500 border border-red-500/20 shrink-0">
+                                      🔥 {s.playCount} lượt nghe
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Action Buttons: Add to Playlist & Favorite */}
+                              <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
+                                <button
+                                  onClick={() => setSongToAdd(s)}
+                                  title="Thêm bài hát này vào danh sách phát tùy chọn của bạn"
+                                  className="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer hover:scale-105 active:scale-95 shrink-0"
+                                  style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.primarySolid }}
+                                >
+                                  <i className="ri-playlist-add-line text-sm"></i>
+                                  <span className="hidden sm:inline">Thêm</span>
+                                </button>
+
+                                <button
+                                  onClick={() => toggleFav(s)}
+                                  title={isFav(s) ? "Bỏ yêu thích bài hát này" : "Thêm bài hát này vào Yêu Thích"}
+                                  className="p-1.5 px-2 rounded-xl transition active:scale-95 cursor-pointer hover:scale-110 shrink-0 flex items-center justify-center"
+                                  style={{
+                                    background: isFav(s) ? 'rgba(244, 63, 94, 0.15)' : C.tag,
+                                    border: `1.5px solid ${isFav(s) ? 'rgba(244, 63, 94, 0.3)' : C.border}`,
+                                    color: isFav(s) ? '#f43f5e' : C.txtFad
+                                  }}
+                                >
+                                  <i className={isFav(s) ? 'ri-heart-fill text-sm text-rose-500' : 'ri-heart-line text-sm'} />
+                                </button>
                               </div>
                             </div>
-
-                            {/* Action Buttons: Add to Playlist & Favorite */}
-                            <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
-                              <button
-                                onClick={() => setSongToAdd(s)}
-                                title="Thêm bài hát này vào danh sách phát tùy chọn của bạn"
-                                className="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer hover:scale-105 active:scale-95 shrink-0"
-                                style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.primarySolid }}
-                              >
-                                <i className="ri-playlist-add-line text-sm"></i>
-                                <span className="hidden sm:inline">Thêm</span>
-                              </button>
-
-                              <button
-                                onClick={() => toggleFav(s)}
-                                title={isFav(s) ? "Bỏ yêu thích bài hát này" : "Thêm bài hát này vào Yêu Thích"}
-                                className="p-1.5 px-2 rounded-xl transition active:scale-95 cursor-pointer hover:scale-110 shrink-0 flex items-center justify-center"
-                                style={{ 
-                                  background: isFav(s) ? 'rgba(244, 63, 94, 0.15)' : C.tag, 
-                                  border: `1.5px solid ${isFav(s) ? 'rgba(244, 63, 94, 0.3)' : C.border}`,
-                                  color: isFav(s) ? '#f43f5e' : C.txtFad
-                                }}
-                              >
-                                <i className={isFav(s) ? 'ri-heart-fill text-sm text-rose-500' : 'ri-heart-line text-sm'} />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
+                          );
+                        });
+                      })()}
+                    </div>
                   </div>
                 </div>
-              </div>
               </>
             ) : (
               <>
@@ -4801,8 +4801,8 @@ export default function App() {
                     background: activePlaylist
                       ? 'linear-gradient(135deg, rgba(236,72,153,0.18) 0%, rgba(99,102,241,0.14) 100%)'
                       : tab === 'favorites'
-                      ? 'linear-gradient(135deg, rgba(244,63,94,0.2) 0%, rgba(168,85,247,0.16) 100%)'
-                      : C.surface,
+                        ? 'linear-gradient(135deg, rgba(244,63,94,0.2) 0%, rgba(168,85,247,0.16) 100%)'
+                        : C.surface,
                     border: `1.5px solid ${C.border}`
                   }}
                 >
@@ -4991,7 +4991,7 @@ export default function App() {
                 {isSelectMode && (
                   <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 mb-4 rounded-2xl shadow-lg border animate-in fade-in slide-in-from-top-2 duration-200"
                     style={{ background: C.surface, borderColor: C.borderSel, boxShadow: `0 8px 30px ${C.primaryGlow}` }}>
-                    
+
                     <div className="flex items-center gap-2.5">
                       {/* Checkbox Select All */}
                       <button
@@ -5074,9 +5074,8 @@ export default function App() {
                           }
                         }}
                         title={isSelectMode ? `Bấm để ${isSelected ? 'bỏ chọn' : 'chọn'} ${song.title}` : `Bấm để phát: ${song.title} - ${song.artist}`}
-                        className={`flex items-center p-2 md:p-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-200 group gap-2 md:gap-3 hover:opacity-95 ${
-                          isPlayingThis ? 'active-playing-led-row' : ''
-                        }`}
+                        className={`flex items-center p-2 md:p-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-200 group gap-2 md:gap-3 hover:opacity-95 ${isPlayingThis ? 'active-playing-led-row' : ''
+                          }`}
                         style={{
                           '--led-color': C.primarySolid,
                           '--led-glow': C.primaryGlow,
@@ -5752,7 +5751,7 @@ export default function App() {
           onMouseDown={e => { if (e.target === e.currentTarget) setSongToAdd(null); }}>
           <div className="w-full max-w-md rounded-3xl p-6 shadow-2xl transition-all"
             style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
-            
+
             {/* Target Song Info Header */}
             <div className="flex items-center gap-3 pb-4 mb-4 border-b" style={{ borderColor: C.border }}>
               <img src={songToAdd.thumbnail} alt={songToAdd.title} className="w-12 h-12 rounded-xl object-cover shrink-0 shadow-md" />
@@ -5767,16 +5766,16 @@ export default function App() {
             </div>
 
             <div className="flex flex-col gap-3 max-h-80 overflow-y-auto custom-scrollbar pr-1">
-              
+
               {/* Option 1: Thư viện cá nhân */}
               <div className="flex flex-col gap-1">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider px-1" style={{ color: C.txtFad }}>1. Thư Viện Cá Nhân</span>
                 {(() => {
                   const targetSongId = songToAdd.id || songToAdd._id;
                   const targetYtId = songToAdd.youtubeId;
-                  const inLibrary = songs.some(s => 
-                    ((targetSongId && (s.id === targetSongId || s._id === targetSongId)) || 
-                     (targetYtId && Boolean(s.youtubeId) && s.youtubeId === targetYtId)) && 
+                  const inLibrary = songs.some(s =>
+                    ((targetSongId && (s.id === targetSongId || s._id === targetSongId)) ||
+                      (targetYtId && Boolean(s.youtubeId) && s.youtubeId === targetYtId)) &&
                     s.inLibrary !== false
                   );
                   return (
@@ -6417,11 +6416,11 @@ export default function App() {
           onMouseDown={e => { if (e.target === e.currentTarget) setConfirmBatchDeleteModal(false); }}>
           <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
             style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, color: C.txt }}>
-            
+
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 bg-red-500/15 text-red-500 text-2xl shadow-sm">
               <i className="ri-delete-bin-fill"></i>
             </div>
-            
+
             <h3 className="text-lg font-bold text-center mb-1" style={{ color: C.txt }}>
               Xóa Hàng Loạt ({selectedSongIds.length} bài hát)
             </h3>
@@ -6516,7 +6515,7 @@ export default function App() {
 
                 {/* Center Dedicated Media Control Console (ALWAYS VISIBLE) */}
                 <div className="relative z-10 flex-1 flex flex-col justify-between p-2.5 gap-1 min-h-0 bg-black/40 backdrop-blur-[2px]">
-                  
+
                   {/* Title & Artist */}
                   <div className="text-center min-w-0 shrink-0">
                     <h4 className="text-xs font-extrabold truncate text-white leading-tight">{track.title}</h4>
@@ -6525,7 +6524,7 @@ export default function App() {
 
                   {/* Main Action Buttons Row */}
                   <div className="flex items-center justify-center gap-2 md:gap-3 text-white my-auto">
-                    
+
                     {/* Volume / Mute */}
                     <button onClick={toggleMute} className="p-1 hover:scale-110 active:scale-95 transition text-white/80 hover:text-white cursor-pointer shrink-0" title="Âm thanh">
                       <i className={muted || vol === 0 ? "ri-volume-mute-line text-sm" : "ri-volume-up-line text-sm"}></i>
@@ -6718,36 +6717,34 @@ export default function App() {
           style={{
             background: C.isDark ? 'rgba(30, 41, 59, 0.94)' : 'rgba(255, 252, 249, 0.96)',
             backdropFilter: 'blur(16px)',
-            border: `1.5px solid ${
-              toast.type === 'success' ? '#10b981' : toast.type === 'error' ? '#f43f5e' : C.primarySolid
-            }`,
+            border: `1.5px solid ${toast.type === 'success' ? '#10b981' : toast.type === 'error' ? '#f43f5e' : C.primarySolid
+              }`,
             boxShadow: toast.type === 'success'
               ? '0 12px 35px rgba(16, 185, 129, 0.3)'
               : toast.type === 'error'
-              ? '0 12px 35px rgba(244, 63, 94, 0.3)'
-              : '0 12px 35px rgba(0,0,0,0.3)',
+                ? '0 12px 35px rgba(244, 63, 94, 0.3)'
+                : '0 12px 35px rgba(0,0,0,0.3)',
             color: C.txt
           }}
         >
           <div
-            className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center text-xl shadow-xs ${
-              toast.type === 'success'
-                ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30'
-                : toast.type === 'error'
+            className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center text-xl shadow-xs ${toast.type === 'success'
+              ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30'
+              : toast.type === 'error'
                 ? 'bg-rose-500/20 text-rose-500 border border-rose-500/30'
                 : toast.type === 'warning'
-                ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
-                : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-            }`}
+                  ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
+                  : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+              }`}
           >
             <i className={
               toast.type === 'success'
                 ? 'ri-checkbox-circle-fill'
                 : toast.type === 'error'
-                ? 'ri-error-warning-fill'
-                : toast.type === 'warning'
-                ? 'ri-alert-fill'
-                : 'ri-disc-fill spin-slow'
+                  ? 'ri-error-warning-fill'
+                  : toast.type === 'warning'
+                    ? 'ri-alert-fill'
+                    : 'ri-disc-fill spin-slow'
             }></i>
           </div>
 
@@ -6774,7 +6771,7 @@ export default function App() {
 
       {/* ── DAILY ACTIVE USERS DETAIL MODAL ────────────────────────── */}
       {selectedDayStat && (
-        <div 
+        <div
           className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in pointer-events-auto"
           onClick={() => setSelectedDayStat(null)}
         >
@@ -6842,10 +6839,10 @@ export default function App() {
 
                   <div className="flex items-center gap-2 shrink-0 self-end sm:self-center flex-wrap">
                     {/* Added Songs count on this day badge */}
-                    <div 
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl shrink-0" 
-                      style={{ 
-                        background: (u.addedSongsCount || 0) > 0 ? 'rgba(16, 185, 129, 0.15)' : C.tag, 
+                    <div
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl shrink-0"
+                      style={{
+                        background: (u.addedSongsCount || 0) > 0 ? 'rgba(16, 185, 129, 0.15)' : C.tag,
                         border: `1px solid ${(u.addedSongsCount || 0) > 0 ? 'rgba(16, 185, 129, 0.3)' : C.border}`,
                         color: (u.addedSongsCount || 0) > 0 ? '#10b981' : C.txtFad
                       }}
