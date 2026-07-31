@@ -1177,9 +1177,10 @@ export default function App() {
       return;
     }
 
+    // 1. Try Backend lyrics endpoint first
     try {
       const res = await axios.get(`/api/music/lyrics?title=${encodeURIComponent(targetTrack.title)}&artist=${encodeURIComponent(targetTrack.artist || '')}`);
-      if (res.data) {
+      if (res.data && (res.data.syncedLyrics || res.data.plainLyrics)) {
         const synced = parseLrc(res.data.syncedLyrics);
         const isSynced = synced.length > 0;
         setLyricsData({
@@ -1189,13 +1190,45 @@ export default function App() {
           isCustom: false
         });
         setCustomLyricsInput(res.data.syncedLyrics || res.data.plainLyrics || '');
+        setLyricsLoading(false);
+        return;
       }
     } catch (err) {
-      console.warn("Could not fetch lyrics automatically:", err);
-      setLyricsErr('Không tìm thấy lời bài hát tự động. Bạn có thể tự dán lời bài hát!');
-    } finally {
-      setLyricsLoading(false);
+      console.warn("Backend lyrics API fallback to direct LRCLIB...");
     }
+
+    // 2. Direct Frontend LRCLIB fallback search (tries short core word queries)
+    try {
+      const baseT = targetTrack.title.split(/–|—|-|\(ft|\(feat|ft\.|feat\./i)[0].replace(/[\(\[\{].*?[\)\]\}]/g, '').trim();
+      const words = baseT.split(' ').filter(Boolean);
+      const shortT = words.length <= 3 ? words.join(' ') : (words.length <= 6 ? words.slice(0, 4).join(' ') : words.slice(0, 5).join(' '));
+      const queries = [shortT, baseT].filter((v, i, a) => v && a.indexOf(v) === i);
+
+      for (const qStr of queries) {
+        const lrclibDirectRes = await axios.get(`https://lrclib.net/api/search?q=${encodeURIComponent(qStr)}`);
+        if (lrclibDirectRes.data && Array.isArray(lrclibDirectRes.data) && lrclibDirectRes.data.length > 0) {
+          const match = lrclibDirectRes.data.find(item => item.syncedLyrics && item.syncedLyrics.trim()) ||
+                        lrclibDirectRes.data.find(item => item.plainLyrics && item.plainLyrics.trim()) ||
+                        lrclibDirectRes.data[0];
+          if (match && (match.syncedLyrics || match.plainLyrics)) {
+            const synced = parseLrc(match.syncedLyrics);
+            const isSynced = synced.length > 0;
+            setLyricsData({
+              synced,
+              plain: match.plainLyrics || match.syncedLyrics || '',
+              isSynced,
+              isCustom: false
+            });
+            setCustomLyricsInput(match.syncedLyrics || match.plainLyrics || '');
+            setLyricsLoading(false);
+            return;
+          }
+        }
+      }
+    } catch (e) { }
+
+    setLyricsErr('Không tìm thấy lời bài hát tự động. Bạn có thể tự dán lời bài hát bên dưới!');
+    setLyricsLoading(false);
   };
 
   useEffect(() => {

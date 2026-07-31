@@ -312,10 +312,37 @@ const addSpotifyPlaylist = async (req, res) => {
 const cleanSearchTerm = (str) => {
   if (!str) return '';
   return str
-    .replace(/[\(\[\{].*?[\)\]\}]/g, '') // remove (Official MV), [Audio], etc.
+    .replace(/[\(\[\{](official|mv|video|audio|lyric|remix|lofi|tiktok).*?[\)\]\}]/gi, '')
     .replace(/official\s*music\s*video|official\s*video|official\s*audio|mv|remix|lofi|ver|version|cover|tiktok|audio/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
+};
+
+const extractBaseTitle = (title) => {
+  if (!title) return '';
+  let base = title.split(/–|—|-|\(ft|\(feat|ft\.|feat\./i)[0];
+  base = base.replace(/[\(\[\{].*?[\)\]\}]/g, '').trim();
+  return base || title;
+};
+
+const getShortTitle = (title) => {
+  if (!title) return '';
+  const base = extractBaseTitle(title);
+  const words = base.split(' ').filter(Boolean);
+  if (words.length <= 3) {
+    return words.join(' ');
+  } else if (words.length <= 6) {
+    return words.slice(0, 4).join(' '); // 4 words
+  } else {
+    return words.slice(0, 5).join(' '); // 5 words
+  }
+};
+
+const extractBaseArtist = (artist) => {
+  if (!artist) return '';
+  let base = artist.split(/\/|&|,|feat|ft\./i)[0];
+  base = base.replace(/official|creator|channel/gi, '').trim();
+  return base || artist;
 };
 
 const getLyrics = async (req, res) => {
@@ -325,48 +352,45 @@ const getLyrics = async (req, res) => {
       return res.status(400).json({ message: 'Thiếu tên bài hát.' });
     }
 
+    const baseTitle = extractBaseTitle(title);
+    const shortTitle = getShortTitle(title);
+    const baseArtist = extractBaseArtist(artist || '');
     const cleanTitle = cleanSearchTerm(title);
     const cleanArtist = cleanSearchTerm(artist || '');
 
-    // 1. Try LRCLIB exact get API
-    try {
-      const lrclibRes = await axios.get('https://lrclib.net/api/get', {
-        params: {
-          track_name: cleanTitle,
-          artist_name: cleanArtist
-        },
-        timeout: 4000
-      });
-      if (lrclibRes.data && (lrclibRes.data.syncedLyrics || lrclibRes.data.plainLyrics)) {
-        return res.json({
-          syncedLyrics: lrclibRes.data.syncedLyrics || '',
-          plainLyrics: lrclibRes.data.plainLyrics || '',
-          isSynced: Boolean(lrclibRes.data.syncedLyrics),
-          source: 'LRCLIB Direct'
+    // List of search queries to try sequentially on LRCLIB (short core words first!)
+    const searchQueries = [
+      shortTitle, // e.g. "Nếu Như Ta Chẳng"
+      `${shortTitle} ${baseArtist}`, // e.g. "Nếu Như Ta Chẳng MCK"
+      baseTitle, // e.g. "Nếu Như Ta Chẳng Còn"
+      `${baseTitle} ${baseArtist}`,
+      cleanTitle,
+      `${cleanTitle} ${cleanArtist}`
+    ].filter((q, idx, arr) => q && q.trim().length > 0 && arr.indexOf(q) === idx);
+
+    for (const query of searchQueries) {
+      try {
+        const searchRes = await axios.get('https://lrclib.net/api/search', {
+          params: { q: query.trim() },
+          timeout: 4000
         });
-      }
-    } catch (e) { }
 
-    // 2. Fallback: Search LRCLIB query API
-    try {
-      const searchQuery = `${cleanTitle} ${cleanArtist}`.trim();
-      const searchRes = await axios.get('https://lrclib.net/api/search', {
-        params: { q: searchQuery },
-        timeout: 4000
-      });
+        if (searchRes.data && Array.isArray(searchRes.data) && searchRes.data.length > 0) {
+          const bestMatch = searchRes.data.find(item => item.syncedLyrics && item.syncedLyrics.trim()) || 
+                            searchRes.data.find(item => item.plainLyrics && item.plainLyrics.trim()) || 
+                            searchRes.data[0];
 
-      if (searchRes.data && Array.isArray(searchRes.data) && searchRes.data.length > 0) {
-        const bestMatch = searchRes.data.find(item => item.syncedLyrics) || searchRes.data[0];
-        if (bestMatch.syncedLyrics || bestMatch.plainLyrics) {
-          return res.json({
-            syncedLyrics: bestMatch.syncedLyrics || '',
-            plainLyrics: bestMatch.plainLyrics || '',
-            isSynced: Boolean(bestMatch.syncedLyrics),
-            source: 'LRCLIB Search'
-          });
+          if (bestMatch && (bestMatch.syncedLyrics || bestMatch.plainLyrics)) {
+            return res.json({
+              syncedLyrics: bestMatch.syncedLyrics || '',
+              plainLyrics: bestMatch.plainLyrics || '',
+              isSynced: Boolean(bestMatch.syncedLyrics && bestMatch.syncedLyrics.trim()),
+              source: `LRCLIB (${query})`
+            });
+          }
         }
-      }
-    } catch (e) { }
+      } catch (e) { }
+    }
 
     return res.status(404).json({ message: 'Không tìm thấy lời bài hát tự động.' });
   } catch (error) {
