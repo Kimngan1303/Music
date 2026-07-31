@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { getSongs, parseYouTubeUrl, addSong, deleteSong, deleteBatchSongs, searchYouTube, searchOnline, addPlaylist, addSpotifyPlaylist, getLyrics } = require('../controllers/musicController');
+const { getSongs, parseYouTubeUrl, addSong, deleteSong, deleteBatchSongs, searchYouTube, searchOnline, addPlaylist, addSpotifyPlaylist, getLyrics, polishLyricsController } = require('../controllers/musicController');
 
 router.get('/', getSongs);
 router.get('/lyrics', getLyrics);
+router.post('/lyrics/polish', polishLyricsController);
 router.get('/search', searchYouTube);
 router.get('/search-online', searchOnline);
 router.post('/parse-youtube', parseYouTubeUrl);

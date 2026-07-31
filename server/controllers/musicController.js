@@ -538,4 +538,59 @@ const getLyrics = async (req, res) => {
   }
 };
 
-module.exports = { getSongs, parseYouTubeUrl, addSong, deleteSong, deleteBatchSongs, searchYouTube, searchOnline, addPlaylist, addSpotifyPlaylist, getLyrics };
+const polishLyricsWithAI = async (rawLrcOrPlain) => {
+  if (!GEMINI_API_KEY || !rawLrcOrPlain || !rawLrcOrPlain.trim()) return rawLrcOrPlain;
+
+  try {
+    const isLrc = rawLrcOrPlain.includes('[') && rawLrcOrPlain.includes(']');
+    const prompt = isLrc
+      ? `You are a professional music lyric editor. Correct Vietnamese spelling typos, casing, and punctuation in the lyric lines below, while strictly preserving every timestamp tag [mm:ss.xx] at the beginning of each line.
+DO NOT alter or remove any timestamp tag [mm:ss.xx].
+Output ONLY the clean corrected LRC text without any markdown code blocks or explanations.
+
+Input LRC:
+${rawLrcOrPlain}`
+      : `You are a professional music lyric editor. Correct Vietnamese spelling typos, casing, and line formatting for these lyrics.
+Output ONLY the clean corrected lyrics text without any markdown code blocks or explanations.
+
+Input Lyrics:
+${rawLrcOrPlain}`;
+
+    const res = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 2048
+        }
+      },
+      { timeout: 8000 }
+    );
+
+    const replyText = res.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (replyText && replyText.trim()) {
+      return replyText.replace(/```lrc|```text|```/gi, '').trim();
+    }
+  } catch (err) {
+    console.warn("Gemini AI lyric polishing error:", err.message);
+  }
+  return rawLrcOrPlain;
+};
+
+const polishLyricsController = async (req, res) => {
+  try {
+    const { lyrics } = req.body;
+    if (!lyrics || !lyrics.trim()) {
+      return res.status(400).json({ message: 'Thiếu nội dung lời bài hát.' });
+    }
+
+    const polished = await polishLyricsWithAI(lyrics);
+    res.json({ polishedLyrics: polished });
+  } catch (error) {
+    console.error("Polish lyrics error:", error);
+    res.status(500).json({ message: 'Lỗi khi sửa lời bài hát bằng AI.' });
+  }
+};
+
+module.exports = { getSongs, parseYouTubeUrl, addSong, deleteSong, deleteBatchSongs, searchYouTube, searchOnline, addPlaylist, addSpotifyPlaylist, getLyrics, polishLyricsController };

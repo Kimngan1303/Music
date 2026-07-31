@@ -989,6 +989,7 @@ export default function App() {
   const [lyricsEditMode, setLyricsEditMode] = useState(false);
   const [customLyricsInput, setCustomLyricsInput] = useState('');
   const [activeLyricIndex, setActiveLyricIndex] = useState(-1);
+  const [isPolishingLyrics, setIsPolishingLyrics] = useState(false);
   const lyricsContainerRef = useRef(null);
   const activeLyricRef = useRef(null);
 
@@ -1344,6 +1345,45 @@ export default function App() {
       showToast('Đã lưu lời bài hát tùy chỉnh!', 'success', 'Lời Bài Hát 🎵');
     }
     setLyricsEditMode(false);
+  };
+
+  const handlePolishLyrics = async () => {
+    const textToPolish = customLyricsInput || lyricsData?.plain || '';
+    if (!textToPolish.trim()) {
+      showToast('Chưa có nội dung lời bài hát để AI sửa lỗi!', 'warning', 'Sửa Lỗi Lời Bài Hát ✨');
+      return;
+    }
+
+    setIsPolishingLyrics(true);
+    try {
+      const res = await axios.post('/api/music/lyrics/polish', { lyrics: textToPolish });
+      if (res.data && res.data.polishedLyrics) {
+        const polished = res.data.polishedLyrics;
+        const parsedLrc = parseLrc(polished);
+        const isSynced = parsedLrc.length > 0;
+
+        setLyricsData(prev => ({
+          synced: parsedLrc.length > 0 ? parsedLrc : (prev?.synced || []),
+          plain: polished,
+          isSynced: parsedLrc.length > 0 || (prev?.isSynced || false),
+          isCustom: true
+        }));
+        setCustomLyricsInput(polished);
+
+        if (track) {
+          const uid = user?._id || 'guest';
+          const localCustomKey = `aura_lyrics_${uid}_${track.id || track._id || track.youtubeId}`;
+          localStorage.setItem(localCustomKey, polished);
+        }
+
+        showToast('Gemini AI đã sửa lỗi chính tả & chuẩn hóa câu chữ thành công!', 'success', 'Gemini AI ✨');
+      }
+    } catch (err) {
+      console.warn("Polish lyrics error:", err);
+      showToast('Không thể sửa lỗi bằng AI lúc này. Vui lòng thử lại sau!', 'error', 'Sửa Lỗi Lời Bài Hát ⚠️');
+    } finally {
+      setIsPolishingLyrics(false);
+    }
   };
 
   // Helper to compress avatar image to ~15KB - 25KB WebP/JPEG (max 250x250)
@@ -6806,6 +6846,26 @@ export default function App() {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
+                {/* AI Polish Lyrics Button */}
+                <button
+                  onClick={handlePolishLyrics}
+                  disabled={isPolishingLyrics}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-gradient-to-r from-purple-500/30 to-pink-500/30 hover:from-purple-500/40 hover:to-pink-500/40 text-purple-200 border border-purple-400/30 shadow-sm disabled:opacity-50"
+                  title="Sử dụng Gemini AI để sửa lỗi chính tả và chuẩn hóa câu chữ"
+                >
+                  {isPolishingLyrics ? (
+                    <>
+                      <i className="ri-loader-4-line text-sm animate-spin text-purple-300"></i>
+                      <span>AI Đang Sửa...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="ri-magic-line text-sm text-pink-400"></i>
+                      <span>AI Sửa Lỗi Lời</span>
+                    </>
+                  )}
+                </button>
+
                 <button
                   onClick={() => setLyricsEditMode(!lyricsEditMode)}
                   className="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-white/10 hover:bg-white/20 text-white border border-white/15"
