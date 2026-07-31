@@ -1187,7 +1187,8 @@ export default function App() {
           synced,
           plain: res.data.plainLyrics || res.data.syncedLyrics || '',
           isSynced,
-          isCustom: false
+          isCustom: false,
+          source: res.data.source || ''
         });
         setCustomLyricsInput(res.data.syncedLyrics || res.data.plainLyrics || '');
         setLyricsLoading(false);
@@ -1344,6 +1345,28 @@ export default function App() {
       showToast('Đã lưu lời bài hát tùy chỉnh!', 'success', 'Lời Bài Hát 🎵');
     }
     setLyricsEditMode(false);
+  };
+
+  const getCleanSongTitle = (targetTrack) => {
+    if (!targetTrack || !targetTrack.title) return '';
+    let title = targetTrack.title;
+    const cleanA = (targetTrack.artist || '').toLowerCase();
+
+    let cleaned = title.replace(/[\(\[\{](official|mv|video|audio|lyric|live|remix|lofi|tiktok|full).*?[\)\]\}]/gi, '');
+
+    const parts = cleaned.split(/–|—|-|:|\|/).map(p => p.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      if (cleanA && parts[0].toLowerCase().includes(cleanA)) {
+        cleaned = parts.slice(1).join(' ');
+      } else if (cleanA && parts[parts.length - 1].toLowerCase().includes(cleanA)) {
+        cleaned = parts.slice(0, -1).join(' ');
+      } else {
+        cleaned = parts[1] || parts[0];
+      }
+    }
+
+    cleaned = cleaned.replace(/ft\..*|feat\..*/gi, '').trim();
+    return cleaned || targetTrack.title;
   };
 
   // Helper to compress avatar image to ~15KB - 25KB WebP/JPEG (max 250x250)
@@ -6843,29 +6866,35 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                /* 3-Column Layout (Left Title, Center Video Cover, Right Lyrics) */
+                /* 3-Column Layout (Expanded Left Title, Center Video Cover, Right Lyrics without scrollbars) */
                 <div className="h-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
                   
-                  {/* Left Column: Artist Name & Large Bold Song Title (like OVERTHINK in reference image) */}
-                  <div className="lg:col-span-3 flex flex-col justify-center items-center lg:items-start text-center lg:text-left space-y-3 shrink-0">
-                    <div>
-                      <p className="text-xs md:text-sm font-medium text-white/70 tracking-wide mb-1.5">
+                  {/* Left Column: Artist Name & Expanded Clean Song Title Only */}
+                  <div className="lg:col-span-4 flex flex-col justify-center items-center lg:items-start text-center lg:text-left space-y-3 shrink-0">
+                    <div className="w-full">
+                      <p className="text-xs md:text-sm font-medium text-white/70 tracking-wide mb-1.5 truncate">
                         {track.artist || 'Nhiều ca sĩ'}
                       </p>
-                      <h2 className="text-2xl md:text-4xl lg:text-5xl font-black text-white tracking-tight uppercase leading-tight drop-shadow-xl font-mono">
-                        {track.title}
+                      <h2 className="text-xl md:text-3xl lg:text-4xl font-extrabold text-white tracking-tight uppercase leading-snug drop-shadow-xl font-sans break-words">
+                        {getCleanSongTitle(track)}
                       </h2>
                     </div>
 
                     {/* Status Badges */}
                     <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 pt-2">
+                      {lyricsData?.source?.includes('HopAmChuan') && (
+                        <span className="px-2.5 py-1 text-[11px] font-extrabold rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1.5 shadow-sm">
+                          <i className="ri-music-fill text-xs"></i> Hợp Âm Chuẩn (HopAmChuan.com)
+                        </span>
+                      )}
+
                       {lyricsData?.isSynced ? (
                         <span className="px-2.5 py-1 text-[11px] font-extrabold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
                           <i className="ri-mic-fill text-xs animate-pulse"></i> Karaoke Tự Chạy theo Lời
                         </span>
                       ) : lyricsData?.plain ? (
                         <span className="px-2.5 py-1 text-[11px] font-extrabold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5 shadow-sm">
-                          <i className="ri-file-text-line text-xs"></i> Lời Đọc Tĩnh (Không bộ đếm)
+                          <i className="ri-file-text-line text-xs"></i> Lời Đọc Tĩnh
                         </span>
                       ) : null}
 
@@ -6877,9 +6906,9 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Center Column: Video Thumbnail Cover Art (like center image in reference picture) */}
+                  {/* Center Column: Video Thumbnail Cover Art */}
                   <div className="lg:col-span-4 flex justify-center items-center my-2 lg:my-0">
-                    <div className="relative group max-w-[250px] sm:max-w-[290px] lg:max-w-[360px] w-full aspect-square">
+                    <div className="relative group max-w-[240px] sm:max-w-[280px] lg:max-w-[340px] w-full aspect-square">
                       <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-cyan-500 to-purple-600 opacity-30 group-hover:opacity-60 blur-xl transition duration-500"></div>
                       <img
                         src={track.thumbnail}
@@ -6889,8 +6918,8 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Right Column: Lyrics List (like right side in reference picture) */}
-                  <div className="lg:col-span-5 h-full max-h-[350px] lg:max-h-full overflow-y-auto custom-scrollbar flex flex-col justify-start pr-2 lg:pr-4 py-4 text-left">
+                  {/* Right Column: Lyrics List (Hidden Scrollbars) */}
+                  <div className="lg:col-span-4 h-full max-h-[350px] lg:max-h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex flex-col justify-start pr-1 py-4 text-left">
                     {lyricsData?.isSynced && lyricsData.synced.length > 0 ? (
                       /* Synced Karaoke Mode */
                       <div ref={lyricsContainerRef} className="w-full flex flex-col gap-4 my-auto py-8">
@@ -6901,7 +6930,7 @@ export default function App() {
                               key={idx}
                               ref={isActive ? activeLyricRef : null}
                               onClick={() => seek(line.time)}
-                              className={`transition-all duration-300 cursor-pointer select-none py-1.5 px-3 rounded-xl hover:bg-white/10 ${
+                              className={`transition-all duration-300 cursor-pointer select-none py-2 px-3.5 rounded-2xl hover:bg-white/10 ${
                                 isActive
                                   ? 'text-base md:text-xl lg:text-2xl font-black italic scale-105 origin-left text-white drop-shadow-[0_0_18px_rgba(56,189,248,0.9)] bg-white/10 border-l-4 border-cyan-400 pl-4'
                                   : 'text-xs md:text-sm font-semibold opacity-50 hover:opacity-90 text-white/80'

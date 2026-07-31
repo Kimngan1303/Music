@@ -415,11 +415,105 @@ Channel Name: "${videoArtist || ''}"`;
   return null;
 };
 
+/**
+ * Scrape Vietnamese lyrics directly from HopAmChuan (hopamchuan.com)
+ * @param {string} query 
+ * @returns {Promise<string|null>}
+ */
+const fetchLyricsFromHopAmChuan = async (query) => {
+  if (!query || !query.trim()) return null;
+
+  try {
+    const cleanQ = query.replace(/[\(\[\{].*?[\)\]\}]/g, '').replace(/ft\..*|feat\..*/gi, '').trim();
+    const searchUrl = `https://hopamchuan.com/search?q=${encodeURIComponent(cleanQ)}`;
+    
+    const searchRes = await axios.get(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7'
+      },
+      timeout: 5000
+    });
+
+    const html = searchRes.data;
+    const songLinkMatch = html.match(/href="(https:\/\/hopamchuan\.com\/song\/[^"]+)"\s+class="song-title"/i) ||
+                          html.match(/href="(\/song\/[^"]+)"\s+class="song-title"/i);
+
+    if (!songLinkMatch) return null;
+
+    let songUrl = songLinkMatch[1];
+    if (songUrl.startsWith('/')) {
+      songUrl = `https://hopamchuan.com${songUrl}`;
+    }
+
+    const detailRes = await axios.get(songUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7'
+      },
+      timeout: 5000
+    });
+
+    const detailHtml = detailRes.data;
+    const lyricDivMatch = detailHtml.match(/<div id="song-lyric"[^>]*>([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/i) ||
+                          detailHtml.match(/<div id="song-lyric"[^>]*>([\s\S]*?)<div id="song-leftover-space"/i);
+
+    if (!lyricDivMatch) return null;
+
+    const lyricHtml = lyricDivMatch[1];
+    const lines = [];
+    const lineRegex = /<div class="chord_lyric_line[^"]*">([\s\S]*?)<\/div>/gi;
+    let match;
+
+    while ((match = lineRegex.exec(lyricHtml)) !== null) {
+      const lineContent = match[1];
+      let cleanLine = lineContent.replace(/<span class="hopamchuan_chord_inline">[\s\S]*?<\/span>/gi, '');
+      cleanLine = cleanLine.replace(/<[^>]+>/g, '').replace(/&nbsp;/gi, ' ').trim();
+      
+      if (cleanLine && !cleanLine.toLowerCase().startsWith('tone ')) {
+        lines.push(cleanLine);
+      }
+    }
+
+    if (lines.length > 0) {
+      return lines.join('\n');
+    }
+  } catch (err) {
+    console.warn("HopAmChuan scrape warning:", err.message);
+  }
+  return null;
+};
+
 const getLyrics = async (req, res) => {
   try {
     const { title, artist } = req.query;
     if (!title) {
       return res.status(400).json({ message: 'Thiếu tên bài hát.' });
+    }
+
+    // ── PRIORITY LAYER 0: HOPAMCHUAN.COM VIETNAMESE LYRICS SEARCH ─────────
+    try {
+      const hopAmChuanLyrics = await fetchLyricsFromHopAmChuan(title);
+      if (hopAmChuanLyrics) {
+        console.log(`🎶 Found Vietnamese Lyrics from HopAmChuan.com for "${title}"`);
+        let syncedLrc = '';
+        try {
+          const cleanT = title.replace(/[\(\[\{].*?[\)\]\}]/g, '').trim();
+          const lrclibRes = await axios.get('https://lrclib.net/api/search', { params: { q: cleanT }, timeout: 3000 });
+          if (lrclibRes.data?.[0]?.syncedLyrics) {
+            syncedLrc = lrclibRes.data[0].syncedLyrics;
+          }
+        } catch (e) {}
+
+        return res.json({
+          syncedLyrics: syncedLrc,
+          plainLyrics: hopAmChuanLyrics,
+          isSynced: Boolean(syncedLrc && syncedLrc.trim()),
+          source: 'HopAmChuan.com (Hợp Âm Chuẩn)'
+        });
+      }
+    } catch (e) {
+      console.warn("HopAmChuan layer error:", e.message);
     }
 
     // ── LAYER 1: GEMINI AI POWERED EXACT METADATA EXTRACTION ───────────────
