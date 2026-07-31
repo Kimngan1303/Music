@@ -907,6 +907,32 @@ function Tooltip({ text, children, className = "" }) {
   );
 }
 
+// Helper: Parse LRC timestamp string [mm:ss.xx] into array of { time: seconds, text: string }
+const parseLrc = (lrcText) => {
+  if (!lrcText || typeof lrcText !== 'string') return [];
+  const lines = lrcText.split('\n');
+  const result = [];
+  const timeRegex = /\[(\d{2}):(\d{2})(?:\.(\d{2,3}))?\]/g;
+
+  lines.forEach(line => {
+    const matches = [...line.matchAll(timeRegex)];
+    if (matches.length > 0) {
+      const text = line.replace(timeRegex, '').trim();
+      matches.forEach(m => {
+        const min = parseInt(m[1], 10);
+        const sec = parseInt(m[2], 10);
+        const ms = m[3] ? parseInt(m[3].padEnd(3, '0'), 10) : 0;
+        const totalSeconds = min * 60 + sec + ms / 1000;
+        if (text) {
+          result.push({ time: totalSeconds, text });
+        }
+      });
+    }
+  });
+
+  return result.sort((a, b) => a.time - b.time);
+};
+
 // Start with empty library — user adds their own songs
 const DEFAULT_SONGS = [];
 
@@ -954,6 +980,117 @@ export default function App() {
   const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
   const isCreatingPlaylistRef = useRef(false);
   const [songToAdd, setSongToAdd] = useState(null); // Which song is currently selected to be added to a playlist
+
+  // Lyrics State & Auto-Sync
+  const [lyricsModal, setLyricsModal] = useState(false);
+  const [lyricsData, setLyricsData] = useState(null); // { synced: [{time, text}], plain: string, isSynced: boolean, isCustom: boolean }
+  const [lyricsLoading, setLyricsLoading] = useState(false);
+  const [lyricsErr, setLyricsErr] = useState('');
+  const [lyricsEditMode, setLyricsEditMode] = useState(false);
+  const [customLyricsInput, setCustomLyricsInput] = useState('');
+  const [activeLyricIndex, setActiveLyricIndex] = useState(-1);
+  const lyricsContainerRef = useRef(null);
+  const activeLyricRef = useRef(null);
+
+  // Fetch Lyrics for current track
+  const fetchLyrics = async (targetTrack) => {
+    if (!targetTrack) return;
+    setLyricsLoading(true);
+    setLyricsErr('');
+    setLyricsData(null);
+    setActiveLyricIndex(-1);
+
+    const uid = user?._id || 'guest';
+    const localCustomKey = `aura_lyrics_${uid}_${targetTrack.id || targetTrack._id || targetTrack.youtubeId}`;
+    const savedCustom = localStorage.getItem(localCustomKey);
+
+    if (savedCustom) {
+      const parsedLrc = parseLrc(savedCustom);
+      const isSynced = parsedLrc.length > 0;
+      setLyricsData({
+        synced: parsedLrc,
+        plain: savedCustom,
+        isSynced,
+        isCustom: true
+      });
+      setCustomLyricsInput(savedCustom);
+      setLyricsLoading(false);
+      return;
+    }
+
+    try {
+      const res = await axios.get(`/api/music/lyrics?title=${encodeURIComponent(targetTrack.title)}&artist=${encodeURIComponent(targetTrack.artist || '')}`);
+      if (res.data) {
+        const synced = parseLrc(res.data.syncedLyrics);
+        const isSynced = synced.length > 0;
+        setLyricsData({
+          synced,
+          plain: res.data.plainLyrics || res.data.syncedLyrics || '',
+          isSynced,
+          isCustom: false
+        });
+        setCustomLyricsInput(res.data.syncedLyrics || res.data.plainLyrics || '');
+      }
+    } catch (err) {
+      console.warn("Could not fetch lyrics automatically:", err);
+      setLyricsErr('Không tìm thấy lời bài hát tự động. Bạn có thể tự dán lời bài hát!');
+    } finally {
+      setLyricsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (lyricsModal && track) {
+      fetchLyrics(track);
+    }
+  }, [track?.id, track?.youtubeId, lyricsModal]);
+
+  // Auto-highlight & auto-scroll lyric line during playback
+  useEffect(() => {
+    if (!lyricsData || !lyricsData.isSynced || lyricsData.synced.length === 0) return;
+    const synced = lyricsData.synced;
+
+    let currentIndex = -1;
+    for (let i = 0; i < synced.length; i++) {
+      if (curTime >= synced[i].time - 0.3) {
+        currentIndex = i;
+      } else {
+        break;
+      }
+    }
+
+    if (currentIndex !== activeLyricIndex) {
+      setActiveLyricIndex(currentIndex);
+      if (activeLyricRef.current) {
+        activeLyricRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
+    }
+  }, [curTime, lyricsData]);
+
+  const handleSaveCustomLyrics = () => {
+    if (!track) return;
+    const uid = user?._id || 'guest';
+    const localCustomKey = `aura_lyrics_${uid}_${track.id || track._id || track.youtubeId}`;
+
+    if (!customLyricsInput.trim()) {
+      localStorage.removeItem(localCustomKey);
+      fetchLyrics(track);
+    } else {
+      localStorage.setItem(localCustomKey, customLyricsInput.trim());
+      const parsedLrc = parseLrc(customLyricsInput.trim());
+      setLyricsData({
+        synced: parsedLrc,
+        plain: customLyricsInput.trim(),
+        isSynced: parsedLrc.length > 0,
+        isCustom: true
+      });
+      showToast('Đã lưu lời bài hát tùy chỉnh!', 'success', 'Lời Bài Hát 🎵');
+    }
+    setLyricsEditMode(false);
+  };
 
   // Context Menu (Right Click) & Edit Playlist Details State
   const [contextMenu, setContextMenu] = useState(null); // { x, y, playlist }
@@ -6055,6 +6192,15 @@ export default function App() {
               </button>
             </Tooltip>
 
+            {/* Lyrics Karaoke Button */}
+            <Tooltip text="Lời bài hát (Karaoke 🎤)">
+              <button onClick={() => setLyricsModal(true)}
+                className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                style={{ color: lyricsModal ? C.primarySolid : C.txtFad }}>
+                <i className={lyricsModal ? "ri-mic-fill text-lg md:text-xl" : "ri-mic-line text-lg md:text-xl"}></i>
+              </button>
+            </Tooltip>
+
             {/* Mini Player Window Button */}
             <Tooltip text={pipWindow ? "Đóng cửa sổ thu nhỏ" : "Mở cửa sổ con nổi toàn hệ thống (Mini Player)"}>
               <button
@@ -6511,6 +6657,165 @@ export default function App() {
               >
                 Xóa ngay
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── KARAOKE / LYRICS MODAL ────────────────────────────────────────── */}
+      {lyricsModal && track && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 md:p-6"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(20px)' }}
+          onMouseDown={e => { if (e.target === e.currentTarget) setLyricsModal(false); }}>
+
+          <div className="relative w-full max-w-2xl h-[85vh] max-h-[720px] rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200 border border-white/10"
+            style={{ background: C.isDark ? '#0f172a' : '#1e1b4b', color: '#fff' }}>
+
+            {/* Background album cover artwork blurred */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-25">
+              <img src={track.thumbnail} alt="" className="w-full h-full object-cover blur-3xl scale-125" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80" />
+            </div>
+
+            {/* Header */}
+            <div className="relative z-10 flex items-center justify-between p-4 md:p-6 border-b border-white/10 shrink-0 bg-black/30 backdrop-blur-md">
+              <div className="flex items-center gap-3 min-w-0">
+                <img src={track.thumbnail} alt={track.title} className="w-12 h-12 md:w-14 md:h-14 rounded-2xl object-cover shadow-lg shrink-0 border border-white/15" />
+                <div className="flex flex-col min-w-0">
+                  <h3 className="text-sm md:text-base font-extrabold truncate text-white leading-tight">{track.title}</h3>
+                  <p className="text-xs text-white/70 truncate">{track.artist}</p>
+                  
+                  {/* Status Badge */}
+                  <div className="flex items-center gap-2 mt-1">
+                    {lyricsData?.isSynced ? (
+                      <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                        <i className="ri-mic-fill text-xs animate-pulse"></i> Karaoke Tự Chạy theo Lời
+                      </span>
+                    ) : lyricsData?.plain ? (
+                      <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                        <i className="ri-file-text-line text-xs"></i> Lời Đọc Tĩnh (Bản Remix / Không bộ đếm)
+                      </span>
+                    ) : null}
+                    
+                    {lyricsData?.isCustom && (
+                      <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                        ✨ Lời Tự Nhập
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setLyricsEditMode(!lyricsEditMode)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-white/10 hover:bg-white/20 text-white border border-white/15"
+                  title="Tự dán hoặc chỉnh sửa lời bài hát"
+                >
+                  <i className={lyricsEditMode ? "ri-close-line" : "ri-edit-box-line"}></i>
+                  <span>{lyricsEditMode ? "Đóng Sửa" : "Tự Sửa Lời"}</span>
+                </button>
+                <button
+                  onClick={() => setLyricsModal(false)}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center transition bg-white/10 hover:bg-white/20 text-white cursor-pointer"
+                >
+                  <i className="ri-close-line text-xl"></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Main Lyrics Body Container */}
+            <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8 flex flex-col items-center min-h-0 text-center">
+
+              {lyricsLoading ? (
+                <div className="my-auto flex flex-col items-center gap-3">
+                  <i className="ri-loader-4-line text-4xl animate-spin text-cyan-400"></i>
+                  <p className="text-sm font-bold text-white/80">Đang tìm lời bài hát tự động...</p>
+                </div>
+              ) : lyricsEditMode ? (
+                /* Edit Custom Lyrics Mode */
+                <div className="w-full flex flex-col gap-4 max-w-lg my-auto text-left">
+                  <div>
+                    <h4 className="text-sm font-bold mb-1 text-white flex items-center gap-2">
+                      <i className="ri-edit-line text-cyan-400"></i> Tự Nhập Lời Bài Hát
+                    </h4>
+                    <p className="text-xs text-white/60 mb-3">
+                      Bạn có thể dán định dạng định giờ LRC `[00:12.34] Lời hát...` để chạy Karaoke, hoặc dán văn bản thường để tự đọc.
+                    </p>
+                    <textarea
+                      rows={10}
+                      value={customLyricsInput}
+                      onChange={e => setCustomLyricsInput(e.target.value)}
+                      placeholder="Dán lời bài hát tại đây..."
+                      className="w-full p-4 rounded-2xl text-xs outline-none bg-black/40 border border-white/20 text-white custom-scrollbar focus:border-cyan-400 font-mono"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => setLyricsEditMode(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      onClick={handleSaveCustomLyrics}
+                      className="px-5 py-2 rounded-xl text-xs font-bold text-white shadow-lg flex items-center gap-1.5"
+                      style={{ background: C.primary }}
+                    >
+                      <i className="ri-save-line"></i> Lưu Lời Bài Hát
+                    </button>
+                  </div>
+                </div>
+              ) : lyricsData?.isSynced && lyricsData.synced.length > 0 ? (
+                /* Synced Karaoke Mode */
+                <div ref={lyricsContainerRef} className="w-full flex flex-col items-center gap-5 my-auto py-12">
+                  {lyricsData.synced.map((line, idx) => {
+                    const isActive = activeLyricIndex === idx;
+                    return (
+                      <div
+                        key={idx}
+                        ref={isActive ? activeLyricRef : null}
+                        onClick={() => seek({ target: { value: line.time } })}
+                        className={`transition-all duration-300 cursor-pointer px-4 py-2 rounded-2xl hover:scale-105 active:scale-95 max-w-xl select-none ${
+                          isActive
+                            ? 'text-lg md:text-2xl font-black scale-110 drop-shadow-[0_0_20px_rgba(56,189,248,0.8)]'
+                            : 'text-sm md:text-base font-semibold opacity-40 hover:opacity-80'
+                        }`}
+                        style={{
+                          color: isActive ? (C.primarySolid || '#38bdf8') : '#ffffff',
+                          textShadow: isActive ? `0 0 16px ${C.primaryGlow || 'rgba(56,189,248,0.6)'}` : 'none'
+                        }}
+                      >
+                        {line.text}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : lyricsData?.plain ? (
+                /* Plain Text Non-Synced Mode (For Remix / Songs without LRC timing) */
+                <div className="w-full max-w-xl text-center my-auto py-8 whitespace-pre-wrap leading-relaxed text-sm md:text-base font-medium opacity-90 text-white/90">
+                  {lyricsData.plain}
+                </div>
+              ) : (
+                /* Empty / Not Found State */
+                <div className="my-auto flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 rounded-3xl bg-white/10 flex items-center justify-center text-3xl text-white/60 mb-1">
+                    <i className="ri-music-2-line"></i>
+                  </div>
+                  <h4 className="text-sm font-bold text-white">Chưa có lời bài hát cho bài này</h4>
+                  <p className="text-xs text-white/60 max-w-xs mb-2">
+                    Các bản Remix hoặc nhạc chế thường không tìm thấy lời tự động. Bạn có thể bấm nút dưới để tự thêm lời!
+                  </p>
+                  <button
+                    onClick={() => setLyricsEditMode(true)}
+                    className="px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-lg flex items-center gap-2 cursor-pointer transition hover:scale-105"
+                    style={{ background: C.primary }}
+                  >
+                    <i className="ri-edit-box-line"></i> Tự Nhập Lời Cho Bài Hát Này
+                  </button>
+                </div>
+              )}
+
             </div>
           </div>
         </div>

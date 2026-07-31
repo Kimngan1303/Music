@@ -309,4 +309,70 @@ const addSpotifyPlaylist = async (req, res) => {
   }
 };
 
-module.exports = { getSongs, parseYouTubeUrl, addSong, deleteSong, deleteBatchSongs, searchYouTube, searchOnline, addPlaylist, addSpotifyPlaylist };
+const cleanSearchTerm = (str) => {
+  if (!str) return '';
+  return str
+    .replace(/[\(\[\{].*?[\)\]\}]/g, '') // remove (Official MV), [Audio], etc.
+    .replace(/official\s*music\s*video|official\s*video|official\s*audio|mv|remix|lofi|ver|version|cover|tiktok|audio/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const getLyrics = async (req, res) => {
+  try {
+    const { title, artist } = req.query;
+    if (!title) {
+      return res.status(400).json({ message: 'Thiếu tên bài hát.' });
+    }
+
+    const cleanTitle = cleanSearchTerm(title);
+    const cleanArtist = cleanSearchTerm(artist || '');
+
+    // 1. Try LRCLIB exact get API
+    try {
+      const lrclibRes = await axios.get('https://lrclib.net/api/get', {
+        params: {
+          track_name: cleanTitle,
+          artist_name: cleanArtist
+        },
+        timeout: 4000
+      });
+      if (lrclibRes.data && (lrclibRes.data.syncedLyrics || lrclibRes.data.plainLyrics)) {
+        return res.json({
+          syncedLyrics: lrclibRes.data.syncedLyrics || '',
+          plainLyrics: lrclibRes.data.plainLyrics || '',
+          isSynced: Boolean(lrclibRes.data.syncedLyrics),
+          source: 'LRCLIB Direct'
+        });
+      }
+    } catch (e) { }
+
+    // 2. Fallback: Search LRCLIB query API
+    try {
+      const searchQuery = `${cleanTitle} ${cleanArtist}`.trim();
+      const searchRes = await axios.get('https://lrclib.net/api/search', {
+        params: { q: searchQuery },
+        timeout: 4000
+      });
+
+      if (searchRes.data && Array.isArray(searchRes.data) && searchRes.data.length > 0) {
+        const bestMatch = searchRes.data.find(item => item.syncedLyrics) || searchRes.data[0];
+        if (bestMatch.syncedLyrics || bestMatch.plainLyrics) {
+          return res.json({
+            syncedLyrics: bestMatch.syncedLyrics || '',
+            plainLyrics: bestMatch.plainLyrics || '',
+            isSynced: Boolean(bestMatch.syncedLyrics),
+            source: 'LRCLIB Search'
+          });
+        }
+      }
+    } catch (e) { }
+
+    return res.status(404).json({ message: 'Không tìm thấy lời bài hát tự động.' });
+  } catch (error) {
+    console.error("Lyrics search error:", error);
+    res.status(500).json({ message: 'Lỗi khi tải lời bài hát.' });
+  }
+};
+
+module.exports = { getSongs, parseYouTubeUrl, addSong, deleteSong, deleteBatchSongs, searchYouTube, searchOnline, addPlaylist, addSpotifyPlaylist, getLyrics };
