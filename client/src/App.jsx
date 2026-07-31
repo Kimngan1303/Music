@@ -2722,14 +2722,21 @@ export default function App() {
     if (!newPlaylistName.trim() || !user) return;
     try {
       const res = await axios.post('/api/playlists', { name: newPlaylistName, userId: user._id });
+      const newPl = res.data;
       setPlaylists(p => {
-        const up = [res.data, ...p];
+        const up = [newPl, ...p];
         localStorage.setItem(playlistsKey(user._id), JSON.stringify(up));
         return up;
       });
       setPlaylistModal(false);
       setNewPlaylistName('');
-      setTab(`playlist_${res.data._id}`);
+
+      // Nếu đang trong quá trình chọn thêm bài hát vào playlist, tự động thêm luôn bài hát này vào playlist vừa tạo
+      if (songToAdd) {
+        handleAddToPlaylist(newPl._id, songToAdd);
+      } else {
+        setTab(`playlist_${newPl._id}`);
+      }
     } catch (err) {
       console.error(err);
       alert('Lỗi tạo playlist: ' + (err.response?.data?.message || err.message));
@@ -5710,11 +5717,11 @@ export default function App() {
 
       {/* ── CREATE PLAYLIST MODAL ─────────────────────── */}
       {playlistModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-[60] p-4"
-          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(14px)' }}
+        <div className="fixed inset-0 flex items-center justify-center z-[80] p-4"
+          style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(16px)' }}
           onMouseDown={e => { if (e.target === e.currentTarget) setPlaylistModal(false); }}>
-          <div className="w-full max-w-sm rounded-3xl p-8 shadow-2xl"
-            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+          <div className="w-full max-w-sm rounded-3xl p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+            style={{ background: C.isDark ? '#1e293b' : '#fffcf9', border: `1.5px solid ${C.border}`, boxShadow: '0 25px 60px rgba(0,0,0,0.3)' }}>
             <h3 className="flex items-center gap-2 mb-5" style={{ fontFamily: F.heading, fontSize: '20px', fontWeight: 700, color: C.txt }}>
               <i className="ri-play-list-add-fill" style={{ color: C.primarySolid }}></i> Tạo Playlist Mới
             </h3>
