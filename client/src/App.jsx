@@ -6012,9 +6012,14 @@ export default function App() {
             <span className="text-[10px] md:text-[11px] font-mono w-7 md:w-9 text-right shrink-0" style={{ color: C.txtFad }}>{fmt(curTime)}</span>
             <input type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
               className={`flex-1 cursor-pointer ${themeKey === 'summer_season' ? 'sun-theme-slider' : ''}`}
-              style={themeKey === 'summer_season' ? {
-                background: `linear-gradient(90deg, #ff7e5f 0%, #f59e0b ${(curTime / (dur || 1)) * 100}%, rgba(245, 158, 11, 0.25) ${(curTime / (dur || 1)) * 100}%)`
-              } : { accentColor: C.primarySolid, '--accent-color': C.primarySolid, '--accent-glow': C.primaryGlow }} />
+              style={{
+                background: themeKey === 'summer_season'
+                  ? `linear-gradient(90deg, #ff7e5f 0%, #f59e0b ${(dur > 0 ? (curTime / dur) * 100 : 0)}%, rgba(245, 158, 11, 0.25) ${(dur > 0 ? (curTime / dur) * 100 : 0)}%, rgba(245, 158, 11, 0.25) 100%)`
+                  : `linear-gradient(90deg, ${C.primarySolid} 0%, ${C.primarySolid} ${(dur > 0 ? (curTime / dur) * 100 : 0)}%, ${C.isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'} ${(dur > 0 ? (curTime / dur) * 100 : 0)}%, ${C.isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'} 100%)`,
+                accentColor: C.primarySolid,
+                '--accent-color': C.primarySolid,
+                '--accent-glow': C.primaryGlow
+              }} />
             <span className="text-[11px] font-mono w-9 shrink-0" style={{ color: C.txtFad }}>{fmt(dur)}</span>
           </div>
         </div>
@@ -6030,9 +6035,14 @@ export default function App() {
           </Tooltip>
           <input type="range" min="0" max="100" value={muted ? 0 : vol} onChange={changeVol}
             className={`w-24 cursor-pointer ${themeKey === 'summer_season' ? 'sun-theme-slider' : ''}`}
-            style={themeKey === 'summer_season' ? {
-              background: `linear-gradient(90deg, #ff7e5f 0%, #f59e0b ${muted ? 0 : vol}%, rgba(245, 158, 11, 0.25) ${muted ? 0 : vol}%)`
-            } : { accentColor: C.primarySolid, '--accent-color': C.primarySolid, '--accent-glow': C.primaryGlow }} />
+            style={{
+              background: themeKey === 'summer_season'
+                ? `linear-gradient(90deg, #ff7e5f 0%, #f59e0b ${muted ? 0 : vol}%, rgba(245, 158, 11, 0.25) ${muted ? 0 : vol}%, rgba(245, 158, 11, 0.25) 100%)`
+                : `linear-gradient(90deg, ${C.primarySolid} 0%, ${C.primarySolid} ${muted ? 0 : vol}%, ${C.isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'} ${muted ? 0 : vol}%, ${C.isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'} 100%)`,
+              accentColor: C.primarySolid,
+              '--accent-color': C.primarySolid,
+              '--accent-glow': C.primaryGlow
+            }} />
         </div>
       </footer>
 
@@ -6566,8 +6576,13 @@ export default function App() {
                     </div>
                     <input
                       type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
-                      className="w-full h-1 cursor-pointer bg-white/30 rounded-lg"
-                      style={{ accentColor: C.primarySolid, '--accent-color': C.primarySolid, '--accent-glow': C.primaryGlow }}
+                      className="w-full h-1 cursor-pointer rounded-lg"
+                      style={{
+                        background: `linear-gradient(90deg, ${C.primarySolid} 0%, ${C.primarySolid} ${(dur > 0 ? (curTime / dur) * 100 : 0)}%, rgba(255, 255, 255, 0.2) ${(dur > 0 ? (curTime / dur) * 100 : 0)}%, rgba(255, 255, 255, 0.2) 100%)`,
+                        accentColor: C.primarySolid,
+                        '--accent-color': C.primarySolid,
+                        '--accent-glow': C.primaryGlow
+                      }}
                     />
                   </div>
 
@@ -6662,8 +6677,13 @@ export default function App() {
                     </div>
                     <input
                       type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
-                      className="w-full h-1 cursor-pointer bg-white/30 rounded-lg"
-                      style={{ accentColor: C.primarySolid, '--accent-color': C.primarySolid, '--accent-glow': C.primaryGlow }}
+                      className="w-full h-1 cursor-pointer rounded-lg"
+                      style={{
+                        background: `linear-gradient(90deg, ${C.primarySolid} 0%, ${C.primarySolid} ${(dur > 0 ? (curTime / dur) * 100 : 0)}%, rgba(255, 255, 255, 0.2) ${(dur > 0 ? (curTime / dur) * 100 : 0)}%, rgba(255, 255, 255, 0.2) 100%)`,
+                        accentColor: C.primarySolid,
+                        '--accent-color': C.primarySolid,
+                        '--accent-glow': C.primaryGlow
+                      }}
                     />
                   </div>
 
