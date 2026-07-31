@@ -990,6 +990,7 @@ export default function App() {
   const [customLyricsInput, setCustomLyricsInput] = useState('');
   const [activeLyricIndex, setActiveLyricIndex] = useState(-1);
   const [isPolishingLyrics, setIsPolishingLyrics] = useState(false);
+  const [lyricOffset, setLyricOffset] = useState(0);
   const lyricsContainerRef = useRef(null);
   const activeLyricRef = useRef(null);
 
@@ -1300,14 +1301,15 @@ export default function App() {
     }
   }, [track?.id, track?.youtubeId, lyricsModal]);
 
-  // Auto-highlight & auto-scroll lyric line during playback
+  // Auto-highlight & auto-scroll lyric line during playback (with lyricOffset adjustment)
   useEffect(() => {
     if (!lyricsData || !lyricsData.isSynced || lyricsData.synced.length === 0) return;
     const synced = lyricsData.synced;
+    const adjustedTime = curTime - lyricOffset;
 
     let currentIndex = -1;
     for (let i = 0; i < synced.length; i++) {
-      if (curTime >= synced[i].time - 0.3) {
+      if (adjustedTime >= synced[i].time - 0.3) {
         currentIndex = i;
       } else {
         break;
@@ -1323,7 +1325,7 @@ export default function App() {
         });
       }
     }
-  }, [curTime, lyricsData]);
+  }, [curTime, lyricsData, lyricOffset]);
 
   const handleSaveCustomLyrics = () => {
     if (!track) return;
@@ -1383,6 +1385,42 @@ export default function App() {
       showToast('Không thể sửa lỗi bằng AI lúc này. Vui lòng thử lại sau!', 'error', 'Sửa Lỗi Lời Bài Hát ⚠️');
     } finally {
       setIsPolishingLyrics(false);
+    }
+  };
+
+  const adjustLyricOffset = (delta) => {
+    setLyricOffset(prev => {
+      const next = parseFloat((prev + delta).toFixed(1));
+      showToast(`Đã chỉnh lệch nhịp lời: ${next >= 0 ? '+' : ''}${next} giây`, 'info', 'Chỉnh Nhịp Karaoke ⏱️');
+      return next;
+    });
+  };
+
+  const fetchVideoLyrics = async () => {
+    if (!track) return;
+    setLyricsLoading(true);
+    setLyricsErr('');
+
+    try {
+      const res = await axios.get(`/api/music/video-lyrics?youtubeId=${track.youtubeId || ''}&title=${encodeURIComponent(track.title)}&artist=${encodeURIComponent(track.artist || '')}&duration=${dur || 210}`);
+      if (res.data && res.data.syncedLyrics) {
+        const synced = parseLrc(res.data.syncedLyrics);
+        setLyricsData({
+          synced,
+          plain: res.data.plainLyrics || res.data.syncedLyrics || '',
+          isSynced: synced.length > 0,
+          isCustom: true
+        });
+        setCustomLyricsInput(res.data.syncedLyrics);
+        showToast(`Đã bóc tách lời & mốc thời gian từ Video (${res.data.source || 'YouTube'})!`, 'success', 'Bóc Tách Video 📹');
+        setLyricsLoading(false);
+        return;
+      }
+    } catch (err) {
+      console.warn("Fetch video lyrics error:", err);
+      showToast('Không thể bóc tách lời từ Video này. Vui lòng thử tự nhập lời!', 'error', 'Bóc Tách Video ⚠️');
+    } finally {
+      setLyricsLoading(false);
     }
   };
 
@@ -6881,6 +6919,48 @@ export default function App() {
                   <i className="ri-close-line text-xl"></i>
                 </button>
               </div>
+            </div>
+
+            {/* Sub-Toolbar for Offset Alignment & Video Extraction */}
+            <div className="relative z-10 flex items-center justify-between px-6 py-2.5 bg-black/40 border-b border-white/10 shrink-0 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-white/60 text-[11px] font-medium">Chỉnh lệch nhịp:</span>
+                <button
+                  onClick={() => adjustLyricOffset(-0.5)}
+                  className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-mono font-bold text-[11px] transition active:scale-95 cursor-pointer"
+                  title="Cho lời chạy nhanh hơn 0.5s"
+                >
+                  ⏩ -0.5s
+                </button>
+                <span className="font-mono font-bold text-cyan-300 text-[11px] min-w-[36px] text-center">
+                  {lyricOffset > 0 ? `+${lyricOffset}` : lyricOffset}s
+                </span>
+                <button
+                  onClick={() => adjustLyricOffset(0.5)}
+                  className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-mono font-bold text-[11px] transition active:scale-95 cursor-pointer"
+                  title="Cho lời chạy chậm hơn 0.5s"
+                >
+                  ⏪ +0.5s
+                </button>
+                {lyricOffset !== 0 && (
+                  <button
+                    onClick={() => setLyricOffset(0)}
+                    className="px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 text-[10px] font-bold transition cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+
+              <button
+                onClick={fetchVideoLyrics}
+                disabled={lyricsLoading}
+                className="px-3 py-1 rounded-xl font-bold bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-400/30 transition flex items-center gap-1.5 cursor-pointer text-[11px]"
+                title="Bóc tách phụ đề & mốc thời gian trực tiếp từ Video YouTube này"
+              >
+                <i className="ri-video-line text-sm"></i>
+                <span>📹 Tải Lời Từ Video</span>
+              </button>
             </div>
 
             {/* Main Lyrics Body Container */}

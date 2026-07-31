@@ -593,4 +593,103 @@ const polishLyricsController = async (req, res) => {
   }
 };
 
-module.exports = { getSongs, parseYouTubeUrl, addSong, deleteSong, deleteBatchSongs, searchYouTube, searchOnline, addPlaylist, addSpotifyPlaylist, getLyrics, polishLyricsController };
+const { fetchYouTubeCaptions } = require('../services/videoLyricsService');
+
+const generateLrcWithAIDuration = async (lyricsText, durationSec, title, artist) => {
+  if (!GEMINI_API_KEY || !lyricsText || !durationSec) return lyricsText;
+
+  try {
+    const prompt = `You are a professional music timing editor. Generate realistic LRC timestamp tags [mm:ss.xx] for these lyrics to match a video with total duration of ${Math.round(durationSec)} seconds.
+Song Title: "${title || ''}"
+Artist: "${artist || ''}"
+
+Rules:
+1. Account for intro instrumental lead-in time (usually 10-25 seconds).
+2. Distribute lines naturally across verses and choruses up to ${Math.round(durationSec - 10)} seconds.
+3. Every line MUST start with an exact timestamp [mm:ss.xx].
+4. Correct Vietnamese spelling typos.
+5. Output ONLY the LRC formatted lines. No markdown code blocks or explanations.
+
+Input Lyrics:
+${lyricsText}`;
+
+    const res = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 2048 }
+      },
+      { timeout: 8000 }
+    );
+
+    const reply = res.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (reply && reply.trim()) {
+      return reply.replace(/```lrc|```text|```/gi, '').trim();
+    }
+  } catch (e) {
+    console.warn("AI Duration timestamp generation warning:", e.message);
+  }
+  return lyricsText;
+};
+
+const getVideoLyrics = async (req, res) => {
+  try {
+    const { youtubeId, title, artist, duration } = req.query;
+    if (!youtubeId && !title) {
+      return res.status(400).json({ message: 'Thiếu thông tin Video.' });
+    }
+
+    // 1. Try to fetch direct YouTube captions for exact video audio waveform timing
+    if (youtubeId) {
+      const captions = await fetchYouTubeCaptions(youtubeId);
+      if (captions && captions.length > 0) {
+        // Convert YouTube captions into LRC format
+        const rawLrcLines = captions.map(c => {
+          const min = Math.floor(c.start / 60).toString().padStart(2, '0');
+          const sec = (c.start % 60).toFixed(2).padStart(5, '0');
+          return `[${min}:${sec}] ${c.text}`;
+        }).join('\n');
+
+        // Polish text with Gemini AI
+        const polishedLrc = await polishLyricsWithAI(rawLrcLines);
+
+        return res.json({
+          syncedLyrics: polishedLrc,
+          plainLyrics: captions.map(c => c.text).join('\n'),
+          isSynced: true,
+          source: 'YouTube Video Captions + Gemini AI'
+        });
+      }
+    }
+
+    // 2. Fallback: If no captions, use Gemini AI Duration Interpolation
+    const durationSec = parseFloat(duration) || 210;
+    
+    // Get plain lyrics first
+    const cleanT = (title || '').replace(/[\(\[\{].*?[\)\]\}]/g, '').trim();
+    const searchRes = await axios.get('https://lrclib.net/api/search', {
+      params: { q: cleanT },
+      timeout: 4000
+    }).catch(() => null);
+
+    const bestMatch = searchRes?.data?.[0];
+    const rawPlain = bestMatch?.plainLyrics || bestMatch?.syncedLyrics || title || '';
+
+    if (rawPlain) {
+      const aiLrc = await generateLrcWithAIDuration(rawPlain, durationSec, title, artist);
+      return res.json({
+        syncedLyrics: aiLrc,
+        plainLyrics: rawPlain,
+        isSynced: Boolean(aiLrc && aiLrc.includes('[')),
+        source: 'Gemini AI Duration Sync'
+      });
+    }
+
+    return res.status(404).json({ message: 'Không thể bóc tách lời từ Video này.' });
+  } catch (error) {
+    console.error("Get video lyrics error:", error);
+    res.status(500).json({ message: 'Lỗi khi bóc tách lời từ Video.' });
+  }
+};
+
+module.exports = { getSongs, parseYouTubeUrl, addSong, deleteSong, deleteBatchSongs, searchYouTube, searchOnline, addPlaylist, addSpotifyPlaylist, getLyrics, polishLyricsController, getVideoLyrics };
