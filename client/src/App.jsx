@@ -877,10 +877,10 @@ function PauseIcon({ className = "w-4 h-4" }) {
 }
 
 // ─── Floating Tooltip Component (Hiển thị nhãn ghi chú phía trên button) ───
-function Tooltip({ text, children }) {
+function Tooltip({ text, children, className = "" }) {
   if (!text) return children;
   return (
-    <div className="relative group/tooltip inline-flex items-center justify-center">
+    <div className={`relative group/tooltip ${className || 'inline-flex items-center justify-center'}`}>
       {children}
       <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 hidden group-hover/tooltip:flex flex-col items-center pointer-events-none z-[100] whitespace-nowrap transition-all duration-150">
         <div
@@ -5927,7 +5927,7 @@ export default function App() {
         }}>
 
         {/* Track Info */}
-        <div className="flex items-center gap-2 md:gap-4 w-full md:w-80 lg:w-96 xl:w-[420px] md:flex-none min-w-0 justify-start">
+        <div className="flex items-center gap-2 md:gap-3 w-[180px] sm:w-[220px] md:w-[250px] lg:w-[300px] xl:w-[340px] shrink-0 min-w-0 justify-start overflow-hidden">
           {track ? (
             <>
               <div className="relative shrink-0">
@@ -5946,10 +5946,12 @@ export default function App() {
                   </div>
                 )}
               </div>
-              <Tooltip text={`${track.title} • ${track.artist}`}>
-                <div className="flex flex-col overflow-hidden cursor-pointer min-w-0 text-left" title={`${track.title} - ${track.artist}`}>
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-[11px] md:text-sm font-bold truncate hover:underline" style={{ color: C.txt }}>{track.title}</span>
+              <div className="flex flex-col min-w-0 flex-1 overflow-hidden justify-center text-left">
+                <Tooltip text={`${track.title} • ${track.artist}`} className="w-full min-w-0 flex flex-col overflow-hidden">
+                  <div className="flex items-center gap-1.5 min-w-0 w-full cursor-pointer" title={`${track.title} - ${track.artist}`}>
+                    <span className="text-[11px] md:text-sm font-bold truncate block min-w-0 flex-1 hover:underline" style={{ color: C.txt }}>
+                      {track.title}
+                    </span>
                     {buffering && (
                       <span className="shrink-0 px-1.5 py-0.5 text-[8px] font-extrabold rounded-md text-amber-300 bg-amber-500/20 border border-amber-500/30 flex items-center gap-1 animate-pulse whitespace-nowrap">
                         <i className="ri-loader-4-line animate-spin text-[10px]"></i>
@@ -5957,9 +5959,9 @@ export default function App() {
                       </span>
                     )}
                   </div>
-                  <span className="text-[9px] md:text-xs truncate" style={{ color: C.txtSub }}>{track.artist}</span>
-                </div>
-              </Tooltip>
+                  <span className="text-[9px] md:text-xs truncate block w-full" style={{ color: C.txtSub }}>{track.artist}</span>
+                </Tooltip>
+              </div>
             </>
           ) : (
             <div className="flex items-center gap-1.5 md:gap-3">
