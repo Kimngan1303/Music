@@ -6930,14 +6930,12 @@ export default function App() {
                               key={idx}
                               ref={isActive ? activeLyricRef : null}
                               onClick={() => seek(line.time)}
-                              className={`transition-all duration-300 cursor-pointer select-none py-2 px-3.5 rounded-2xl hover:bg-white/10 ${
-                                isActive
-                                  ? 'text-base md:text-xl lg:text-2xl font-black italic scale-105 origin-left text-white drop-shadow-[0_0_18px_rgba(56,189,248,0.9)] bg-white/10 border-l-4 border-cyan-400 pl-4'
-                                  : 'text-xs md:text-sm font-semibold opacity-50 hover:opacity-90 text-white/80'
-                              }`}
+                              className={`transition-all duration-500 cursor-pointer select-none py-1.5 px-3.5 rounded-2xl hover:opacity-80 text-sm md:text-base font-semibold leading-relaxed`}
                               style={{
-                                color: isActive ? '#ffffff' : 'rgba(255,255,255,0.7)',
-                                textShadow: isActive ? '0 0 16px rgba(56,189,248,0.8), 0 0 30px rgba(168,85,247,0.5)' : 'none'
+                                color: isActive ? '#ffffff' : 'rgba(255,255,255,0.38)',
+                                textShadow: isActive ? '0 0 18px rgba(56,189,248,0.75), 0 0 35px rgba(168,85,247,0.4)' : 'none',
+                                fontWeight: isActive ? 700 : 400,
+                                transition: 'color 0.4s ease, text-shadow 0.4s ease, font-weight 0.3s ease',
                               }}
                             >
                               {line.text}
