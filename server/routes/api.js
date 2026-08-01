@@ -709,9 +709,30 @@ router.get('/social/friends', auth, async (req, res) => {
     }).select('-password').lean();
 
     const now = new Date();
-    const formatted = friends.map(f => ({
-      ...f,
-      isOnline: f.lastSeen ? (Math.abs(now.getTime() - new Date(f.lastSeen).getTime()) < 180000) : false
+    const formatted = await Promise.all(friends.map(async f => {
+      const friendId = String(f._id);
+      const friendEmail = f.email || '';
+
+      const lastMsg = await Message.findOne({
+        $or: [
+          { senderId: currentUserId, recipientId: friendId },
+          { senderId: friendId, recipientId: currentUserId },
+          { senderId: currentUserId, recipientId: friendEmail },
+          { senderId: friendEmail, recipientId: currentUserId }
+        ]
+      }).sort({ createdAt: -1 }).lean();
+
+      return {
+        ...f,
+        isOnline: f.lastSeen ? (Math.abs(now.getTime() - new Date(f.lastSeen).getTime()) < 180000) : false,
+        lastMessage: lastMsg ? {
+          text: lastMsg.text,
+          sharedSong: lastMsg.sharedSong,
+          senderId: lastMsg.senderId,
+          createdAt: lastMsg.createdAt,
+          id: String(lastMsg._id)
+        } : null
+      };
     }));
 
     res.json(formatted);

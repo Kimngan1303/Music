@@ -1205,6 +1205,24 @@ export default function App() {
     }
   };
 
+  // Read Conversations Tracker
+  const [readConversationMsgIds, setReadConversationMsgIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('aura_read_conversations');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  const markConversationRead = (msgId) => {
+    if (!msgId) return;
+    setReadConversationMsgIds(prev => {
+      if (prev.includes(msgId)) return prev;
+      const next = [...prev, msgId];
+      localStorage.setItem('aura_read_conversations', JSON.stringify(next));
+      return next;
+    });
+  };
+
   // Pending Room Invites State & Polling
   const [pendingListenInvites, setPendingListenInvites] = useState([]);
   const seenInviteIdsRef = useRef(new Set());
@@ -7891,46 +7909,80 @@ export default function App() {
                     <p className="font-bold text-sm">Chưa có bạn bè trong danh sách</p>
                     <p className="text-[11px] max-w-xs">Nhập tên/email ở ô tìm kiếm bên trên hoặc chọn ở Bảng Xếp Hạng để chủ động gửi lời mời kết bạn!</p>
                   </div>
-                ) : friendsList.map((fItem, fIdx) => (
-                  <div
-                    key={fItem._id || fIdx}
-                    className="flex items-center justify-between p-3 rounded-2xl border transition hover:opacity-95"
-                    style={{ background: C.tag, borderColor: C.border }}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="relative shrink-0">
-                        <img src={fItem.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} className="w-10 h-10 rounded-full object-cover" />
-                        <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border border-white" style={{ background: fItem.isOnline ? '#22c55e' : '#6b7280' }} />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold truncate" style={{ color: C.txt }}>{fItem.name}</span>
-                        <span className="text-[11px] truncate font-semibold" style={{ color: fItem.isOnline ? '#22c55e' : C.txtSub }}>
-                          {fItem.isOnline ? '🟢 Đang Online' : '⚪ Ngoại tuyến'}
-                        </span>
-                      </div>
-                    </div>
+                ) : friendsList.map((fItem, fIdx) => {
+                  const lastMsg = fItem.lastMessage;
+                  const isSelfLast = lastMsg && (lastMsg.senderId === (user?._id || user?.id) || lastMsg.senderId === user?.email);
+                  const isUnread = lastMsg && !isSelfLast && !readConversationMsgIds.includes(lastMsg.id);
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => setChatModal({ open: true, activeUser: fItem, tab: 'chat' })}
-                        className="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer hover:scale-105 border"
-                        style={{ background: C.surface, color: C.txt, borderColor: C.border }}
-                      >
-                        <i className="ri-message-3-line" /> Chat
-                      </button>
-                      <button
-                        onClick={() => {
-                          setChatModal({ open: true, activeUser: fItem, tab: 'listen_party' });
-                          handleSyncListenParty('create');
-                        }}
-                        className="px-3 py-1.5 rounded-xl text-xs font-bold text-white transition flex items-center gap-1 cursor-pointer hover:scale-105 shadow-sm"
-                        style={{ background: '#10b981' }}
-                      >
-                        <i className="ri-headphone-fill text-xs" /> Mời nghe chung
-                      </button>
+                  let lastMsgPreview = 'Chưa có tin nhắn';
+                  if (lastMsg) {
+                    const content = lastMsg.text || '🎵 Đã chia sẻ 1 bài hát';
+                    lastMsgPreview = isSelfLast ? `Bạn: ${content}` : content;
+                  }
+
+                  return (
+                    <div
+                      key={fItem._id || fIdx}
+                      onClick={() => {
+                        if (lastMsg?.id && !readConversationMsgIds.includes(lastMsg.id)) {
+                          markConversationRead(lastMsg.id);
+                        }
+                        setChatModal({ open: true, activeUser: fItem, tab: 'chat' });
+                      }}
+                      className={`flex items-center justify-between p-3 rounded-2xl border transition hover:opacity-95 cursor-pointer ${isUnread ? 'bg-amber-500/10' : ''}`}
+                      style={{ background: isUnread ? (C.isDark ? 'rgba(245,158,11,0.1)' : '#fffbeb') : C.tag, borderColor: isUnread ? C.primarySolid : C.border }}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">
+                        <div className="relative shrink-0">
+                          <img src={fItem.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} className="w-10 h-10 rounded-full object-cover" />
+                          <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border border-white" style={{ background: fItem.isOnline ? '#22c55e' : '#6b7280' }} />
+                          {isUnread && (
+                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border border-white shadow-sm animate-pulse" />
+                          )}
+                        </div>
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className={`text-xs font-bold truncate ${isUnread ? 'text-amber-500' : ''}`} style={{ color: isUnread ? undefined : C.txt }}>
+                              {fItem.name}
+                            </span>
+                            <span className="text-[10px] shrink-0 font-semibold" style={{ color: fItem.isOnline ? '#22c55e' : C.txtSub }}>
+                              {fItem.isOnline ? '🟢 Online' : '⚪ Offline'}
+                            </span>
+                          </div>
+
+                          <p className={`text-[11px] truncate mt-0.5 ${isUnread ? 'font-black text-emerald-400' : 'font-medium'}`} style={{ color: isUnread ? undefined : C.txtSub }}>
+                            {isUnread ? `🔴 ${lastMsgPreview}` : lastMsgPreview}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (lastMsg?.id) markConversationRead(lastMsg.id);
+                            setChatModal({ open: true, activeUser: fItem, tab: 'chat' });
+                          }}
+                          className="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer hover:scale-105 border"
+                          style={{ background: isUnread ? C.primary : C.surface, color: isUnread ? '#fff' : C.txt, borderColor: C.border }}
+                        >
+                          <i className="ri-message-3-line" /> {isUnread ? 'Chat ngay' : 'Chat'}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setChatModal({ open: true, activeUser: fItem, tab: 'listen_party' });
+                            handleSyncListenParty('create');
+                          }}
+                          className="px-3 py-1.5 rounded-xl text-xs font-bold text-white transition flex items-center gap-1 cursor-pointer hover:scale-105 shadow-sm"
+                          style={{ background: '#10b981' }}
+                        >
+                          <i className="ri-headphone-fill text-xs" /> Mời nghe chung
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
