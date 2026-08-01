@@ -972,6 +972,10 @@ export default function App() {
 
   const [track, setTrack] = useState(null);
   const [playing, setPlaying] = useState(false);
+  const [curTime, setCurTime] = useState(0);
+  const [dur, setDur] = useState(0);
+  const [listenPartyRoom, setListenPartyRoom] = useState(null);
+  const [isListenPartyHost, setIsListenPartyHost] = useState(false);
   const [buffering, setBuffering] = useState(false);
   const [tab, setTab] = useState('home');
   const [favs, setFavs] = useState(() => {
@@ -1043,8 +1047,6 @@ export default function App() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInputText, setChatInputText] = useState('');
   const [friendsList, setFriendsList] = useState([]);
-  const [listenPartyRoom, setListenPartyRoom] = useState(null); // { roomId, hostId, hostName, track, curTime, isPlaying, members }
-  const [isListenPartyHost, setIsListenPartyHost] = useState(false);
 
   // Helper to get token config
   const getAuthConfig = () => {
@@ -1401,8 +1403,6 @@ export default function App() {
   const [localFilterQuery, setLocalFilterQuery] = useState(''); // Spotify-style local song filter query
   const [sidebarQuery, setSidebarQuery] = useState(''); // Spotify-style sidebar playlist filter query
   const [showSidebarSearch, setShowSidebarSearch] = useState(false);
-  const [curTime, setCurTime] = useState(0);
-  const [dur, setDur] = useState(0);
   const [vol, setVol] = useState(() => {
     const saved = localStorage.getItem('aura_volume');
     return saved !== null ? Math.min(100, Math.max(0, parseInt(saved, 10))) : 80;
