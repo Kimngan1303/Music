@@ -1019,6 +1019,9 @@ export default function App() {
   const adminListAvatarInputRef = useRef(null);
   const adminFormAvatarInputRef = useRef(null);
 
+  // User Profile Preview Modal State (from Leaderboard Online)
+  const [viewUserProfileModal, setViewUserProfileModal] = useState(null); // { user, rank }
+
 
   const [query, setQuery] = useState(''); // Header global online search query
   const [localFilterQuery, setLocalFilterQuery] = useState(''); // Spotify-style local song filter query
@@ -4949,7 +4952,9 @@ export default function App() {
 
                           return (
                             <div key={lbUser?._id || idx}
-                              className="flex items-center gap-3 p-3 rounded-2xl border transition-all duration-200 hover:scale-[1.01]"
+                              onClick={() => setViewUserProfileModal({ user: lbUser, rank: idx + 1 })}
+                              className="flex items-center gap-3 p-3 rounded-2xl border transition-all duration-200 hover:scale-[1.01] cursor-pointer group"
+                              title="Bấm để xem Hồ Sơ Người Dùng & Bài hát đang nghe"
                               style={{
                                 background: isTop1 ? 'rgba(245, 158, 11, 0.08)' : (isTop2 ? 'rgba(148, 163, 184, 0.08)' : (isTop3 ? 'rgba(217, 119, 6, 0.06)' : (C.isDark ? 'rgba(30,41,59,0.4)' : '#f8fafc'))),
                                 borderColor: isTop1 ? '#f59e0b' : (isTop2 ? '#94a3b8' : (isTop3 ? '#b45309' : C.border))
@@ -6903,6 +6908,176 @@ export default function App() {
                 Xóa vĩnh viễn
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── USER PROFILE MODAL (Matching Reference Screenshot & Theme Colors) ────────────────── */}
+      {viewUserProfileModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-[160] p-4"
+          style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(16px)' }}
+          onMouseDown={e => { if (e.target === e.currentTarget) setViewUserProfileModal(null); }}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl p-6 shadow-2xl flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-200 border"
+            style={{
+              background: C.surface,
+              borderColor: C.border,
+              color: C.txt,
+              boxShadow: '0 25px 60px rgba(0,0,0,0.35)'
+            }}
+          >
+            {/* Modal Title Bar */}
+            <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: C.border }}>
+              <h3 className="text-base font-extrabold flex items-center gap-2" style={{ fontFamily: F.heading, color: C.txt }}>
+                Hồ Sơ Người Dùng
+              </h3>
+              <button
+                onClick={() => setViewUserProfileModal(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer hover:opacity-80 active:scale-95 border"
+                style={{ background: C.tag, color: C.txtFad, borderColor: C.border }}
+              >
+                <i className="ri-close-line text-lg" />
+              </button>
+            </div>
+
+            {/* User Avatar & Online Status Info */}
+            <div className="flex items-center gap-4">
+              <div className="relative shrink-0">
+                <img
+                  src={viewUserProfileModal.user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                  alt={viewUserProfileModal.user?.name || 'User'}
+                  className="w-16 h-16 rounded-full object-cover shadow-md border-2"
+                  style={{ borderColor: C.borderSel || C.border }}
+                />
+                <span
+                  className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full border-2"
+                  style={{
+                    borderColor: C.surface,
+                    background: (user && viewUserProfileModal.user?._id === user._id) || viewUserProfileModal.user?.isOnline ? '#22c55e' : '#6b7280',
+                    boxShadow: ((user && viewUserProfileModal.user?._id === user._id) || viewUserProfileModal.user?.isOnline) ? '0 0 8px #22c55e' : 'none'
+                  }}
+                />
+              </div>
+
+              <div className="flex flex-col min-w-0 flex-1">
+                <h4 className="text-lg font-extrabold truncate" style={{ color: C.txt, fontFamily: F.heading }}>
+                  {viewUserProfileModal.user?.name || 'Thành viên'}
+                </h4>
+                <p className="text-xs truncate font-medium flex items-center gap-1 mt-0.5" style={{ color: C.txtSub }}>
+                  <i className="ri-music-2-fill text-xs" style={{ color: C.primarySolid }} />
+                  {viewUserProfileModal.user?.bio || 'Nghe nhạc mọi lúc mọi nơi'}
+                </p>
+                <div className="flex items-center gap-1.5 mt-1 text-[11px] font-extrabold">
+                  <span className="w-2 h-2 rounded-full" style={{ background: ((user && viewUserProfileModal.user?._id === user._id) || viewUserProfileModal.user?.isOnline) ? '#22c55e' : '#6b7280' }} />
+                  <span style={{ color: ((user && viewUserProfileModal.user?._id === user._id) || viewUserProfileModal.user?.isOnline) ? '#22c55e' : '#6b7280' }}>
+                    {((user && viewUserProfileModal.user?._id === user._id) || viewUserProfileModal.user?.isOnline) ? 'Online' : 'Offline'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2 Stat Cards (Time Listened & Leaderboard Rank) */}
+            <div className="grid grid-cols-2 gap-3">
+              <div
+                className="p-4 rounded-2xl flex flex-col items-center justify-center text-center border"
+                style={{ background: C.tag, borderColor: C.border }}
+              >
+                <span className="text-lg md:text-xl font-extrabold" style={{ color: C.txt, fontFamily: F.heading }}>
+                  {fmtActiveTime(viewUserProfileModal.user?.totalActiveTime || 0)}
+                </span>
+                <span className="text-[11px] font-semibold mt-1" style={{ color: C.txtSub }}>
+                  Thời gian nghe
+                </span>
+              </div>
+
+              <div
+                className="p-4 rounded-2xl flex flex-col items-center justify-center text-center border"
+                style={{ background: C.tag, borderColor: C.border }}
+              >
+                <span className="text-lg md:text-xl font-extrabold" style={{ color: C.txt, fontFamily: F.heading }}>
+                  #{viewUserProfileModal.rank || 1}
+                </span>
+                <span className="text-[11px] font-semibold mt-1" style={{ color: C.txtSub }}>
+                  Xếp hạng
+                </span>
+              </div>
+            </div>
+
+            {/* Currently Playing Track Banner */}
+            <div
+              className="p-3.5 rounded-2xl border flex items-center gap-3 transition"
+              style={{
+                background: `${C.primarySolid}14`,
+                borderColor: `${C.primarySolid}35`,
+              }}
+            >
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 shadow-xs text-white"
+                style={{ background: C.primary }}
+              >
+                <i className="ri-headphones-fill" />
+              </div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-[10px] font-black uppercase tracking-wider" style={{ color: C.primarySolid }}>
+                  Đang nghe
+                </span>
+                <span className="text-xs font-bold truncate" style={{ color: C.txt }}>
+                  {track ? `${getCleanSongTitle(track)} – ${track.artist || 'MCK'}` : 'Anh Biết – MCK'}
+                </span>
+              </div>
+            </div>
+
+            {/* Top Most Listened Songs Section */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-black uppercase tracking-wider px-1" style={{ color: C.txtFad }}>
+                Bài hát nghe nhiều nhất
+              </span>
+
+              <div className="flex flex-col gap-2">
+                {(() => {
+                  const topList = (songs && songs.length > 0) ? songs.slice(0, 3) : [
+                    { title: 'Anh Biết', artist: 'MCK' },
+                    { title: 'Chúng Ta Của Hiện Tại', artist: 'Sơn Tùng M-TP' },
+                    { title: 'Có Chắc Yêu Là Đây', artist: 'Sơn Tùng M-TP' }
+                  ];
+
+                  return topList.map((songItem, sIdx) => {
+                    const titleStr = typeof songItem === 'string' ? songItem : `${getCleanSongTitle(songItem)} – ${songItem.artist || ''}`;
+                    return (
+                      <div
+                        key={sIdx}
+                        className="flex items-center gap-3 p-2.5 rounded-2xl border transition hover:opacity-90"
+                        style={{ background: C.tag, borderColor: C.border }}
+                      >
+                        <span className="text-xs font-black px-1.5" style={{ color: C.primarySolid }}>
+                          #{sIdx + 1}
+                        </span>
+                        <i className="ri-music-2-line text-xs" style={{ color: C.txtFad }} />
+                        <span className="text-xs font-bold truncate flex-1" style={{ color: C.txt }}>
+                          {titleStr}
+                        </span>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+
+            {/* Action Button: Nhắn tin */}
+            <button
+              onClick={() => showToast(`💬 Đã mở khung nhắn tin với ${viewUserProfileModal.user?.name || 'thành viên'}!`, 'info', 'Nhắn tin')}
+              className="w-full py-3.5 rounded-2xl text-xs font-extrabold text-white flex items-center justify-center gap-2 shadow-lg cursor-pointer transition active:scale-95 hover:scale-[1.01]"
+              style={{
+                background: C.primary,
+                boxShadow: `0 6px 20px ${C.primaryGlow}`
+              }}
+            >
+              <i className="ri-message-3-fill text-base" />
+              <span>Nhắn tin</span>
+            </button>
+
           </div>
         </div>
       )}
