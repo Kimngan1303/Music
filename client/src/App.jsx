@@ -1304,6 +1304,26 @@ export default function App() {
     showToast('Đã rời phòng nghe nhạc chung. Bạn đã tự do điều khiển nhạc độc lập! 🎵', 'info', 'Rời Phòng');
   };
 
+  // Helper to determine if current user is Host
+  const checkIfHost = (roomObj) => {
+    if (!roomObj || !roomObj.hostId) return false;
+    const myId = String(user?._id || user?.id || '');
+    const myEmail = String(user?.email || '').toLowerCase();
+    const hId = String(roomObj.hostId);
+    return (myId && hId === myId) || (myEmail && hId.toLowerCase() === myEmail);
+  };
+
+  const updateRoomState = (roomObj) => {
+    if (roomObj && roomObj.roomId) {
+      setListenPartyRoom(roomObj);
+      const isHost = checkIfHost(roomObj);
+      setIsListenPartyHost(isHost);
+    } else {
+      setListenPartyRoom(null);
+      setIsListenPartyHost(false);
+    }
+  };
+
   // Listen Together Room Sync
   const handleSyncListenParty = async (actionType = 'sync', customTrack = null, customRoomId = null) => {
     try {
@@ -1312,19 +1332,16 @@ export default function App() {
 
       const res = await axios.post('/api/social/listen-room/sync', {
         roomId: targetRoomId || `room_${user?._id || user?.id || 'host'}`,
-        track: customTrack || track,
-        curTime,
-        isPlaying: playing,
+        track: customTrack || trackRef.current || track,
+        curTime: curTimeRef.current || curTime,
+        isPlaying: playingRef.current !== undefined ? playingRef.current : playing,
         action: actionType
       }, getAuthConfig());
 
       if (res.data && res.data.room) {
-        setListenPartyRoom(res.data.room);
-        const isHost = res.data.room.hostId === String(user?._id || user?.id || 'host');
-        setIsListenPartyHost(isHost);
+        updateRoomState(res.data.room);
       } else if (actionType === 'leave') {
-        setListenPartyRoom(null);
-        setIsListenPartyHost(false);
+        updateRoomState(null);
       }
     } catch (e) { }
   };
@@ -1342,7 +1359,16 @@ export default function App() {
     return () => clearInterval(interval);
   }, [chatModal.open, chatModal.activeUser?._id, chatModal.tab]);
 
-  // Real-time Listen Together Room & Audio Sync Engine
+  // Player state refs for smooth interval
+  const playingRef = useRef(playing);
+  const trackRef = useRef(track);
+  const curTimeRef = useRef(curTime);
+
+  useEffect(() => { playingRef.current = playing; }, [playing]);
+  useEffect(() => { trackRef.current = track; }, [track]);
+  useEffect(() => { curTimeRef.current = curTime; }, [curTime]);
+
+  // Real-time Listen Together Room & Audio Sync Engine (Smooth Non-flickering)
   useEffect(() => {
     if (!listenPartyRoom?.roomId) return;
 
@@ -1355,18 +1381,14 @@ export default function App() {
           // Member fetches Host's latest state
           const res = await axios.get(`/api/social/listen-room/${listenPartyRoom.roomId}`);
           if (res.data && res.data.active && res.data.room) {
-            setListenPartyRoom(res.data.room);
-          } else {
-            // Room ended or was closed
-            setListenPartyRoom(null);
-            setIsListenPartyHost(false);
+            updateRoomState(res.data.room);
           }
         }
       } catch (e) { }
     }, 1500);
 
     return () => clearInterval(interval);
-  }, [listenPartyRoom?.roomId, isListenPartyHost, playing, track?.id, curTime]);
+  }, [listenPartyRoom?.roomId, isListenPartyHost]);
 
   // Audio Sync for joined Listen Together Room members
   useEffect(() => {
