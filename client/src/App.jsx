@@ -1361,33 +1361,41 @@ export default function App() {
     return () => clearInterval(interval);
   }, [chatModal.open, chatModal.activeUser?._id, chatModal.tab]);
 
-  // Player state refs for smooth interval
+  // Player & Room state refs for smooth non-flickering interval
   const playingRef = useRef(playing);
   const trackRef = useRef(track);
   const curTimeRef = useRef(curTime);
+  const listenPartyRoomRef = useRef(listenPartyRoom);
+  const isListenPartyHostRef = useRef(isListenPartyHost);
 
   useEffect(() => { playingRef.current = playing; }, [playing]);
   useEffect(() => { trackRef.current = track; }, [track]);
   useEffect(() => { curTimeRef.current = curTime; }, [curTime]);
+  useEffect(() => { listenPartyRoomRef.current = listenPartyRoom; }, [listenPartyRoom]);
+  useEffect(() => { isListenPartyHostRef.current = isListenPartyHost; }, [isListenPartyHost]);
 
   // Real-time Listen Together Room & Audio Sync Engine (Smooth Non-flickering)
   useEffect(() => {
-    if (!listenPartyRoom?.roomId) return;
+    const curRoomId = listenPartyRoom?.roomId;
+    if (!curRoomId) return;
 
     const interval = setInterval(async () => {
       try {
-        if (isListenPartyHost) {
+        const activeRoom = listenPartyRoomRef.current;
+        if (!activeRoom || !activeRoom.roomId) return;
+
+        if (isListenPartyHostRef.current) {
           // Host continuously broadcasts current playback timeline & status to server
           await handleSyncListenParty('sync');
         } else {
           // Member fetches Host's latest state
-          const res = await axios.get(`/api/social/listen-room/${listenPartyRoom.roomId}`);
+          const res = await axios.get(`/api/social/listen-room/${activeRoom.roomId}`);
           if (res.data && res.data.active && res.data.room) {
             updateRoomState(res.data.room);
           }
         }
       } catch (e) { }
-    }, 1500);
+    }, 1200);
 
     return () => clearInterval(interval);
   }, [listenPartyRoom?.roomId, isListenPartyHost]);

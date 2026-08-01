@@ -916,6 +916,21 @@ router.post('/social/listen-room/invite', auth, async (req, res) => {
     let currentUser = await User.findById(currentUserId);
     const hostName = currentUser ? currentUser.name : (req.user.name || 'Host');
     const hostAvatar = currentUser ? currentUser.avatar : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+    const targetRoomId = roomId || `room_${currentUserId}`;
+
+    // Ensure Host room is registered in server memory map
+    if (!listenRooms.has(targetRoomId)) {
+      listenRooms.set(targetRoomId, {
+        roomId: targetRoomId,
+        hostId: currentUserId,
+        hostName,
+        track: null,
+        curTime: 0,
+        isPlaying: false,
+        members: [{ id: currentUserId, name: hostName }],
+        updatedAt: Date.now()
+      });
+    }
 
     const inviteObj = {
       id: 'invite_' + Date.now(),
@@ -923,7 +938,7 @@ router.post('/social/listen-room/invite', auth, async (req, res) => {
       hostName,
       hostAvatar,
       targetUserId: String(targetUserId),
-      roomId: roomId || `room_${currentUserId}`,
+      roomId: targetRoomId,
       createdAt: new Date()
     };
 
@@ -1004,7 +1019,7 @@ router.post('/social/listen-room/sync', auth, async (req, res) => {
       const memberName = (currentUser && currentUser.name) ? currentUser.name : (req.user.name || 'Thành viên');
 
       if (!room) {
-        const hostIdParam = req.body.hostId || targetRoomId.replace('room_', '');
+        const hostIdParam = req.body.hostId || (req.body.hostName ? 'host_' + req.body.hostName : targetRoomId.replace('room_', ''));
         let hostUser = await User.findById(hostIdParam).catch(() => null);
         const hostName = (hostUser && hostUser.name) ? hostUser.name : (req.body.hostName || 'Host');
 
@@ -1023,6 +1038,9 @@ router.post('/social/listen-room/sync', auth, async (req, res) => {
         };
         listenRooms.set(room.roomId, room);
       } else {
+        if (!room.members.some(m => String(m.id) === String(room.hostId))) {
+          room.members.unshift({ id: String(room.hostId), name: room.hostName });
+        }
         if (!room.members.some(m => String(m.id) === currentUserId || (currentUserEmail && String(m.id).toLowerCase() === currentUserEmail))) {
           room.members.push({ id: currentUserId, name: memberName });
         }
