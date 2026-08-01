@@ -6806,84 +6806,9 @@ export default function App() {
                       (targetYtId && Boolean(s.youtubeId) && s.youtubeId === targetYtId)) &&
                     s.inLibrary !== false
                   );
-                  return (
-                    <button
-                      onClick={() => handleAddOnlineSongToLibrary(songToAdd)}
-                      className="flex items-center justify-between px-4 py-3 rounded-2xl transition-all cursor-pointer hover:scale-[1.01] active:scale-95 text-left"
-                      style={{ background: C.tag, border: `1.5px solid ${inLibrary ? '#22c55e' : C.border}` }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs" style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}>
-                          <i className="ri-music-2-fill text-base"></i>
-                        </div>
-                        <div className="flex flex-col text-left">
-                          <span className="text-xs font-bold" style={{ color: inLibrary ? '#22c55e' : C.txt }}>Thư viện của tôi</span>
-                          <span className="text-[10px]" style={{ color: C.txtSub }}>{inLibrary ? '✓ Đã có trong thư viện cá nhân' : 'Bấm để lưu vào thư viện cá nhân'}</span>
-                        </div>
-                      </div>
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${inLibrary ? 'bg-green-500 text-white' : 'border border-gray-400 text-transparent'}`}>
-                        <i className="ri-check-line"></i>
-                      </div>
-                    </button>
-                  );
-                })()}
-              </div>
-
-              {/* Option 2: Danh sách phát (Playlists) */}
-              <div className="flex flex-col gap-1.5 mt-2">
-                <div className="flex items-center justify-between px-1">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider" style={{ color: C.txtFad }}>2. Các Danh Sách Phát (Playlists)</span>
-                  <button
-                    onClick={() => { setPlaylistModal(true); }}
-                    className="text-[11px] font-bold text-rose-500 hover:underline cursor-pointer flex items-center gap-1"
-                  >
-                    <i className="ri-add-circle-line"></i> Tạo Mới
-                  </button>
-                </div>
-
-                {playlists.length === 0 ? (
-                  <p className="text-xs text-center py-3" style={{ color: C.txtSub }}>Bạn chưa có playlist nào. Hãy bấm "Tạo Mới" ở trên!</p>
-                ) : playlists.map(p => {
-                  const targetSongId = songToAdd.id || songToAdd._id;
-                  const targetYtId = songToAdd.youtubeId;
-                  const inPlaylist = (p.songs || []).some(sId => {
-                    if (targetSongId && sId === targetSongId) return true;
-                    const matchedSong = songs.find(s => s.id === sId || s._id === sId);
-                    return Boolean(targetYtId) && Boolean(matchedSong?.youtubeId) && matchedSong.youtubeId === targetYtId;
-                  });
-                  return (
-                    <button key={p._id} onClick={() => inPlaylist ? handleRemoveFromPlaylist(p._id, targetSongId) : handleAddToPlaylist(p._id, targetSongId)}
-                      className="flex items-center justify-between px-4 py-3 rounded-2xl transition-all cursor-pointer hover:scale-[1.01] active:scale-95 text-left"
-                      style={{ background: C.tag, border: `1.5px solid ${inPlaylist ? C.primarySolid : C.border}` }}>
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs" style={{ background: C.primary }}>
-                          <i className="ri-folder-music-fill text-base"></i>
-                        </div>
-                        <span className="text-xs font-bold truncate" style={{ color: inPlaylist ? C.primarySolid : C.txt }}>{p.name}</span>
-                      </div>
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${inPlaylist ? 'text-white' : 'border border-gray-400 text-transparent'}`}
-                        style={inPlaylist ? { background: C.primarySolid } : {}}>
-                        <i className="ri-check-line"></i>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-            </div>
-
-            <button onClick={() => setSongToAdd(null)}
-              className="mt-4 w-full py-2.5 rounded-xl text-xs font-bold cursor-pointer transition active:scale-95" style={btn}>
-              Xong / Đóng
-            </button>
-          </div>
-        </div>
-      )}
-
-
-      {/* ── BOTTOM PLAYER ─────────────────────── */}
+                  r      {/* ── BOTTOM PLAYER ─────────────────────── */}
       <footer
-        className="w-full flex flex-col md:flex-row items-center px-2 md:px-8 justify-center md:justify-between shrink-0 z-50 transition-all h-auto md:h-[88px] py-2.5 md:py-0 gap-2.5 md:gap-0"
+        className="w-full flex flex-col md:flex-row items-center px-2 md:px-4 lg:px-6 justify-center md:justify-between shrink-0 z-50 transition-all h-auto md:h-[90px] py-2.5 md:py-0 gap-2.5 md:gap-0"
         style={{
           background: C.surface,
           backdropFilter: 'blur(24px)',
@@ -6892,17 +6817,17 @@ export default function App() {
           paddingBottom: 'max(env(safe-area-inset-bottom), 12px)'
         }}>
 
-        {/* Track Info */}
-        <div className="flex items-center gap-2 md:gap-3 w-[180px] sm:w-[220px] md:w-[250px] lg:w-[300px] xl:w-[340px] shrink-0 min-w-0 justify-start overflow-hidden">
+        {/* Track Info (LEFT) */}
+        <div className="flex items-center gap-2 md:gap-3 w-[30%] min-w-[180px] max-w-[340px] shrink-0 overflow-hidden justify-start">
           {track ? (
             <>
               <div className="relative shrink-0">
                 <img src={track.thumbnail} alt={track.title}
-                  className="w-8 h-8 md:w-14 md:h-14 rounded-lg md:rounded-2xl object-cover"
-                  style={{ border: `2px solid ${C.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.1)' }}
+                  className="w-10 h-10 md:w-14 md:h-14 rounded-lg md:rounded-xl object-cover"
+                  style={{ border: `1px solid ${C.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.1)' }}
                 />
                 {playing && (
-                  <div className="absolute inset-0 rounded-lg md:rounded-2xl flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.25)' }}>
+                  <div className="absolute inset-0 rounded-lg md:rounded-xl flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.25)' }}>
                     <span className="flex gap-[1px] md:gap-0.5 items-end h-3 md:h-4">
                       {['100%', '50%', '75%'].map((h, i) => (
                         <span key={i} className="w-[1.5px] md:w-1 rounded-full animate-pulse text-white"
@@ -6912,67 +6837,58 @@ export default function App() {
                   </div>
                 )}
               </div>
-              <div className="flex flex-col min-w-0 flex-1 overflow-hidden justify-center text-left">
+              <div className="flex flex-col min-w-0 flex-1 overflow-hidden justify-center text-left mr-2">
                 <Tooltip text={`${track.title} • ${track.artist}`} className="w-full min-w-0 flex flex-col overflow-hidden">
                   <div className="flex items-center gap-1.5 min-w-0 w-full cursor-pointer" title={`${track.title} - ${track.artist}`}>
-                    <span className="text-[11px] md:text-sm font-bold truncate block min-w-0 flex-1 hover:underline" style={{ color: C.txt }}>
+                    <span className="text-xs md:text-sm font-bold truncate block min-w-0 flex-1 hover:underline" style={{ color: C.txt }}>
                       {track.title}
                     </span>
                     {buffering && (
                       <span className="shrink-0 px-1.5 py-0.5 text-[8px] font-extrabold rounded-md text-amber-300 bg-amber-500/20 border border-amber-500/30 flex items-center gap-1 animate-pulse whitespace-nowrap">
                         <i className="ri-loader-4-line animate-spin text-[10px]"></i>
-                        Mạng yếu...
                       </span>
                     )}
                   </div>
-                  <span className="text-[9px] md:text-xs truncate block w-full" style={{ color: C.txtSub }}>{track.artist}</span>
+                  <span className="text-[10px] md:text-xs truncate block w-full" style={{ color: C.txtSub }}>{track.artist}</span>
                 </Tooltip>
               </div>
+              
+              {/* Fav button moved to Track Info area like Spotify */}
+              <Tooltip text={track && favs.includes(track.id) ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}>
+                <button onClick={() => track && toggleFav(track.id)}
+                  className="transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0 ml-1"
+                  style={{ color: track && favs.includes(track.id) ? C.primarySolid : C.txtFad }}
+                  onMouseEnter={e => e.currentTarget.style.color = track && favs.includes(track.id) ? C.primarySolid : C.txt}
+                  onMouseLeave={e => e.currentTarget.style.color = track && favs.includes(track.id) ? C.primarySolid : C.txtFad}
+                >
+                  <i className={track && favs.includes(track.id) ? 'ri-heart-fill text-base md:text-lg' : 'ri-heart-line text-base md:text-lg'}></i>
+                </button>
+              </Tooltip>
             </>
           ) : (
             <div className="flex items-center gap-1.5 md:gap-3">
-              <div className="w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-2xl flex items-center justify-center" style={{ background: C.tag }}>
+              <div className="w-10 h-10 md:w-14 md:h-14 rounded-lg md:rounded-xl flex items-center justify-center" style={{ background: C.tag }}>
                 <i className="ri-music-2-line text-sm md:text-xl" style={{ color: C.txtFad }}></i>
               </div>
-              <span className="text-[9px] md:text-xs font-semibold" style={{ color: C.txtFad }}>Chưa chọn bài hát~</span>
+              <span className="text-[10px] md:text-xs font-semibold" style={{ color: C.txtFad }}>Chưa chọn bài hát</span>
             </div>
           )}
         </div>
 
-        {/* Controls + Progress */}
-        <div className="flex flex-col items-center gap-1.5 md:gap-1.5 w-full md:flex-1 max-w-lg md:px-6">
-          <div className="flex items-center justify-between md:justify-center gap-1 md:gap-5 w-full px-4 md:px-0 order-2 md:order-1">
+        {/* Center: Controls + Timeline */}
+        <div className="flex flex-col items-center gap-2 md:gap-2 w-full md:max-w-2xl md:flex-1 md:px-6">
+          <div className="flex items-center justify-between md:justify-center gap-4 md:gap-6 w-full px-6 md:px-0 order-2 md:order-1">
             <Tooltip text={isShuffle ? 'Tắt phát ngẫu nhiên' : 'Bật phát ngẫu nhiên'}>
               <button
                 onClick={toggleShuffle}
                 className="relative p-1 transition cursor-pointer hover:scale-110 active:scale-95"
                 style={{ color: isShuffle ? C.primarySolid : C.txtFad }}
+                onMouseEnter={e => e.currentTarget.style.color = isShuffle ? C.primarySolid : C.txt}
+                onMouseLeave={e => e.currentTarget.style.color = isShuffle ? C.primarySolid : C.txtFad}
               >
-                <i className="ri-shuffle-line text-sm md:text-lg"></i>
+                <i className="ri-shuffle-line text-lg md:text-xl"></i>
                 {isShuffle && (
-                  <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1.5 md:h-1.5 rounded-full"
-                    style={{ background: C.primarySolid }}>
-                  </span>
-                )}
-              </button>
-            </Tooltip>
-
-            {/* Repeat Mode Button */}
-            <Tooltip text={repeatMode === 'one' ? 'Đang lặp 1 bài' : repeatMode === 'all' ? 'Đang lặp danh sách' : 'Lặp lại danh sách'}>
-              <button
-                onClick={toggleRepeat}
-                className="relative p-1 transition cursor-pointer hover:scale-110 active:scale-95"
-                style={{ color: repeatMode !== 'off' ? C.primarySolid : C.txtFad }}
-              >
-                <i className={repeatMode === 'one' ? 'ri-repeat-2-line text-sm md:text-lg font-bold' : 'ri-repeat-line text-sm md:text-lg'}></i>
-                {repeatMode === 'one' && (
-                  <span className="absolute -top-1 -right-1 text-[7px] md:text-[9px] font-black rounded-full w-2.5 h-2.5 md:w-3.5 md:h-3.5 flex items-center justify-center text-white shadow-xs"
-                    style={{ background: C.primarySolid }}>
-                    1
-                  </span>
-                )}
-                {repeatMode === 'all' && (
-                  <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1.5 md:h-1.5 rounded-full"
+                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1 md:h-1 rounded-full"
                     style={{ background: C.primarySolid }}>
                   </span>
                 )}
@@ -6980,34 +6896,146 @@ export default function App() {
             </Tooltip>
 
             <Tooltip text="Bài phía trước">
-              <button onClick={prevTrack} className="transition-transform hover:scale-110 active:scale-95 cursor-pointer" style={{ color: C.txtSub }}>
-                <i className="ri-skip-back-fill text-lg md:text-2xl"></i>
+              <button onClick={prevTrack} 
+                className="transition-transform hover:scale-110 active:scale-95 cursor-pointer" 
+                style={{ color: C.txtFad }}
+                onMouseEnter={e => e.currentTarget.style.color = C.txt}
+                onMouseLeave={e => e.currentTarget.style.color = C.txtFad}
+              >
+                <i className="ri-skip-back-fill text-xl md:text-3xl"></i>
               </button>
             </Tooltip>
 
             <Tooltip text={buffering ? 'Đang tải dữ liệu...' : playing ? 'Tạm dừng' : 'Bật phát nhạc'}>
               <button onClick={togglePlay}
-                className={`w-8 h-8 md:w-10 md:h-10 rounded-full text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0 ${getSeasonalPlayBtnClass(themeKey) || 'shadow-md'}`}
-                style={getSeasonalPlayBtnClass(themeKey) ? {} : { background: C.primary, boxShadow: `0 3px 12px ${C.primaryGlow}` }}>
-                {buffering ? <i className="ri-loader-4-line text-base md:text-lg animate-spin" /> : playing ? <PauseIcon className="w-4 h-4 md:w-5 md:h-5" /> : <PlayIcon className="w-4 h-4 md:w-5 md:h-5" />}
+                className={`w-10 h-10 md:w-11 md:h-11 rounded-full text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0 ${getSeasonalPlayBtnClass(themeKey) || 'shadow-md'}`}
+                style={getSeasonalPlayBtnClass(themeKey) ? {} : { background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}>
+                {buffering ? <i className="ri-loader-4-line text-lg animate-spin" /> : playing ? <PauseIcon className="w-5 h-5 md:w-6 md:h-6" /> : <PlayIcon className="w-5 h-5 md:w-6 md:h-6" />}
               </button>
             </Tooltip>
 
             <Tooltip text="Bài tiếp theo">
-              <button onClick={nextTrack} className="transition-transform hover:scale-110 active:scale-95 cursor-pointer" style={{ color: C.txtSub }}>
-                <i className="ri-skip-forward-fill text-lg md:text-2xl"></i>
+              <button onClick={nextTrack} 
+                className="transition-transform hover:scale-110 active:scale-95 cursor-pointer" 
+                style={{ color: C.txtFad }}
+                onMouseEnter={e => e.currentTarget.style.color = C.txt}
+                onMouseLeave={e => e.currentTarget.style.color = C.txtFad}
+              >
+                <i className="ri-skip-forward-fill text-xl md:text-3xl"></i>
               </button>
             </Tooltip>
 
-            <Tooltip text={track && favs.includes(track.id) ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}>
-              <button onClick={() => track && toggleFav(track.id)}
-                className="transition-transform hover:scale-110 active:scale-95 cursor-pointer"
-                style={{ color: track && favs.includes(track.id) ? C.primarySolid : C.txtFad }}>
-                <i className={track && favs.includes(track.id) ? 'ri-heart-fill text-lg' : 'ri-heart-line'}></i>
+            <Tooltip text={repeatMode === 'one' ? 'Đang lặp 1 bài' : repeatMode === 'all' ? 'Đang lặp danh sách' : 'Lặp lại danh sách'}>
+              <button
+                onClick={toggleRepeat}
+                className="relative p-1 transition cursor-pointer hover:scale-110 active:scale-95"
+                style={{ color: repeatMode !== 'off' ? C.primarySolid : C.txtFad }}
+                onMouseEnter={e => e.currentTarget.style.color = repeatMode !== 'off' ? C.primarySolid : C.txt}
+                onMouseLeave={e => e.currentTarget.style.color = repeatMode !== 'off' ? C.primarySolid : C.txtFad}
+              >
+                <i className={repeatMode === 'one' ? 'ri-repeat-2-line text-lg md:text-xl font-bold' : 'ri-repeat-line text-lg md:text-xl'}></i>
+                {repeatMode === 'one' && (
+                  <span className="absolute -top-1 -right-1 text-[8px] md:text-[9px] font-black rounded-full w-3 h-3 md:w-3.5 md:h-3.5 flex items-center justify-center text-white shadow-xs"
+                    style={{ background: C.primarySolid }}>
+                    1
+                  </span>
+                )}
+                {repeatMode === 'all' && (
+                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1 md:h-1 rounded-full"
+                    style={{ background: C.primarySolid }}>
+                  </span>
+                )}
               </button>
             </Tooltip>
+          </div>
 
-            <Tooltip text={sleepTimer ? `Hẹn giờ: ${sleepTimer} phút` : 'Hẹn giờ tắt nhạc'}>
+          <div className="flex items-center gap-2 md:gap-3 w-full order-1 md:order-2 px-2 md:px-0">
+            <span className="text-[10px] md:text-[11px] font-medium w-8 md:w-9 text-right shrink-0" style={{ color: C.txtSub }}>{fmt(curTime)}</span>
+            <input type="range" min="0" max={dur || 100} value={curTime} onChange={seek}
+              className={`flex-1 cursor-pointer h-1 md:h-1.5 rounded-full ${themeKey === 'summer_season' ? 'sun-theme-slider' : ''}`}
+              style={{
+                background: themeKey === 'summer_season'
+                  ? `linear-gradient(90deg, #ff7e5f 0%, #f59e0b ${(dur > 0 ? (curTime / dur) * 100 : 0)}%, rgba(245, 158, 11, 0.25) ${(dur > 0 ? (curTime / dur) * 100 : 0)}%, rgba(245, 158, 11, 0.25) 100%)`
+                  : `linear-gradient(90deg, ${C.primarySolid} 0%, ${C.primarySolid} ${(dur > 0 ? (curTime / dur) * 100 : 0)}%, ${C.isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'} ${(dur > 0 ? (curTime / dur) * 100 : 0)}%, ${C.isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'} 100%)`,
+                accentColor: C.primarySolid,
+                '--accent-color': C.primarySolid,
+                '--accent-glow': C.primaryGlow
+              }} />
+            <span className="text-[10px] md:text-[11px] font-medium w-8 md:w-9 shrink-0" style={{ color: C.txtSub }}>{fmt(dur)}</span>
+          </div>
+        </div>
+
+        {/* Right Controls: Extra + Volume */}
+        <div className="hidden md:flex items-center justify-end gap-3 w-[30%] min-w-[180px] max-w-[340px] shrink-0">
+          <Tooltip text={sleepTimer ? `Hẹn giờ: ${sleepTimer} phút` : 'Hẹn giờ tắt nhạc'}>
+            <button onClick={cycleSleepTimer}
+              className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+              style={{ color: sleepTimer > 0 ? C.primarySolid : C.txtFad }}
+              onMouseEnter={e => e.currentTarget.style.color = sleepTimer > 0 ? C.primarySolid : C.txt}
+              onMouseLeave={e => e.currentTarget.style.color = sleepTimer > 0 ? C.primarySolid : C.txtFad}
+            >
+              <i className={sleepTimer > 0 ? 'ri-timer-fill text-lg md:text-xl' : 'ri-timer-line text-lg md:text-xl'}></i>
+              {sleepTimer > 0 && (
+                <span className="absolute -top-1 -right-2 text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center text-white shadow-xs"
+                  style={{ background: C.primarySolid }}>
+                  {sleepTimer}
+                </span>
+              )}
+            </button>
+          </Tooltip>
+
+          <Tooltip text="Lời bài hát (Karaoke 🎤)">
+            <button onClick={() => setLyricsModal(true)}
+              className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+              style={{ color: lyricsModal ? C.primarySolid : C.txtFad }}
+              onMouseEnter={e => e.currentTarget.style.color = lyricsModal ? C.primarySolid : C.txt}
+              onMouseLeave={e => e.currentTarget.style.color = lyricsModal ? C.primarySolid : C.txtFad}
+            >
+              <i className={lyricsModal ? "ri-mic-fill text-lg md:text-xl" : "ri-mic-line text-lg md:text-xl"}></i>
+            </button>
+          </Tooltip>
+
+          <Tooltip text={pipWindow ? "Đóng cửa sổ thu nhỏ" : "Mở cửa sổ con nổi (Mini Player)"}>
+            <button
+              onClick={togglePipWindow}
+              className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+              style={{ color: pipWindow ? C.primarySolid : C.txtFad }}
+              onMouseEnter={e => e.currentTarget.style.color = pipWindow ? C.primarySolid : C.txt}
+              onMouseLeave={e => e.currentTarget.style.color = pipWindow ? C.primarySolid : C.txtFad}
+            >
+              <i className={pipWindow ? "ri-picture-in-picture-2-fill text-lg md:text-xl" : "ri-picture-in-picture-2-line text-lg md:text-xl"}></i>
+              {pipWindow && (
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1 md:h-1 rounded-full"
+                  style={{ background: C.primarySolid }}>
+                </span>
+              )}
+            </button>
+          </Tooltip>
+
+          <div className="flex items-center gap-1.5 ml-2 w-28 lg:w-32">
+            <Tooltip text={muted || vol === 0 ? 'Bật lại âm thanh' : 'Tắt tiếng'}>
+              <button onClick={toggleMute}
+                className="transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0"
+                style={{ color: muted || vol === 0 ? '#f43f5e' : C.txtFad }}
+                onMouseEnter={e => e.currentTarget.style.color = muted || vol === 0 ? '#f43f5e' : C.txt}
+                onMouseLeave={e => e.currentTarget.style.color = muted || vol === 0 ? '#f43f5e' : C.txtFad}
+              >
+                <i className={`text-lg md:text-xl ${muted || vol === 0 ? 'ri-volume-mute-fill' : vol < 50 ? 'ri-volume-down-fill' : 'ri-volume-up-fill'}`}></i>
+              </button>
+            </Tooltip>
+            <input type="range" min="0" max="100" value={muted ? 0 : vol} onChange={changeVol}
+              className={`flex-1 cursor-pointer h-1 md:h-1.5 rounded-full ${themeKey === 'summer_season' ? 'sun-theme-slider' : ''}`}
+              style={{
+                background: themeKey === 'summer_season'
+                  ? `linear-gradient(90deg, #ff7e5f 0%, #f59e0b ${muted ? 0 : vol}%, rgba(245, 158, 11, 0.25) ${muted ? 0 : vol}%, rgba(245, 158, 11, 0.25) 100%)`
+                  : `linear-gradient(90deg, ${C.primarySolid} 0%, ${C.primarySolid} ${muted ? 0 : vol}%, ${C.isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'} ${muted ? 0 : vol}%, ${C.isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'} 100%)`,
+                accentColor: C.primarySolid,
+                '--accent-color': C.primarySolid,
+                '--accent-glow': C.primaryGlow
+              }} />
+          </div>
+        </div>
+      </footer>ạc'}>
               <button onClick={cycleSleepTimer}
                 className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
                 style={{ color: sleepTimer > 0 ? C.primarySolid : C.txtFad }}>
