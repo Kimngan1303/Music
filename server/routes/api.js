@@ -985,9 +985,9 @@ router.post('/social/listen-room/sync', auth, async (req, res) => {
       return res.json({ success: true, message: 'Đã rời phòng nghe nhạc chung', room: null });
     }
 
-    if (action === 'create' || (action === 'join' && !room)) {
+    if (action === 'create') {
       let currentUser = await User.findById(currentUserId);
-      const hostName = currentUser ? currentUser.name : (req.user.name || 'Host');
+      const hostName = (currentUser && currentUser.name) ? currentUser.name : (req.user.name || 'Host');
       room = {
         roomId: targetRoomId,
         hostId: currentUserId,
@@ -999,22 +999,42 @@ router.post('/social/listen-room/sync', auth, async (req, res) => {
         updatedAt: Date.now()
       };
       listenRooms.set(room.roomId, room);
-    } else if (room) {
-      if (action === 'join') {
-        let currentUser = await User.findById(currentUserId);
-        const memberName = currentUser ? currentUser.name : (req.user.name || 'Thành viên');
+    } else if (action === 'join') {
+      let currentUser = await User.findById(currentUserId);
+      const memberName = (currentUser && currentUser.name) ? currentUser.name : (req.user.name || 'Thành viên');
+
+      if (!room) {
+        const hostIdParam = req.body.hostId || targetRoomId.replace('room_', '');
+        let hostUser = await User.findById(hostIdParam).catch(() => null);
+        const hostName = (hostUser && hostUser.name) ? hostUser.name : (req.body.hostName || 'Host');
+
+        room = {
+          roomId: targetRoomId,
+          hostId: hostIdParam,
+          hostName,
+          track: track || null,
+          curTime: curTime || 0,
+          isPlaying: Boolean(isPlaying),
+          members: [
+            { id: hostIdParam, name: hostName },
+            { id: currentUserId, name: memberName }
+          ],
+          updatedAt: Date.now()
+        };
+        listenRooms.set(room.roomId, room);
+      } else {
         if (!room.members.some(m => String(m.id) === currentUserId || (currentUserEmail && String(m.id).toLowerCase() === currentUserEmail))) {
           room.members.push({ id: currentUserId, name: memberName });
         }
-      } else if (action === 'sync') {
-        // Host updates track, playback state and timeline!
-        const isHost = (room.hostId === currentUserId) || (currentUserEmail && String(room.hostId).toLowerCase() === currentUserEmail);
-        if (isHost) {
-          if (track) room.track = track;
-          if (curTime !== undefined) room.curTime = curTime;
-          if (isPlaying !== undefined) room.isPlaying = Boolean(isPlaying);
-          room.updatedAt = Date.now();
-        }
+      }
+    } else if (room && action === 'sync') {
+      // Host updates track, playback state and timeline!
+      const isHost = (room.hostId === currentUserId) || (currentUserEmail && String(room.hostId).toLowerCase() === currentUserEmail);
+      if (isHost) {
+        if (track) room.track = track;
+        if (curTime !== undefined) room.curTime = curTime;
+        if (isPlaying !== undefined) room.isPlaying = Boolean(isPlaying);
+        room.updatedAt = Date.now();
       }
     }
 
