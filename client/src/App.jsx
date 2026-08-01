@@ -1022,6 +1022,119 @@ export default function App() {
   // User Profile Preview Modal State (from Leaderboard Online)
   const [viewUserProfileModal, setViewUserProfileModal] = useState(null); // { user, rank }
 
+  // Social, Direct Messaging & Listen Together States
+  const [chatModal, setChatModal] = useState({ open: false, activeUser: null, tab: 'chat' }); // tab: 'chat' | 'friends' | 'listen_party'
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInputText, setChatInputText] = useState('');
+  const [friendsList, setFriendsList] = useState([]);
+  const [listenPartyRoom, setListenPartyRoom] = useState(null); // { roomId, hostId, hostName, track, curTime, isPlaying, members }
+  const [isListenPartyHost, setIsListenPartyHost] = useState(false);
+
+  // Fetch Friends List
+  const fetchFriendsList = async () => {
+    try {
+      const res = await axios.get('/api/social/friends');
+      if (res.data) setFriendsList(res.data);
+    } catch (e) { }
+  };
+
+  // Fetch Chat Messages
+  const fetchChatMessages = async (targetUser) => {
+    try {
+      const targetId = targetUser ? (targetUser._id || targetUser.id) : 'public';
+      const res = await axios.get(`/api/social/messages/${targetId}`);
+      if (res.data && Array.isArray(res.data)) {
+        setChatMessages(res.data);
+      }
+    } catch (e) { }
+  };
+
+  // Send Direct Message or Share Song Card
+  const handleSendMessage = async (textToSend, songToShare = null) => {
+    if (!textToSend && !songToShare) return;
+    try {
+      const targetId = chatModal.activeUser ? (chatModal.activeUser._id || chatModal.activeUser.id) : 'public';
+      const res = await axios.post('/api/social/messages', {
+        recipientId: targetId,
+        text: textToSend,
+        sharedSong: songToShare ? {
+          title: getCleanSongTitle(songToShare),
+          artist: songToShare.artist || 'Artist',
+          thumbnail: songToShare.thumbnail,
+          youtubeId: songToShare.youtubeId,
+          id: songToShare.id || songToShare._id
+        } : null
+      });
+
+      if (res.data) {
+        setChatMessages(prev => [...prev, res.data]);
+        setChatInputText('');
+        showToast('Đã gửi tin nhắn! 💬', 'success', 'Nhắn tin');
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Lỗi gửi tin nhắn', 'error');
+    }
+  };
+
+  // Handle Send Friend Request
+  const handleSendFriendRequest = async (targetUser, action = 'request') => {
+    try {
+      const targetId = targetUser?._id || targetUser?.id;
+      const res = await axios.post('/api/social/friend-request', { targetUserId: targetId, action });
+      showToast(res.data.message || 'Thao tác kết bạn thành công!', 'success', 'Kết bạn');
+      fetchFriendsList();
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Lỗi thao tác kết bạn', 'error');
+    }
+  };
+
+  // Listen Together Room Sync
+  const handleSyncListenParty = async (actionType = 'sync', customTrack = null) => {
+    try {
+      const roomId = listenPartyRoom?.roomId || 'main_party_room';
+      const res = await axios.post('/api/social/listen-room/sync', {
+        roomId,
+        track: customTrack || track,
+        curTime,
+        isPlaying: playing,
+        action: actionType
+      });
+
+      if (res.data && res.data.room) {
+        setListenPartyRoom(res.data.room);
+        if (res.data.room.hostId === (user?._id || user?.id)) {
+          setIsListenPartyHost(true);
+        }
+      }
+    } catch (e) { }
+  };
+
+  // Polling for chat & listen together updates when open
+  useEffect(() => {
+    if (!chatModal.open) return;
+    fetchFriendsList();
+    fetchChatMessages(chatModal.activeUser);
+
+    const interval = setInterval(() => {
+      fetchChatMessages(chatModal.activeUser);
+      if (chatModal.tab === 'listen_party' || listenPartyRoom) {
+        handleSyncListenParty('sync');
+      }
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [chatModal.open, chatModal.activeUser?._id, chatModal.tab]);
+
+  // Audio Sync for joined Listen Together Room members
+  useEffect(() => {
+    if (!listenPartyRoom || isListenPartyHost || !listenPartyRoom.track) return;
+    const roomT = listenPartyRoom.track;
+    if (!track || (track.id !== roomT.id && track.youtubeId !== roomT.youtubeId)) {
+      play(roomT);
+      showToast(`🎧 Đã đồng bộ bài hát từ Host ${listenPartyRoom.hostName}!`, 'info', 'Nghe Nhạc Cùng Nhau');
+    }
+  }, [listenPartyRoom?.updatedAt]);
+
 
   const [query, setQuery] = useState(''); // Header global online search query
   const [localFilterQuery, setLocalFilterQuery] = useState(''); // Spotify-style local song filter query
@@ -4187,6 +4300,19 @@ export default function App() {
                 </button>
               )}
 
+              {/* 💬 Direct Chat & Listen Together Button */}
+              <button
+                onClick={() => setChatModal({ open: true, activeUser: null, tab: 'chat' })}
+                className="relative p-2 rounded-full transition-all cursor-pointer hover:scale-110 active:scale-95 flex items-center justify-center"
+                style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.primarySolid }}
+                title="Trò chuyện trực tiếp & Nghe Nhạc Cùng Nhau"
+              >
+                <i className="ri-message-3-fill text-base md:text-lg"></i>
+                <span className="absolute -top-1 -right-1 bg-emerald-500 text-white font-extrabold text-[8px] px-1 rounded-full border border-white shadow-md">
+                  LIVE
+                </span>
+              </button>
+
               {/* 🔔 Notification Bell Button & Dropdown Panel (Đặt ngang hàng ở cuối hàng) */}
               <div ref={notifMenuRef} className="relative z-50">
                 <button
@@ -6965,6 +7091,49 @@ export default function App() {
                 <h4 className="text-lg font-extrabold truncate" style={{ color: C.txt, fontFamily: F.heading }}>
                   {viewUserProfileModal.user?.name || 'Thành viên'}
                 </h4>
+                
+            {/* Action Buttons: Kết bạn, Nhắn tin, Mời nghe nhạc chung */}
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleSendFriendRequest(viewUserProfileModal.user, 'request')}
+                  className="flex-1 py-3 rounded-2xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border hover:opacity-90 active:scale-95"
+                  style={{ background: C.tag, color: C.txt, borderColor: C.border }}
+                >
+                  <i className="ri-user-add-line text-sm" style={{ color: C.primarySolid }} />
+                  <span>Kết Bạn</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const targetU = viewUserProfileModal.user;
+                    setViewUserProfileModal(null);
+                    setChatModal({ open: true, activeUser: targetU, tab: 'chat' });
+                  }}
+                  className="flex-1 py-3 rounded-2xl text-xs font-bold text-white shadow-md flex items-center justify-center gap-1.5 cursor-pointer transition hover:scale-[1.02] active:scale-95"
+                  style={{ background: C.primary, boxShadow: `0 6px 18px ${C.primaryGlow}` }}
+                >
+                  <i className="ri-message-3-fill text-sm" />
+                  <span>Nhắn Tin</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => {
+                  const targetU = viewUserProfileModal.user;
+                  setViewUserProfileModal(null);
+                  setChatModal({ open: true, activeUser: targetU, tab: 'listen_party' });
+                  handleSyncListenParty('create');
+                  showToast(`🎧 Đã khởi tạo Phòng Nghe Nhạc Cùng Nhau với ${targetU?.name || 'thành viên'}!`, 'info', 'Nghe Nhạc Cùng Nhau');
+                }}
+                className="w-full py-2.5 rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer transition hover:opacity-95 border"
+                style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(16,185,129,0.2))', color: '#10b981', borderColor: 'rgba(16,185,129,0.3)' }}
+              >
+                <i className="ri-headphone-fill text-sm animate-bounce" />
+                <span>Mời Nghe Nhạc Cùng Nhau 🎧</span>
+              </button>
+            </div>
+                
                 <p className="text-xs truncate font-medium flex items-center gap-1 mt-0.5" style={{ color: C.txtSub }}>
                   <i className="ri-music-2-fill text-xs" style={{ color: C.primarySolid }} />
                   {viewUserProfileModal.user?.bio || 'Nghe nhạc mọi lúc mọi nơi'}
@@ -7123,6 +7292,344 @@ export default function App() {
         </div>
       )}
 
+
+      {/* ── REAL-TIME CHAT & LISTEN TOGETHER MODAL ───────────────────────── */}
+      {chatModal.open && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-[170] p-4"
+          style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(16px)' }}
+          onMouseDown={e => { if (e.target === e.currentTarget) setChatModal(prev => ({ ...prev, open: false })); }}
+        >
+          <div
+            className="w-full max-w-2xl h-[85vh] max-h-[680px] rounded-3xl p-5 shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200 border"
+            style={{
+              background: C.surface,
+              borderColor: C.border,
+              color: C.txt,
+              boxShadow: '0 25px 60px rgba(0,0,0,0.35)'
+            }}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b shrink-0" style={{ borderColor: C.border }}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-lg text-white shadow-sm" style={{ background: C.primary }}>
+                  <i className="ri-message-3-fill" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold flex items-center gap-2" style={{ fontFamily: F.heading, color: C.txt }}>
+                    {chatModal.activeUser ? `Chat với ${chatModal.activeUser.name}` : 'Trò Chuyện & Nghe Nhạc Cùng Nhau'}
+                  </h3>
+                  <p className="text-xs" style={{ color: C.txtSub }}>
+                    {chatModal.activeUser ? (chatModal.activeUser.isOnline ? '🟢 Đang Online' : '⚪ Khởi tạo nhắn tin 1-1') : 'Kết nối thành viên, nhắn tin & chia sẻ âm nhạc'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setChatModal(prev => ({ ...prev, open: false }))}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer hover:opacity-80 border"
+                style={{ background: C.tag, color: C.txtFad, borderColor: C.border }}
+              >
+                <i className="ri-close-line text-lg" />
+              </button>
+            </div>
+
+            {/* Modal Tabs Bar */}
+            <div className="flex gap-2 p-1 rounded-2xl shrink-0 border" style={{ background: C.tag, borderColor: C.border }}>
+              <button
+                onClick={() => setChatModal(prev => ({ ...prev, tab: 'chat' }))}
+                className="flex-1 py-2 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
+                style={{
+                  background: chatModal.tab === 'chat' ? C.primary : 'transparent',
+                  color: chatModal.tab === 'chat' ? '#fff' : C.txtSub,
+                  boxShadow: chatModal.tab === 'chat' ? `0 4px 12px ${C.primaryGlow}` : 'none'
+                }}
+              >
+                <i className="ri-chat-3-line text-sm" />
+                <span>{chatModal.activeUser ? `Chat riêng (${chatModal.activeUser.name})` : 'Khung Chat Nhóm / 1-1'}</span>
+              </button>
+
+              <button
+                onClick={() => setChatModal(prev => ({ ...prev, tab: 'friends' }))}
+                className="flex-1 py-2 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
+                style={{
+                  background: chatModal.tab === 'friends' ? C.primary : 'transparent',
+                  color: chatModal.tab === 'friends' ? '#fff' : C.txtSub,
+                  boxShadow: chatModal.tab === 'friends' ? `0 4px 12px ${C.primaryGlow}` : 'none'
+                }}
+              >
+                <i className="ri-user-heart-line text-sm" />
+                <span>Bạn Bè ({friendsList.length})</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setChatModal(prev => ({ ...prev, tab: 'listen_party' }));
+                  handleSyncListenParty('create');
+                }}
+                className="flex-1 py-2 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
+                style={{
+                  background: chatModal.tab === 'listen_party' ? '#10b981' : 'transparent',
+                  color: chatModal.tab === 'listen_party' ? '#fff' : C.txtSub,
+                  boxShadow: chatModal.tab === 'listen_party' ? '0 4px 12px rgba(16,185,129,0.4)' : 'none'
+                }}
+              >
+                <i className="ri-headphone-fill text-sm animate-bounce" />
+                <span>Nghe Nhạc Cùng Nhau 🎧</span>
+              </button>
+            </div>
+
+            {/* TAB 1: Chat Messages */}
+            {chatModal.tab === 'chat' && (
+              <div className="flex-1 flex flex-col min-h-0">
+                {/* Active user header indicator if set */}
+                {chatModal.activeUser && (
+                  <div className="flex items-center justify-between p-2.5 px-3 mb-2 rounded-xl border text-xs" style={{ background: C.tag, borderColor: C.border }}>
+                    <div className="flex items-center gap-2">
+                      <img src={chatModal.activeUser.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} className="w-6 h-6 rounded-full object-cover" />
+                      <span className="font-bold" style={{ color: C.txt }}>Đang chat riêng với {chatModal.activeUser.name}</span>
+                    </div>
+                    <button
+                      onClick={() => setChatModal(prev => ({ ...prev, activeUser: null }))}
+                      className="text-[11px] font-bold text-blue-500 hover:underline cursor-pointer"
+                    >
+                      ← Đổi sang Chat Công Khai
+                    </button>
+                  </div>
+                )}
+
+                {/* Message Scroll Area */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col gap-3 rounded-2xl border mb-3" style={{ background: C.isDark ? 'rgba(15,23,42,0.4)' : '#f9fafb', borderColor: C.border }}>
+                  {chatMessages.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center gap-2 py-12 text-center" style={{ color: C.txtFad }}>
+                      <i className="ri-chat-smile-2-line text-3xl" style={{ color: C.primarySolid }} />
+                      <p className="text-xs font-bold">Chưa có tin nhắn nào trong cuộc trò chuyện</p>
+                      <p className="text-[11px]">Hãy nhập lời chào hoặc chia sẻ bài hát đang nghe bên dưới!</p>
+                    </div>
+                  ) : chatMessages.map((msg, mIdx) => {
+                    const isSelf = msg.senderId === (user?._id || user?.id);
+                    return (
+                      <div key={msg._id || mIdx} className={`flex gap-2.5 items-end ${isSelf ? 'flex-row-reverse' : ''}`}>
+                        <img src={msg.senderAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} className="w-7 h-7 rounded-full object-cover shrink-0 mb-1" />
+                        <div className={`flex flex-col max-w-[75%] ${isSelf ? 'items-end' : 'items-start'}`}>
+                          <span className="text-[10px] font-bold px-1 mb-0.5" style={{ color: C.txtFad }}>{msg.senderName}</span>
+
+                          {/* Text Message Bubble */}
+                          {msg.text && (
+                            <div
+                              className="p-3 rounded-2xl text-xs leading-relaxed font-medium shadow-xs"
+                              style={{
+                                background: isSelf ? C.primary : C.tag,
+                                color: isSelf ? '#fff' : C.txt,
+                                border: `1px solid ${isSelf ? 'transparent' : C.border}`,
+                                borderRadius: isSelf ? '18px 18px 4px 18px' : '18px 18px 18px 4px'
+                              }}
+                            >
+                              {msg.text}
+                            </div>
+                          )}
+
+                          {/* Shared Song Card Bubble */}
+                          {msg.sharedSong && (
+                            <div
+                              className="mt-1 p-3 rounded-2xl border shadow-sm flex items-center gap-3 w-64 transition hover:scale-[1.01]"
+                              style={{ background: C.surface, borderColor: C.primarySolid }}
+                            >
+                              <img src={msg.sharedSong.thumbnail || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150&auto=format&fit=crop&q=80"} className="w-11 h-11 rounded-xl object-cover shrink-0" />
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <span className="text-[9px] font-black uppercase text-emerald-500">🎵 Bài hát được chia sẻ</span>
+                                <span className="text-xs font-bold truncate" style={{ color: C.txt }}>{msg.sharedSong.title}</span>
+                                <span className="text-[11px] truncate" style={{ color: C.txtSub }}>{msg.sharedSong.artist}</span>
+                              </div>
+                              <button
+                                onClick={() => play(msg.sharedSong)}
+                                className="w-8 h-8 rounded-full text-white flex items-center justify-center shrink-0 shadow-md cursor-pointer transition hover:scale-110 active:scale-95"
+                                style={{ background: C.primary }}
+                                title="Bấm để phát bài hát này"
+                              >
+                                <i className="ri-play-fill text-base ml-0.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Message Input & Action Bar */}
+                <form
+                  onSubmit={e => {
+                    e.preventDefault();
+                    handleSendMessage(chatInputText);
+                  }}
+                  className="flex items-center gap-2 pt-1"
+                >
+                  {track && (
+                    <button
+                      type="button"
+                      onClick={() => handleSendMessage('', track)}
+                      className="px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition hover:scale-105 active:scale-95 shrink-0 border"
+                      style={{ background: C.tag, color: C.primarySolid, borderColor: C.border }}
+                      title="Gửi thẻ bài hát đang nghe vào khung chat"
+                    >
+                      <i className="ri-music-2-fill text-sm" />
+                      <span className="hidden sm:inline">Gửi Bài Đang Nghe</span>
+                    </button>
+                  )}
+
+                  <input
+                    type="text"
+                    placeholder={chatModal.activeUser ? `Nhập tin nhắn cho ${chatModal.activeUser.name}...` : 'Nhập tin nhắn trò chuyện công khai...'}
+                    value={chatInputText}
+                    onChange={e => setChatInputText(e.target.value)}
+                    className="flex-1 px-4 py-2.5 rounded-2xl text-xs font-semibold outline-none transition"
+                    style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                  />
+
+                  <button
+                    type="submit"
+                    className="px-4 py-2.5 rounded-2xl text-xs font-extrabold text-white flex items-center gap-1.5 shadow-md cursor-pointer transition hover:scale-105 active:scale-95 shrink-0"
+                    style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primaryGlow}` }}
+                  >
+                    <span>Gửi</span>
+                    <i className="ri-send-plane-fill text-xs" />
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* TAB 2: Friends List */}
+            {chatModal.tab === 'friends' && (
+              <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2.5 p-1">
+                {friendsList.length === 0 ? (
+                  <div className="py-12 text-center text-xs flex flex-col items-center justify-center gap-2" style={{ color: C.txtSub }}>
+                    <i className="ri-user-heart-line text-3xl" style={{ color: C.primarySolid }} />
+                    <p className="font-bold text-sm">Chưa có bạn bè trong danh sách</p>
+                    <p className="text-[11px] max-w-xs">Hãy vào Bảng Xếp Hạng Online và bấm "Kết bạn" để mở rộng mạng lưới âm nhạc của bạn!</p>
+                  </div>
+                ) : friendsList.map((fItem, fIdx) => (
+                  <div
+                    key={fItem._id || fIdx}
+                    className="flex items-center justify-between p-3 rounded-2xl border transition hover:opacity-95"
+                    style={{ background: C.tag, borderColor: C.border }}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative shrink-0">
+                        <img src={fItem.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} className="w-10 h-10 rounded-full object-cover" />
+                        <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border border-white" style={{ background: fItem.isOnline ? '#22c55e' : '#6b7280' }} />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-bold truncate" style={{ color: C.txt }}>{fItem.name}</span>
+                        <span className="text-[11px] truncate font-semibold" style={{ color: fItem.isOnline ? '#22c55e' : C.txtSub }}>
+                          {fItem.isOnline ? '🟢 Đang Online' : '⚪ Ngoại tuyến'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => setChatModal({ open: true, activeUser: fItem, tab: 'chat' })}
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer hover:scale-105 border"
+                        style={{ background: C.surface, color: C.txt, borderColor: C.border }}
+                      >
+                        <i className="ri-message-3-line" /> Chat
+                      </button>
+                      <button
+                        onClick={() => {
+                          setChatModal({ open: true, activeUser: fItem, tab: 'listen_party' });
+                          handleSyncListenParty('create');
+                        }}
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold text-white transition flex items-center gap-1 cursor-pointer hover:scale-105 shadow-sm"
+                        style={{ background: '#10b981' }}
+                      >
+                        <i className="ri-headphone-fill text-xs" /> Mời nghe chung
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* TAB 3: Listen Together (Phòng Nghe Nhạc Cùng Nhau) */}
+            {chatModal.tab === 'listen_party' && (
+              <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 p-2">
+                {/* Room Info Banner */}
+                <div
+                  className="p-5 rounded-3xl border flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left relative overflow-hidden"
+                  style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(59,130,246,0.15) 100%)', borderColor: 'rgba(16,185,129,0.3)' }}
+                >
+                  <div className="flex items-center gap-4 z-10 min-w-0">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl text-white shadow-lg shrink-0" style={{ background: '#10b981' }}>
+                      <i className="ri-headphone-fill animate-bounce" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-500">🎧 Phòng Nghe Nhạc Cùng Nhau</span>
+                      <h4 className="text-base font-extrabold truncate" style={{ color: C.txt, fontFamily: F.heading }}>
+                        {listenPartyRoom ? `Phòng của Host ${listenPartyRoom.hostName}` : 'Phòng Nghe Nhạc Chung'}
+                      </h4>
+                      <p className="text-xs" style={{ color: C.txtSub }}>
+                        {listenPartyRoom?.members ? `${listenPartyRoom.members.length} người đang cùng nghe` : 'Sẵn sàng đồng bộ bài hát'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 z-10 shrink-0">
+                    <button
+                      onClick={() => handleSyncListenParty('join')}
+                      className="px-4 py-2.5 rounded-2xl text-xs font-extrabold text-white shadow-md flex items-center gap-1.5 cursor-pointer transition hover:scale-105 active:scale-95"
+                      style={{ background: '#10b981', boxShadow: '0 4px 14px rgba(16,185,129,0.4)' }}
+                    >
+                      <i className="ri-play-circle-fill text-sm" />
+                      <span>Đồng Bộ Nghe Ngay</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Host Control Actions */}
+                <div className="p-4 rounded-2xl border flex flex-col gap-3" style={{ background: C.tag, borderColor: C.border }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold flex items-center gap-1.5" style={{ color: C.txt }}>
+                      <i className="ri-equalizer-line text-emerald-500" /> Bàn Điều Khiển Phát Nhạc Đồng Bộ
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
+                      {isListenPartyHost ? '✦ Bạn là Host điều khiển' : '✦ Đang đồng bộ từ Host'}
+                    </span>
+                  </div>
+
+                  {track ? (
+                    <div className="flex items-center justify-between p-3 rounded-xl border bg-white/5" style={{ borderColor: C.border }}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img src={track.thumbnail} className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold truncate" style={{ color: C.txt }}>{getCleanSongTitle(track)}</span>
+                          <span className="text-[11px] truncate" style={{ color: C.txtSub }}>{track.artist || 'Artist'}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => {
+                            togglePlay();
+                            handleSyncListenParty('sync');
+                          }}
+                          className="w-9 h-9 rounded-full text-white flex items-center justify-center shadow-md cursor-pointer transition hover:scale-110"
+                          style={{ background: C.primary }}
+                        >
+                          {playing ? <i className="ri-pause-fill text-lg" /> : <i className="ri-play-fill text-lg ml-0.5" />}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-center py-4" style={{ color: C.txtFad }}>Chọn 1 bài hát trong thư viện để bắt đầu phát chung!</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
 
       {/* ── HIDDEN CANVAS & VIDEO FOR MOBILE iOS / ANDROID NATIVE SYSTEM PIP ─────────────────── */}
       <canvas ref={mobileCanvasRef} width="480" height="480" className="hidden" />

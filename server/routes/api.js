@@ -656,4 +656,190 @@ router.post('/history', auth, async (req, res) => {
   }
 });
 
+// --- SOCIAL, MESSAGING & LISTEN TOGETHER ROUTES ---
+const Friendship = require('../models/Friendship');
+const Message = require('../models/Message');
+
+// 1. Friend Requests & Friend List
+router.get('/social/friends', auth, async (req, res) => {
+  try {
+    const currentUserId = req.user.id;
+    const friendships = await Friendship.find({
+      $or: [{ requesterId: currentUserId }, { recipientId: currentUserId }],
+      status: 'accepted'
+    });
+
+    const friendIds = friendships.map(f =>
+      f.requesterId === currentUserId ? f.recipientId : f.requesterId
+    );
+
+    const friends = await User.find({ _id: { $in: friendIds } }).select('-password').lean();
+    const now = new Date();
+    const formatted = friends.map(f => ({
+      ...f,
+      isOnline: f.lastSeen ? (Math.abs(now.getTime() - new Date(f.lastSeen).getTime()) < 180000) : false
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.post('/social/friend-request', auth, async (req, res) => {
+  try {
+    const { targetUserId, action } = req.body; // action: 'request' | 'accept' | 'reject'
+    const currentUserId = req.user.id;
+
+    if (!targetUserId || targetUserId === currentUserId) {
+      return res.status(400).json({ message: 'Thao tác kết bạn không hợp lệ' });
+    }
+
+    if (action === 'accept') {
+      const existing = await Friendship.findOneAndUpdate(
+        { requesterId: targetUserId, recipientId: currentUserId },
+        { status: 'accepted' },
+        { new: true }
+      );
+      if (!existing) {
+        await Friendship.create({ requesterId: targetUserId, recipientId: currentUserId, status: 'accepted' });
+      }
+      return res.json({ message: 'Đã chấp nhận lời mời kết bạn! 🎉', status: 'accepted' });
+    }
+
+    if (action === 'reject') {
+      await Friendship.deleteOne({
+        $or: [
+          { requesterId: targetUserId, recipientId: currentUserId },
+          { requesterId: currentUserId, recipientId: targetUserId }
+        ]
+      });
+      return res.json({ message: 'Đã từ chối kết bạn', status: 'rejected' });
+    }
+
+    // Default: 'request'
+    let fs = await Friendship.findOne({
+      $or: [
+        { requesterId: currentUserId, recipientId: targetUserId },
+        { requesterId: targetUserId, recipientId: currentUserId }
+      ]
+    });
+
+    if (fs) {
+      if (fs.status === 'accepted') return res.json({ message: 'Cả hai đã là bạn bè!', status: 'accepted' });
+      return res.json({ message: 'Yêu cầu kết bạn đã được gửi từ trước!', status: 'pending' });
+    }
+
+    fs = new Friendship({ requesterId: currentUserId, recipientId: targetUserId, status: 'pending' });
+    await fs.save();
+    res.json({ message: 'Đã gửi yêu cầu kết bạn thành công! ✨', status: 'pending' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// 2. Direct Messages & Public Chat
+router.get('/social/messages/:targetUserId', auth, async (req, res) => {
+  try {
+    const currentUserId = req.user.id;
+    const { targetUserId } = req.params;
+
+    let query = {};
+    if (targetUserId === 'all' || targetUserId === 'public') {
+      query = { recipientId: 'public' };
+    } else {
+      query = {
+        $or: [
+          { senderId: currentUserId, recipientId: targetUserId },
+          { senderId: targetUserId, recipientId: currentUserId }
+        ]
+      };
+    }
+
+    const messages = await Message.find(query).sort({ createdAt: 1 }).limit(100).lean();
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.post('/social/messages', auth, async (req, res) => {
+  try {
+    const { recipientId, text, sharedSong } = req.body;
+    const currentUserId = req.user.id;
+
+    let currentUser = await User.findById(currentUserId);
+    if (!currentUser && req.user.email) {
+      currentUser = await User.findOne({ email: new RegExp(`^${req.user.email}$`, 'i') });
+    }
+
+    const newMsg = new Message({
+      senderId: currentUserId,
+      senderName: currentUser ? currentUser.name : (req.user.name || 'Thành viên'),
+      senderAvatar: currentUser ? currentUser.avatar : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      recipientId: recipientId || 'public',
+      text: text || '',
+      sharedSong: sharedSong || null
+    });
+
+    await newMsg.save();
+    res.status(201).json(newMsg);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// 3. Listen Together (Phòng Nghe Nhạc Cùng Nhau) Room In-Memory Sync Engine
+const listenRooms = new Map(); // roomId => { hostId, hostName, track, curTime, isPlaying, members: [] }
+
+router.get('/social/listen-room/:roomId', (req, res) => {
+  const { roomId } = req.params;
+  const room = listenRooms.get(roomId);
+  if (!room) {
+    return res.json({ active: false, roomId });
+  }
+  res.json({ active: true, room });
+});
+
+router.post('/social/listen-room/sync', auth, async (req, res) => {
+  try {
+    const { roomId, track, curTime, isPlaying, action } = req.body;
+    const currentUserId = req.user.id;
+
+    let room = listenRooms.get(roomId || 'main_room');
+    if (!room) {
+      let currentUser = await User.findById(currentUserId);
+      room = {
+        roomId: roomId || 'main_room',
+        hostId: currentUserId,
+        hostName: currentUser ? currentUser.name : (req.user.name || 'Host'),
+        track: track || null,
+        curTime: curTime || 0,
+        isPlaying: Boolean(isPlaying),
+        members: [{ id: currentUserId, name: currentUser ? currentUser.name : 'Host' }],
+        updatedAt: Date.now()
+      };
+      listenRooms.set(room.roomId, room);
+    } else {
+      if (action === 'join') {
+        let currentUser = await User.findById(currentUserId);
+        if (!room.members.some(m => m.id === currentUserId)) {
+          room.members.push({ id: currentUserId, name: currentUser ? currentUser.name : 'Thành viên' });
+        }
+      } else {
+        // Only host or any member updating state
+        if (track) room.track = track;
+        if (curTime !== undefined) room.curTime = curTime;
+        if (isPlaying !== undefined) room.isPlaying = Boolean(isPlaying);
+        room.updatedAt = Date.now();
+      }
+    }
+
+    res.json({ success: true, room });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;
+
