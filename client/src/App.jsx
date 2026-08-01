@@ -1030,10 +1030,16 @@ export default function App() {
   const [listenPartyRoom, setListenPartyRoom] = useState(null); // { roomId, hostId, hostName, track, curTime, isPlaying, members }
   const [isListenPartyHost, setIsListenPartyHost] = useState(false);
 
+  // Helper to get token config
+  const getAuthConfig = () => {
+    const savedT = localStorage.getItem('aura_token') || localStorage.getItem('token') || '';
+    return savedT ? { headers: { Authorization: `Bearer ${savedT}` } } : {};
+  };
+
   // Fetch Friends List
   const fetchFriendsList = async () => {
     try {
-      const res = await axios.get('/api/social/friends');
+      const res = await axios.get('/api/social/friends', getAuthConfig());
       if (res.data) setFriendsList(res.data);
     } catch (e) { }
   };
@@ -1042,7 +1048,7 @@ export default function App() {
   const fetchChatMessages = async (targetUser) => {
     try {
       const targetId = targetUser ? (targetUser._id || targetUser.id) : 'public';
-      const res = await axios.get(`/api/social/messages/${targetId}`);
+      const res = await axios.get(`/api/social/messages/${targetId}`, getAuthConfig());
       if (res.data && Array.isArray(res.data)) {
         setChatMessages(res.data);
       }
@@ -1128,20 +1134,12 @@ export default function App() {
     }
     setSearchUserLoading(true);
     try {
-      const savedT = localStorage.getItem('aura_token') || localStorage.getItem('token') || '';
-      const headers = savedT ? { headers: { Authorization: `Bearer ${savedT}` } } : {};
-      const res = await axios.get(`/api/social/search-users?q=${encodeURIComponent(queryStr.trim())}`, headers);
+      const res = await axios.get(`/api/social/search-users?q=${encodeURIComponent(queryStr.trim())}`, getAuthConfig());
       if (res.data && Array.isArray(res.data)) {
         setSearchUserResults(res.data);
       }
     } catch (e) { }
     setSearchUserLoading(false);
-  };
-
-  // Helper to get token config
-  const getAuthConfig = () => {
-    const savedT = localStorage.getItem('aura_token') || localStorage.getItem('token') || '';
-    return savedT ? { headers: { Authorization: `Bearer ${savedT}` } } : {};
   };
 
   // Handle Send Friend Request
