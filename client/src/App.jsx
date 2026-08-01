@@ -937,6 +937,22 @@ const parseLrc = (lrcText) => {
 const DEFAULT_SONGS = [];
 
 export default function App() {
+  // User Auth & Profile State (Declared at top of component to prevent TDZ ReferenceError)
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('aura_user');
+      if (!saved) return null;
+      let userData = JSON.parse(saved);
+      return userData;
+    } catch {
+      return null;
+    }
+  });
+
+  const isSuperAdminAccount = (acc) => Boolean(acc && (acc.email === 'admin@gmail.com' || acc.email === 'unnull@gmail.com' || acc._id === 'admin-owner' || acc._id === 'user-unnull' || acc.name?.toLowerCase() === 'tyn'));
+  const isCurrentSuperAdmin = isSuperAdminAccount(user);
+  const isAdmin = Boolean(user && (user.role === 'admin' || isCurrentSuperAdmin));
+
   // ── Helper: per-user localStorage keys ──────────────────
   const songsKey = (uid) => `aura_songs_${uid || 'guest'}`;
   const favsKey = (uid) => `aura_favs_${uid || 'guest'}`;
@@ -1241,22 +1257,7 @@ export default function App() {
   const [adding, setAdding] = useState(false);
   const [addErr, setAddErr] = useState('');
 
-  // User Auth & Profile State
-  const [user, setUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('aura_user');
-      if (!saved) return null; // Not logged in — show landing page
-
-      let userData = JSON.parse(saved);
-      return userData;
-    } catch {
-      return null;
-    }
-  });
-
-  const isSuperAdminAccount = (acc) => Boolean(acc && (acc.email === 'admin@gmail.com' || acc.email === 'unnull@gmail.com' || acc._id === 'admin-owner' || acc._id === 'user-unnull' || acc.name?.toLowerCase() === 'tyn'));
-  const isCurrentSuperAdmin = isSuperAdminAccount(user);
-  const isAdmin = Boolean(user && (user.role === 'admin' || isCurrentSuperAdmin));
+  // User Auth & Profile State moved to top of App component to prevent TDZ ReferenceError
 
 
   // Page routing: 'landing' | 'login' | 'app'
