@@ -7932,21 +7932,32 @@ export default function App() {
                       className={`flex items-center justify-between p-3 rounded-2xl border transition hover:opacity-95 cursor-pointer ${isUnread ? 'bg-amber-500/10' : ''}`}
                       style={{ background: isUnread ? (C.isDark ? 'rgba(245,158,11,0.1)' : '#fffbeb') : C.tag, borderColor: isUnread ? C.primarySolid : C.border }}
                     >
-                      <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">
+                      <div className="flex items-center gap-3 min-w-0 flex-1 pr-3">
                         <div className="relative shrink-0">
-                          <img src={fItem.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} className="w-10 h-10 rounded-full object-cover" />
-                          <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border border-white" style={{ background: fItem.isOnline ? '#22c55e' : '#6b7280' }} />
+                          <img src={fItem.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} className="w-11 h-11 rounded-2xl object-cover shadow-sm" />
+                          <span
+                            className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 shadow-xs"
+                            style={{ background: fItem.isOnline ? '#22c55e' : '#6b7280', borderColor: C.isDark ? '#0f172a' : '#ffffff' }}
+                            title={fItem.isOnline ? 'Đang Online' : 'Ngoại tuyến'}
+                          />
                           {isUnread && (
-                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border border-white shadow-sm animate-pulse" />
+                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white shadow-sm animate-bounce" />
                           )}
                         </div>
-                        <div className="flex flex-col min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className={`text-xs font-bold truncate ${isUnread ? 'text-amber-500' : ''}`} style={{ color: isUnread ? undefined : C.txt }}>
+                        <div className="flex flex-col min-w-0 flex-1 justify-center">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-extrabold truncate ${isUnread ? 'text-amber-500' : ''}`} style={{ color: isUnread ? undefined : C.txt }}>
                               {fItem.name}
                             </span>
-                            <span className="text-[10px] shrink-0 font-semibold" style={{ color: fItem.isOnline ? '#22c55e' : C.txtSub }}>
-                              {fItem.isOnline ? '🟢 Online' : '⚪ Offline'}
+                            <span
+                              className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md shrink-0 flex items-center gap-1"
+                              style={{
+                                background: fItem.isOnline ? 'rgba(34,197,94,0.15)' : 'rgba(107,114,128,0.15)',
+                                color: fItem.isOnline ? '#22c55e' : '#9ca3af'
+                              }}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ background: fItem.isOnline ? '#22c55e' : '#9ca3af' }} />
+                              {fItem.isOnline ? 'Online' : 'Offline'}
                             </span>
                           </div>
 
