@@ -1325,7 +1325,7 @@ export default function App() {
   };
 
   // Listen Together Room Sync
-  const handleSyncListenParty = async (actionType = 'sync', customTrack = null, customRoomId = null) => {
+  const handleSyncListenParty = async (actionType = 'sync', customTrack = null, customRoomId = null, extraData = {}) => {
     try {
       const targetRoomId = customRoomId || listenPartyRoom?.roomId;
       if (!targetRoomId && actionType !== 'create') return;
@@ -1335,7 +1335,9 @@ export default function App() {
         track: customTrack || trackRef.current || track,
         curTime: curTimeRef.current || curTime,
         isPlaying: playingRef.current !== undefined ? playingRef.current : playing,
-        action: actionType
+        action: actionType,
+        hostId: extraData?.hostId,
+        hostName: extraData?.hostName
       }, getAuthConfig());
 
       if (res.data && res.data.room) {
@@ -4666,7 +4668,7 @@ export default function App() {
                                   <div className="flex items-center gap-1.5 shrink-0">
                                     <button
                                       onClick={() => {
-                                        handleSyncListenParty('join', null, inv.roomId);
+                                        handleSyncListenParty('join', null, inv.roomId, { hostId: inv.hostId, hostName: inv.hostName });
                                         setChatModal({ open: true, activeUser: null, tab: 'listen_party' });
                                         setShowNotifMenu(false);
                                       }}
@@ -7894,7 +7896,10 @@ export default function App() {
                                 <div className="flex items-center gap-2 pt-1 border-t border-emerald-500/20">
                                   <button
                                     onClick={() => {
-                                      handleSyncListenParty('join', null, msg.listenInvite.roomId);
+                                      handleSyncListenParty('join', null, msg.listenInvite.roomId, {
+                                        hostId: msg.listenInvite.hostId,
+                                        hostName: msg.listenInvite.hostName
+                                      });
                                       setChatModal(prev => ({ ...prev, tab: 'listen_party' }));
                                       showToast(`Đã tham gia phòng nghe nhạc của ${msg.listenInvite.hostName}! 🎧`, 'success', 'Nghe Chung');
                                     }}
