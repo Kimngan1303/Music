@@ -5644,8 +5644,8 @@ export default function App() {
                         onClick={() => seek(line.time)}
                         className="cursor-pointer select-none py-1.5 px-2 rounded-xl text-sm leading-relaxed"
                         style={{
-                          color: isActive ? '#ffffff' : 'rgba(255,255,255,0.38)',
-                          textShadow: isActive ? '0 0 18px rgba(56,189,248,0.75), 0 0 35px rgba(168,85,247,0.4)' : 'none',
+                          color: isActive ? C.primarySolid : 'rgba(255,255,255,0.35)',
+                          textShadow: isActive ? `0 0 18px ${C.primaryGlow}, 0 0 35px ${C.primaryGlow}` : 'none',
                           fontWeight: isActive ? 700 : 400,
                           transition: 'color 0.4s ease, text-shadow 0.4s ease, font-weight 0.3s ease',
                         }}
