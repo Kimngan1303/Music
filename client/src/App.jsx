@@ -6806,7 +6806,82 @@ export default function App() {
                       (targetYtId && Boolean(s.youtubeId) && s.youtubeId === targetYtId)) &&
                     s.inLibrary !== false
                   );
-                  r      {/* ── BOTTOM PLAYER ─────────────────────── */}
+                  return (
+                    <button
+                      onClick={() => handleAddOnlineSongToLibrary(songToAdd)}
+                      className="flex items-center justify-between px-4 py-3 rounded-2xl transition-all cursor-pointer hover:scale-[1.01] active:scale-95 text-left"
+                      style={{ background: C.tag, border: `1.5px solid ${inLibrary ? '#22c55e' : C.border}` }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs" style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}>
+                          <i className="ri-music-2-fill text-base"></i>
+                        </div>
+                        <div className="flex flex-col text-left">
+                          <span className="text-xs font-bold" style={{ color: inLibrary ? '#22c55e' : C.txt }}>Thư viện của tôi</span>
+                          <span className="text-[10px]" style={{ color: C.txtSub }}>{inLibrary ? '✓ Đã có trong thư viện cá nhân' : 'Bấm để lưu vào thư viện cá nhân'}</span>
+                        </div>
+                      </div>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${inLibrary ? 'bg-green-500 text-white' : 'border border-gray-400 text-transparent'}`}>
+                        <i className="ri-check-line"></i>
+                      </div>
+                    </button>
+                  );
+                })()}
+              </div>
+
+              {/* Option 2: Danh sách phát (Playlists) */}
+              <div className="flex flex-col gap-1.5 mt-2">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider" style={{ color: C.txtFad }}>2. Các Danh Sách Phát (Playlists)</span>
+                  <button
+                    onClick={() => { setPlaylistModal(true); }}
+                    className="text-[11px] font-bold text-rose-500 hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <i className="ri-add-circle-line"></i> Tạo Mới
+                  </button>
+                </div>
+
+                {playlists.length === 0 ? (
+                  <p className="text-xs text-center py-3" style={{ color: C.txtSub }}>Bạn chưa có playlist nào. Hãy bấm "Tạo Mới" ở trên!</p>
+                ) : playlists.map(p => {
+                  const targetSongId = songToAdd.id || songToAdd._id;
+                  const targetYtId = songToAdd.youtubeId;
+                  const inPlaylist = (p.songs || []).some(sId => {
+                    if (targetSongId && sId === targetSongId) return true;
+                    const matchedSong = songs.find(s => s.id === sId || s._id === sId);
+                    return Boolean(targetYtId) && Boolean(matchedSong?.youtubeId) && matchedSong.youtubeId === targetYtId;
+                  });
+                  return (
+                    <button key={p._id} onClick={() => inPlaylist ? handleRemoveFromPlaylist(p._id, targetSongId) : handleAddToPlaylist(p._id, targetSongId)}
+                      className="flex items-center justify-between px-4 py-3 rounded-2xl transition-all cursor-pointer hover:scale-[1.01] active:scale-95 text-left"
+                      style={{ background: C.tag, border: `1.5px solid ${inPlaylist ? C.primarySolid : C.border}` }}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs" style={{ background: C.primary }}>
+                          <i className="ri-folder-music-fill text-base"></i>
+                        </div>
+                        <span className="text-xs font-bold truncate" style={{ color: inPlaylist ? C.primarySolid : C.txt }}>{p.name}</span>
+                      </div>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${inPlaylist ? 'text-white' : 'border border-gray-400 text-transparent'}`}
+                        style={inPlaylist ? { background: C.primarySolid } : {}}>
+                        <i className="ri-check-line"></i>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+            </div>
+
+            <button onClick={() => setSongToAdd(null)}
+              className="mt-4 w-full py-2.5 rounded-xl text-xs font-bold cursor-pointer transition active:scale-95" style={btn}>
+              Xong / Đóng
+            </button>
+          </div>
+        </div>
+      )}
+
+
+      {/* ── BOTTOM PLAYER ─────────────────────── */}
       <footer
         className="w-full flex flex-col md:flex-row items-center px-2 md:px-4 lg:px-6 justify-center md:justify-between shrink-0 z-50 transition-all h-auto md:h-[90px] py-2.5 md:py-0 gap-2.5 md:gap-0"
         style={{
