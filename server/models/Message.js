@@ -13,6 +13,12 @@ const messageSchema = new mongoose.Schema({
     youtubeId: { type: String },
     id: { type: String }
   },
+  listenInvite: {
+    roomId: { type: String },
+    hostId: { type: String },
+    hostName: { type: String },
+    hostAvatar: { type: String }
+  },
   isRead: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });

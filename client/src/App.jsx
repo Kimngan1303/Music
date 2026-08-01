@@ -1252,6 +1252,7 @@ export default function App() {
   const handleInviteListenParty = async (targetUser) => {
     try {
       const targetId = targetUser?._id || targetUser?.id;
+      const hostName = user?.name || (user?.email ? user.email.split('@')[0] : 'Host');
       const myRoomId = listenPartyRoom?.roomId || `room_${user?._id || user?.id || 'host'}`;
 
       // Ensure host room is initialized
@@ -7778,6 +7779,62 @@ export default function App() {
                               >
                                 <i className="ri-play-fill text-base ml-0.5" />
                               </button>
+                            </div>
+                          )}
+
+                          {/* Interactive Listen Together Room Invitation Card Bubble */}
+                          {msg.listenInvite && (
+                            <div
+                              className="mt-1 p-3.5 rounded-3xl border shadow-md flex flex-col gap-2.5 w-72 transition hover:scale-[1.01]"
+                              style={{
+                                background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(59,130,246,0.15) 100%)',
+                                borderColor: '#10b981'
+                              }}
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-2xl flex items-center justify-center text-white text-base shadow-sm shrink-0" style={{ background: '#10b981' }}>
+                                  <i className="ri-headphone-fill animate-bounce" />
+                                </div>
+                                <div className="flex flex-col min-w-0 flex-1">
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-500">🎧 Lời Mời Nghe Nhạc Cùng Nhau</span>
+                                  <span className="text-xs font-extrabold truncate" style={{ color: C.txt }}>
+                                    Phòng của {msg.listenInvite.hostName}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <p className="text-[11px] leading-relaxed font-medium" style={{ color: C.txtSub }}>
+                                {isSelf ? 'Bạn đã gửi lời mời tham gia phòng nghe nhạc đồng bộ.' : `${msg.senderName || 'Bạn bè'} muốn mời bạn cùng nghe nhạc trực tuyến thời gian thực!`}
+                              </p>
+
+                              {!isSelf ? (
+                                <div className="flex items-center gap-2 pt-1 border-t border-emerald-500/20">
+                                  <button
+                                    onClick={() => {
+                                      handleSyncListenParty('join', null, msg.listenInvite.roomId);
+                                      setChatModal(prev => ({ ...prev, tab: 'listen_party' }));
+                                      showToast(`Đã tham gia phòng nghe nhạc của ${msg.listenInvite.hostName}! 🎧`, 'success', 'Nghe Chung');
+                                    }}
+                                    className="flex-1 py-1.5 px-3 rounded-xl text-xs font-extrabold text-white shadow-md flex items-center justify-center gap-1 cursor-pointer transition hover:scale-105 active:scale-95"
+                                    style={{ background: '#10b981' }}
+                                  >
+                                    <i className="ri-check-line text-sm" /> Chấp Nhận
+                                  </button>
+                                  <button
+                                    onClick={() => showToast('Đã từ chối lời mời nghe nhạc', 'info')}
+                                    className="py-1.5 px-3 rounded-xl text-xs font-bold cursor-pointer transition hover:opacity-80 border"
+                                    style={{ background: C.surface, color: C.txtSub, borderColor: C.border }}
+                                  >
+                                    Từ chối
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="pt-1 border-t border-emerald-500/20">
+                                  <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                                    <i className="ri-time-line" /> Đã gửi • Đang chờ đối phương chấp nhận...
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

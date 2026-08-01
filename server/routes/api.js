@@ -875,7 +875,7 @@ router.get('/social/messages/:targetUserId', auth, async (req, res) => {
 
 router.post('/social/messages', auth, async (req, res) => {
   try {
-    const { recipientId, text, sharedSong, senderName: clientSenderName, senderAvatar: clientSenderAvatar } = req.body;
+    const { recipientId, text, sharedSong, listenInvite, senderName: clientSenderName, senderAvatar: clientSenderAvatar } = req.body;
     const currentUserId = String(req.user.id);
 
     let currentUser = await User.findById(currentUserId);
@@ -892,7 +892,8 @@ router.post('/social/messages', auth, async (req, res) => {
       senderAvatar: finalAvatar,
       recipientId: recipientId || 'public',
       text: text || '',
-      sharedSong: sharedSong || null
+      sharedSong: sharedSong || null,
+      listenInvite: listenInvite || null
     });
 
     await newMsg.save();
