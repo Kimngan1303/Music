@@ -5553,11 +5553,6 @@ export default function App() {
 
             {/* Panel Header Matching Image 1 (Track Info & Pill Tab Controls) */}
             <div className="relative z-10 p-5 pb-4 shrink-0" style={{ borderBottom: `1.5px solid ${C.border}` }}>
-              {/* Subtle Vinyl Record / Music Art Watermark on Header Background */}
-              <div className="absolute top-2 right-2 opacity-[0.07] pointer-events-none text-6xl">
-                <i className="ri-disc-line" />
-              </div>
-
               <div className="flex items-start justify-between gap-3 mb-4">
                 {/* Song Title & Artist */}
                 <div className="flex flex-col min-w-0 flex-1 z-10">
