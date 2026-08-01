@@ -963,17 +963,28 @@ router.post('/social/listen-room/sync', auth, async (req, res) => {
     const { roomId, track, curTime, isPlaying, action } = req.body;
     const currentUserId = String(req.user.id);
 
-    let targetRoomId = roomId || `room_${currentUserId}`;
+    let targetRoomId = roomId;
+    if (!targetRoomId) {
+      if (action === 'create') {
+        targetRoomId = `room_${currentUserId}`;
+      } else {
+        return res.json({ success: false, room: null });
+      }
+    }
+
     let room = listenRooms.get(targetRoomId);
 
     if (action === 'leave') {
       if (room) {
         room.members = room.members.filter(m => m.id !== currentUserId);
+        if (room.members.length === 0) {
+          listenRooms.delete(targetRoomId);
+        }
       }
       return res.json({ success: true, message: 'Đã rời phòng nghe nhạc chung', room: null });
     }
 
-    if (action === 'create' || !room) {
+    if (action === 'create') {
       let currentUser = await User.findById(currentUserId);
       room = {
         roomId: targetRoomId,
@@ -986,7 +997,7 @@ router.post('/social/listen-room/sync', auth, async (req, res) => {
         updatedAt: Date.now()
       };
       listenRooms.set(room.roomId, room);
-    } else {
+    } else if (room) {
       if (action === 'join') {
         let currentUser = await User.findById(currentUserId);
         if (!room.members.some(m => m.id === currentUserId)) {
@@ -1003,7 +1014,7 @@ router.post('/social/listen-room/sync', auth, async (req, res) => {
       }
     }
 
-    res.json({ success: true, room });
+    res.json({ success: true, room: room || null });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

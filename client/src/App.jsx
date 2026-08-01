@@ -1258,12 +1258,29 @@ export default function App() {
       // Ensure host room is initialized
       await handleSyncListenParty('create');
 
-      const res = await axios.post('/api/social/listen-room/invite', {
+      // Send backend room notification invite
+      await axios.post('/api/social/listen-room/invite', {
         targetUserId: targetId,
         roomId: myRoomId
       }, getAuthConfig());
 
-      showToast(res.data?.message || `Đã gửi lời mời nghe nhạc tới ${targetUser?.name || 'thành viên'}! 🎧`, 'success', 'Mời Nghe Nhạc');
+      // Send interactive invitation card message directly into chat stream
+      await axios.post('/api/social/messages', {
+        recipientId: targetId,
+        text: `🎧 ${hostName} đã gửi lời mời Nghe Nhạc Cùng Nhau`,
+        listenInvite: {
+          roomId: myRoomId,
+          hostId: user?._id || user?.id || 'host',
+          hostName: hostName,
+          hostAvatar: user?.avatar
+        }
+      }, getAuthConfig());
+
+      // Automatically open chat modal with active user so invitation card is visible immediately
+      setChatModal({ open: true, activeUser: targetUser, tab: 'chat' });
+      fetchChatMessages(targetUser);
+
+      showToast(`Đã gửi lời mời nghe nhạc tới ${targetUser?.name || 'thành viên'}! 🎧`, 'success', 'Mời Nghe Nhạc');
     } catch (err) {
       showToast('Lỗi gửi lời mời nghe nhạc', 'error');
     }
@@ -1271,25 +1288,28 @@ export default function App() {
 
   // Leave Listen Together Room
   const handleLeaveListenParty = async () => {
+    const activeRoomId = listenPartyRoom?.roomId;
+    setListenPartyRoom(null);
+    setIsListenPartyHost(false);
     try {
-      if (listenPartyRoom) {
+      if (activeRoomId) {
         await axios.post('/api/social/listen-room/sync', {
-          roomId: listenPartyRoom.roomId,
+          roomId: activeRoomId,
           action: 'leave'
         }, getAuthConfig());
       }
     } catch (e) { }
-    setListenPartyRoom(null);
-    setIsListenPartyHost(false);
     showToast('Đã rời phòng nghe nhạc chung. Bạn đã tự do điều khiển nhạc độc lập! 🎵', 'info', 'Rời Phòng');
   };
 
   // Listen Together Room Sync
   const handleSyncListenParty = async (actionType = 'sync', customTrack = null, customRoomId = null) => {
     try {
-      const targetRoomId = customRoomId || listenPartyRoom?.roomId || `room_${user?._id || user?.id || 'host'}`;
+      const targetRoomId = customRoomId || listenPartyRoom?.roomId;
+      if (!targetRoomId && actionType !== 'create') return;
+
       const res = await axios.post('/api/social/listen-room/sync', {
-        roomId: targetRoomId,
+        roomId: targetRoomId || `room_${user?._id || user?.id || 'host'}`,
         track: customTrack || track,
         curTime,
         isPlaying: playing,
@@ -1307,7 +1327,7 @@ export default function App() {
     } catch (e) { }
   };
 
-  // Polling for chat & listen together updates when open
+  // Polling for chat updates when modal is open
   useEffect(() => {
     if (!chatModal.open) return;
     fetchFriendsList();
@@ -1315,23 +1335,66 @@ export default function App() {
 
     const interval = setInterval(() => {
       fetchChatMessages(chatModal.activeUser);
-      if (chatModal.tab === 'listen_party' || listenPartyRoom) {
-        handleSyncListenParty('sync');
-      }
     }, 2500);
 
     return () => clearInterval(interval);
   }, [chatModal.open, chatModal.activeUser?._id, chatModal.tab]);
 
+  // Real-time Listen Together Room & Audio Sync Engine
+  useEffect(() => {
+    if (!listenPartyRoom?.roomId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        if (isListenPartyHost) {
+          // Host continuously broadcasts current playback timeline & status to server
+          await handleSyncListenParty('sync');
+        } else {
+          // Member fetches Host's latest state
+          const res = await axios.get(`/api/social/listen-room/${listenPartyRoom.roomId}`);
+          if (res.data && res.data.active && res.data.room) {
+            setListenPartyRoom(res.data.room);
+          } else {
+            // Room ended or was closed
+            setListenPartyRoom(null);
+            setIsListenPartyHost(false);
+          }
+        }
+      } catch (e) { }
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [listenPartyRoom?.roomId, isListenPartyHost, playing, track?.id, curTime]);
+
   // Audio Sync for joined Listen Together Room members
   useEffect(() => {
     if (!listenPartyRoom || isListenPartyHost || !listenPartyRoom.track) return;
     const roomT = listenPartyRoom.track;
+
+    // 1. Sync Song selection
     if (!track || (track.id !== roomT.id && track.youtubeId !== roomT.youtubeId)) {
       play(roomT);
-      showToast(`🎧 Đã đồng bộ bài hát từ Host ${listenPartyRoom.hostName}!`, 'info', 'Nghe Nhạc Cùng Nhau');
+      showToast(`🎧 Host ${listenPartyRoom.hostName} đang phát bài hát mới!`, 'info', 'Đồng Bộ Nhạc');
     }
-  }, [listenPartyRoom?.updatedAt]);
+
+    // 2. Sync Play/Pause status from Host
+    if (listenPartyRoom.isPlaying !== undefined && listenPartyRoom.isPlaying !== playing) {
+      if (listenPartyRoom.isPlaying) {
+        yt.current?.playVideo?.();
+        setPlaying(true);
+      } else {
+        yt.current?.pauseVideo?.();
+        setPlaying(false);
+      }
+    }
+
+    // 3. Sync Timeline Seek position if drift > 3.5 seconds
+    if (typeof listenPartyRoom.curTime === 'number' && typeof curTime === 'number') {
+      if (Math.abs(curTime - listenPartyRoom.curTime) > 3.5) {
+        yt.current?.seekTo?.(listenPartyRoom.curTime, true);
+      }
+    }
+  }, [listenPartyRoom?.updatedAt, listenPartyRoom?.track?.id, listenPartyRoom?.isPlaying]);
 
 
   const [query, setQuery] = useState(''); // Header global online search query
