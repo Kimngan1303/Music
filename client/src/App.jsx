@@ -1049,32 +1049,71 @@ export default function App() {
     } catch (e) { }
   };
 
-  // Send Direct Message or Share Song Card
+  // Send Direct Message or Share Song Card with Messenger-style "Đang gửi..." & "Đã gửi" status
   const handleSendMessage = async (textToSend, songToShare = null) => {
     if (!textToSend && !songToShare) return;
+
+    const tempId = 'temp_' + Date.now();
+    const currentName = user?.name || (user?.email ? user.email.split('@')[0] : 'Thành viên');
+    const currentAvatar = user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+    const targetId = chatModal.activeUser ? (chatModal.activeUser._id || chatModal.activeUser.id) : 'public';
+
+    // Optimistic message UI item for Messenger status
+    const tempMsg = {
+      _id: tempId,
+      senderId: user?._id || user?.id || 'current_user',
+      senderName: currentName,
+      senderAvatar: currentAvatar,
+      recipientId: targetId,
+      text: textToSend,
+      sharedSong: songToShare ? {
+        title: getCleanSongTitle(songToShare),
+        artist: songToShare.artist || 'Artist',
+        thumbnail: songToShare.thumbnail,
+        youtubeId: songToShare.youtubeId,
+        id: songToShare.id || songToShare._id
+      } : null,
+      status: 'sending',
+      createdAt: new Date()
+    };
+
+    setChatMessages(prev => [...prev, tempMsg]);
+    setChatInputText('');
+
     try {
-      const targetId = chatModal.activeUser ? (chatModal.activeUser._id || chatModal.activeUser.id) : 'public';
       const res = await axios.post('/api/social/messages', {
         recipientId: targetId,
+        senderName: currentName,
+        senderAvatar: currentAvatar,
         text: textToSend,
-        sharedSong: songToShare ? {
-          title: getCleanSongTitle(songToShare),
-          artist: songToShare.artist || 'Artist',
-          thumbnail: songToShare.thumbnail,
-          youtubeId: songToShare.youtubeId,
-          id: songToShare.id || songToShare._id
-        } : null
-      });
+        sharedSong: tempMsg.sharedSong
+      }, getAuthConfig());
 
       if (res.data) {
-        setChatMessages(prev => [...prev, res.data]);
-        setChatInputText('');
-        showToast('Đã gửi tin nhắn! 💬', 'success', 'Nhắn tin');
+        setChatMessages(prev => prev.map(m => m._id === tempId ? { ...res.data, status: 'sent' } : m));
       }
     } catch (err) {
-      showToast(err.response?.data?.message || 'Lỗi gửi tin nhắn', 'error');
+      setChatMessages(prev => prev.map(m => m._id === tempId ? { ...m, status: 'sent' } : m));
     }
   };
+
+  // Pending Friend Requests State & Polling
+  const [pendingFriendRequests, setPendingFriendRequests] = useState([]);
+
+  const fetchPendingFriendRequests = async () => {
+    try {
+      const res = await axios.get('/api/social/friend-requests/pending', getAuthConfig());
+      if (res.data && Array.isArray(res.data)) {
+        setPendingFriendRequests(res.data);
+      }
+    } catch (e) { }
+  };
+
+  useEffect(() => {
+    fetchPendingFriendRequests();
+    const interval = setInterval(fetchPendingFriendRequests, 5000);
+    return () => clearInterval(interval);
+  }, [user?._id]);
 
   // Active User Search for Friend Request
   const [searchUserQuery, setSearchUserQuery] = useState('');
@@ -4394,6 +4433,49 @@ export default function App() {
                       </div>
 
                       <div className="flex flex-col gap-2.5 max-h-80 overflow-y-auto custom-scrollbar pr-1">
+                        {/* 🤝 Pending Friend Requests Section inside Notification Dropdown */}
+                        {pendingFriendRequests && pendingFriendRequests.length > 0 && (
+                          <div className="mb-3 pb-3 border-b" style={{ borderColor: C.border }}>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-500 block mb-2">
+                              🤝 Lời Mời Kết Bạn Đang Chờ ({pendingFriendRequests.length})
+                            </span>
+
+                            <div className="flex flex-col gap-2">
+                              {pendingFriendRequests.map(pReq => (
+                                <div
+                                  key={pReq._id}
+                                  className="p-2.5 rounded-2xl border flex items-center justify-between gap-2"
+                                  style={{ background: C.tag, borderColor: C.border }}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <img src={pReq.user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                                    <div className="flex flex-col min-w-0">
+                                      <span className="text-xs font-bold truncate" style={{ color: C.txt }}>{pReq.user?.name || 'Thành viên'}</span>
+                                      <span className="text-[10px] text-emerald-500 font-medium">Muốn kết bạn với bạn</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <button
+                                      onClick={() => handleSendFriendRequest(pReq.user, 'accept')}
+                                      className="px-2.5 py-1 rounded-xl text-[11px] font-bold text-white shadow-xs cursor-pointer hover:scale-105 active:scale-95"
+                                      style={{ background: '#10b981' }}
+                                    >
+                                      Chấp nhận
+                                    </button>
+                                    <button
+                                      onClick={() => handleSendFriendRequest(pReq.user, 'reject')}
+                                      className="px-2 py-1 rounded-xl text-[11px] font-semibold cursor-pointer hover:opacity-80 border"
+                                      style={{ background: C.surface, color: C.txtSub, borderColor: C.border }}
+                                    >
+                                      Từ chối
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         {systemNotifs.length === 0 ? (
                           <div className="py-8 text-center text-xs" style={{ color: C.txtFad }}>
                             Không có thông báo nào mới.
@@ -7437,12 +7519,12 @@ export default function App() {
                       <p className="text-[11px]">Hãy nhập lời chào hoặc chia sẻ bài hát đang nghe bên dưới!</p>
                     </div>
                   ) : chatMessages.map((msg, mIdx) => {
-                    const isSelf = msg.senderId === (user?._id || user?.id);
+                    const isSelf = msg.senderId === (user?._id || user?.id) || (user?.email && msg.senderId === user.email);
                     return (
                       <div key={msg._id || mIdx} className={`flex gap-2.5 items-end ${isSelf ? 'flex-row-reverse' : ''}`}>
                         <img src={msg.senderAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} className="w-7 h-7 rounded-full object-cover shrink-0 mb-1" />
                         <div className={`flex flex-col max-w-[75%] ${isSelf ? 'items-end' : 'items-start'}`}>
-                          <span className="text-[10px] font-bold px-1 mb-0.5" style={{ color: C.txtFad }}>{msg.senderName}</span>
+                          <span className="text-[10px] font-bold px-1 mb-0.5" style={{ color: C.txtFad }}>{msg.senderName || 'Thành viên'}</span>
 
                           {/* Text Message Bubble */}
                           {msg.text && (
@@ -7457,6 +7539,19 @@ export default function App() {
                             >
                               {msg.text}
                             </div>
+                          )}
+
+                          {/* Messenger Style Delivery Status */}
+                          {isSelf && (
+                            <span className="text-[9px] font-bold opacity-75 mt-0.5 px-1" style={{ color: C.txtFad }}>
+                              {msg.status === 'sending' ? (
+                                <span className="flex items-center gap-1 text-amber-500">
+                                  <i className="ri-loader-4-line animate-spin text-[9px]" /> Đang gửi...
+                                </span>
+                              ) : (
+                                <span>Đã gửi</span>
+                              )}
+                            </span>
                           )}
 
                           {/* Shared Song Card Bubble */}

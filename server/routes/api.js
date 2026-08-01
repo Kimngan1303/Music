@@ -687,17 +687,27 @@ router.get('/social/search-users', async (req, res) => {
 // 1. Friend Requests & Friend List
 router.get('/social/friends', auth, async (req, res) => {
   try {
-    const currentUserId = req.user.id;
+    const currentUserId = String(req.user.id);
+    const currentUserEmail = req.user.email;
+
     const friendships = await Friendship.find({
-      $or: [{ requesterId: currentUserId }, { recipientId: currentUserId }],
+      $or: [
+        { requesterId: currentUserId },
+        { recipientId: currentUserId },
+        { requesterId: currentUserEmail },
+        { recipientId: currentUserEmail }
+      ],
       status: 'accepted'
     });
 
     const friendIds = friendships.map(f =>
-      f.requesterId === currentUserId ? f.recipientId : f.requesterId
+      (f.requesterId === currentUserId || f.requesterId === currentUserEmail) ? f.recipientId : f.requesterId
     );
 
-    const friends = await User.find({ _id: { $in: friendIds } }).select('-password').lean();
+    const friends = await User.find({
+      $or: [{ _id: { $in: friendIds } }, { email: { $in: friendIds } }]
+    }).select('-password').lean();
+
     const now = new Date();
     const formatted = friends.map(f => ({
       ...f,
@@ -710,35 +720,71 @@ router.get('/social/friends', auth, async (req, res) => {
   }
 });
 
+// GET Pending Friend Requests for Notification Panel
+router.get('/social/friend-requests/pending', auth, async (req, res) => {
+  try {
+    const currentUserId = String(req.user.id);
+    const currentUserEmail = req.user.email || '';
+
+    const pendingReqs = await Friendship.find({
+      $or: [
+        { recipientId: currentUserId },
+        { recipientId: currentUserEmail }
+      ],
+      status: 'pending'
+    }).lean();
+
+    const requesterIds = pendingReqs.map(p => p.requesterId);
+    const requesters = await User.find({
+      $or: [{ _id: { $in: requesterIds } }, { email: { $in: requesterIds } }]
+    }).select('-password').lean();
+
+    const formatted = pendingReqs.map(pReq => {
+      const reqUser = requesters.find(u => String(u._id) === String(pReq.requesterId) || u.email === pReq.requesterId);
+      return {
+        _id: pReq._id,
+        requesterId: pReq.requesterId,
+        user: reqUser || { name: 'Thành viên', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80' },
+        createdAt: pReq.createdAt
+      };
+    });
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.post('/social/friend-request', auth, async (req, res) => {
   try {
     const { targetUserId, action } = req.body; // action: 'request' | 'accept' | 'reject'
-    const currentUserId = req.user.id;
+    const currentUserId = String(req.user.id);
 
     if (!targetUserId || targetUserId === currentUserId) {
       return res.status(400).json({ message: 'Thao tác kết bạn không hợp lệ' });
     }
 
     if (action === 'accept') {
-      const existing = await Friendship.findOneAndUpdate(
-        { requesterId: targetUserId, recipientId: currentUserId },
-        { status: 'accepted' },
-        { new: true }
+      await Friendship.updateMany(
+        {
+          $or: [
+            { requesterId: targetUserId, recipientId: currentUserId },
+            { requesterId: currentUserId, recipientId: targetUserId }
+          ]
+        },
+        { status: 'accepted' }
       );
-      if (!existing) {
-        await Friendship.create({ requesterId: targetUserId, recipientId: currentUserId, status: 'accepted' });
-      }
       return res.json({ message: 'Đã chấp nhận lời mời kết bạn! 🎉', status: 'accepted' });
     }
 
     if (action === 'reject') {
-      await Friendship.deleteOne({
+      await Friendship.deleteMany({
         $or: [
           { requesterId: targetUserId, recipientId: currentUserId },
           { requesterId: currentUserId, recipientId: targetUserId }
         ]
       });
-      return res.json({ message: 'Đã từ chối kết bạn', status: 'rejected' });
+      return res.json({ message: 'Đã từ chối lời mời kết bạn', status: 'rejected' });
     }
 
     // Default: 'request'
@@ -751,12 +797,12 @@ router.post('/social/friend-request', auth, async (req, res) => {
 
     if (fs) {
       if (fs.status === 'accepted') return res.json({ message: 'Cả hai đã là bạn bè!', status: 'accepted' });
-      return res.json({ message: 'Yêu cầu kết bạn đã được gửi từ trước!', status: 'pending' });
+      return res.json({ message: 'Lời mời kết bạn đã được gửi từ trước!', status: 'pending' });
     }
 
     fs = new Friendship({ requesterId: currentUserId, recipientId: targetUserId, status: 'pending' });
     await fs.save();
-    res.json({ message: 'Đã gửi yêu cầu kết bạn thành công! ✨', status: 'pending' });
+    res.json({ message: 'Đã gửi lời mời kết bạn thành công! ✨', status: 'pending' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -765,8 +811,8 @@ router.post('/social/friend-request', auth, async (req, res) => {
 // 2. Direct Messages & Public Chat
 router.get('/social/messages/:targetUserId', auth, async (req, res) => {
   try {
-    const currentUserId = req.user.id;
-    const { targetUserId } = req.params;
+    const currentUserId = String(req.user.id);
+    const targetUserId = String(req.params.targetUserId);
 
     let query = {};
     if (targetUserId === 'all' || targetUserId === 'public') {
@@ -780,7 +826,7 @@ router.get('/social/messages/:targetUserId', auth, async (req, res) => {
       };
     }
 
-    const messages = await Message.find(query).sort({ createdAt: 1 }).limit(100).lean();
+    const messages = await Message.find(query).sort({ createdAt: 1 }).limit(150).lean();
     res.json(messages);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -789,18 +835,21 @@ router.get('/social/messages/:targetUserId', auth, async (req, res) => {
 
 router.post('/social/messages', auth, async (req, res) => {
   try {
-    const { recipientId, text, sharedSong } = req.body;
-    const currentUserId = req.user.id;
+    const { recipientId, text, sharedSong, senderName: clientSenderName, senderAvatar: clientSenderAvatar } = req.body;
+    const currentUserId = String(req.user.id);
 
     let currentUser = await User.findById(currentUserId);
     if (!currentUser && req.user.email) {
       currentUser = await User.findOne({ email: new RegExp(`^${req.user.email}$`, 'i') });
     }
 
+    const finalName = (currentUser && currentUser.name) ? currentUser.name : (clientSenderName || req.user.name || 'Thành viên');
+    const finalAvatar = (currentUser && currentUser.avatar) ? currentUser.avatar : (clientSenderAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80');
+
     const newMsg = new Message({
       senderId: currentUserId,
-      senderName: currentUser ? currentUser.name : (req.user.name || 'Thành viên'),
-      senderAvatar: currentUser ? currentUser.avatar : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      senderName: finalName,
+      senderAvatar: finalAvatar,
       recipientId: recipientId || 'public',
       text: text || '',
       sharedSong: sharedSong || null
@@ -812,6 +861,7 @@ router.post('/social/messages', auth, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
 
 // 3. Listen Together (Phòng Nghe Nhạc Cùng Nhau) Room In-Memory Sync Engine
 const listenRooms = new Map(); // roomId => { hostId, hostName, track, curTime, isPlaying, members: [] }
