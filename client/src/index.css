@@ -622,3 +622,32 @@ input[type='range'].sun-theme-slider::-webkit-slider-thumb:hover {
 .animate-slide-in {
   animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ── EQUALIZER VISUALIZER ─── */
+@keyframes eqBar1  { 0%,100%{height:4px}  25%{height:18px} 50%{height:8px}  75%{height:22px} }
+@keyframes eqBar2  { 0%,100%{height:10px} 20%{height:24px} 45%{height:6px}  70%{height:20px} }
+@keyframes eqBar3  { 0%,100%{height:16px} 15%{height:6px}  40%{height:26px} 65%{height:10px} }
+@keyframes eqBar4  { 0%,100%{height:8px}  30%{height:20px} 55%{height:28px} 80%{height:4px}  }
+@keyframes eqBar5  { 0%,100%{height:20px} 25%{height:8px}  50%{height:26px} 75%{height:6px}  }
+@keyframes eqBar6  { 0%,100%{height:6px}  20%{height:22px} 50%{height:14px} 80%{height:28px} }
+@keyframes eqBar7  { 0%,100%{height:14px} 35%{height:4px}  60%{height:24px} 85%{height:10px} }
+@keyframes eqBar8  { 0%,100%{height:22px} 25%{height:10px} 50%{height:4px}  75%{height:20px} }
+@keyframes eqBar9  { 0%,100%{height:12px} 20%{height:28px} 55%{height:5px}  80%{height:18px} }
+@keyframes eqBar10 { 0%,100%{height:18px} 30%{height:6px}  60%{height:24px} 85%{height:8px}  }
+@keyframes eqBar11 { 0%,100%{height:7px}  25%{height:22px} 50%{height:16px} 75%{height:28px} }
+@keyframes eqBar12 { 0%,100%{height:24px} 20%{height:8px}  50%{height:20px} 80%{height:4px}  }
+
+.eq-bar { width:3px; border-radius:3px 3px 0 0; min-height:4px; flex-shrink:0; }
+.eq-bar:nth-child(1)  { animation: eqBar1  0.90s ease-in-out infinite; }
+.eq-bar:nth-child(2)  { animation: eqBar2  0.75s ease-in-out infinite 0.05s; }
+.eq-bar:nth-child(3)  { animation: eqBar3  0.85s ease-in-out infinite 0.12s; }
+.eq-bar:nth-child(4)  { animation: eqBar4  0.70s ease-in-out infinite 0.08s; }
+.eq-bar:nth-child(5)  { animation: eqBar5  0.95s ease-in-out infinite 0.18s; }
+.eq-bar:nth-child(6)  { animation: eqBar6  0.80s ease-in-out infinite 0.03s; }
+.eq-bar:nth-child(7)  { animation: eqBar7  0.65s ease-in-out infinite 0.14s; }
+.eq-bar:nth-child(8)  { animation: eqBar8  0.88s ease-in-out infinite 0.09s; }
+.eq-bar:nth-child(9)  { animation: eqBar9  0.72s ease-in-out infinite 0.06s; }
+.eq-bar:nth-child(10) { animation: eqBar10 0.93s ease-in-out infinite 0.16s; }
+.eq-bar:nth-child(11) { animation: eqBar11 0.78s ease-in-out infinite 0.11s; }
+.eq-bar:nth-child(12) { animation: eqBar12 0.67s ease-in-out infinite 0.04s; }
+.eq-bar.paused { animation-play-state:paused !important; height:4px !important; }

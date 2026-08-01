@@ -5534,81 +5534,88 @@ export default function App() {
           </div>
         </main>
 
-        {/* ── INLINE LYRICS PANEL (like Spotify) ─────────────────────────── */}
+        {/* ── INLINE LYRICS PANEL (Matching Reference Design) ─────────────────────────── */}
         {lyricsModal && track && (
           <div
-            className="shrink-0 flex flex-col overflow-hidden"
+            className="shrink-0 flex flex-col overflow-hidden transition-all duration-300"
             style={{
-              width: '320px',
+              width: '340px',
               borderLeft: `1.5px solid ${C.border}`,
               background: C.isDark
-                ? 'linear-gradient(180deg, rgba(10,14,30,0.98) 0%, rgba(20,20,45,0.98) 100%)'
-                : 'linear-gradient(180deg, rgba(15,23,42,0.97) 0%, rgba(30,27,75,0.97) 100%)',
+                ? 'linear-gradient(180deg, rgba(8,12,24,0.98) 0%, rgba(18,22,42,0.98) 100%)'
+                : 'linear-gradient(180deg, rgba(15,23,42,0.97) 0%, rgba(28,35,65,0.97) 100%)',
               color: '#fff',
               position: 'relative',
               zIndex: 10,
             }}
           >
-            {/* Blurred background art */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
+            {/* Ambient Blurred Background */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-15">
               <img src={track.thumbnail} alt="" className="w-full h-full object-cover blur-3xl scale-125 saturate-150" />
-              <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.9))' }} />
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.95))' }} />
             </div>
 
-            {/* Panel Header */}
-            <div className="relative z-10 flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                <span className="text-[11px] font-bold uppercase tracking-wider text-white/70">Lời Bài Hát</span>
+            {/* Top Track Info & Action Buttons Header */}
+            <div className="relative z-10 p-4 pb-3 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="flex items-start justify-between gap-2 mb-3">
+                {/* Song Title & Artist */}
+                <div className="flex flex-col min-w-0 flex-1">
+                  <h3 className="text-sm font-extrabold truncate text-white leading-snug" style={{ fontFamily: F.heading }}>
+                    {getCleanSongTitle(track)}
+                  </h3>
+                  <p className="text-xs truncate font-medium mt-0.5" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                    {track.artist || 'Nhiều ca sĩ'}
+                  </p>
+                </div>
+
+                {/* Header Action Buttons */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => setLyricsEditMode(!lyricsEditMode)}
+                    className="px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer bg-white/10 hover:bg-white/20 text-white border border-white/15 transition active:scale-95 shadow-xs"
+                    title="Tự sửa hoặc dán lời bài hát"
+                  >
+                    <i className={lyricsEditMode ? 'ri-close-line' : 'ri-edit-box-line'} />
+                    <span>{lyricsEditMode ? 'Đóng' : 'Sửa'}</span>
+                  </button>
+                  <button
+                    onClick={() => setLyricsModal(false)}
+                    className="w-7 h-7 rounded-xl flex items-center justify-center transition bg-white/10 hover:bg-white/20 text-white cursor-pointer border border-white/15 active:scale-95 shadow-xs"
+                    title="Đóng bảng lời bài hát"
+                  >
+                    <i className="ri-close-line text-base" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => setLyricsEditMode(!lyricsEditMode)}
-                  className="px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer bg-white/10 hover:bg-white/20 text-white border border-white/15 transition active:scale-95"
-                  title="Tự sửa lời"
-                >
-                  <i className={lyricsEditMode ? 'ri-close-line' : 'ri-edit-box-line'} />
-                  <span>{lyricsEditMode ? 'Đóng' : 'Sửa'}</span>
-                </button>
-                <button
-                  onClick={() => setLyricsModal(false)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center transition bg-white/10 hover:bg-white/20 text-white cursor-pointer border border-white/15 active:scale-95"
-                  title="Đóng lời bài hát"
-                >
-                  <i className="ri-close-line text-base" />
-                </button>
+
+              {/* 🎵 Animated Equalizer Music Visualizer Bars */}
+              <div className="flex items-end gap-1 h-6 pt-1">
+                {[...Array(16)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`eq-bar ${!playing ? 'paused' : ''}`}
+                    style={{ background: C.primarySolid, opacity: playing ? 0.9 : 0.4 }}
+                  />
+                ))}
+                {lyricsData?.isSynced && (
+                  <span className="ml-auto text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    SYNC
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Mini Album Art + Song Info */}
-            <div className="relative z-10 flex items-center gap-3 px-4 py-3 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              <img
-                src={track.thumbnail}
-                alt={track.title}
-                className="w-11 h-11 rounded-xl object-cover shadow-lg shrink-0"
-                style={{ border: '1.5px solid rgba(255,255,255,0.2)' }}
-              />
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-xs font-bold truncate text-white">{getCleanSongTitle(track)}</span>
-                <span className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.55)' }}>{track.artist || 'Nhiều ca sĩ'}</span>
-              </div>
-              {/* Sync badge */}
-              {lyricsData?.isSynced && (
-                <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">SYNC</span>
-              )}
-            </div>
-
-            {/* Lyrics Content */}
-            <div className="relative z-10 flex-1 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden px-4 py-3">
+            {/* Lyrics Content Area */}
+            <div className="relative z-10 flex-1 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden px-5 py-4">
               {lyricsLoading ? (
-                <div className="h-full flex flex-col items-center justify-center gap-3">
-                  <i className="ri-loader-4-line text-3xl animate-spin text-cyan-400" />
-                  <p className="text-xs font-bold text-white/60">Đang tìm lời bài hát...</p>
+                <div className="h-full flex flex-col items-center justify-center gap-3 py-10">
+                  <i className="ri-loader-4-line text-3xl animate-spin" style={{ color: C.primarySolid }} />
+                  <p className="text-xs font-bold text-white/60">Đang tải lời bài hát...</p>
                 </div>
               ) : lyricsEditMode ? (
                 <div className="flex flex-col gap-3 py-2">
                   <p className="text-[11px] text-white/50">
-                    Dán định dạng LRC <code className="text-cyan-300">[00:12.34] lời...</code> để karaoke, hoặc dán văn bản thường.
+                    Dán lời LRC <code className="text-cyan-300">[00:12.34] lời...</code> để chạy Karaoke, hoặc dán văn bản thường.
                   </p>
                   <textarea
                     rows={14}
@@ -5634,7 +5641,7 @@ export default function App() {
                   </div>
                 </div>
               ) : lyricsData?.isSynced && lyricsData.synced.length > 0 ? (
-                <div ref={lyricsContainerRef} className="flex flex-col gap-1 py-4">
+                <div ref={lyricsContainerRef} className="flex flex-col gap-2 py-4">
                   {lyricsData.synced.map((line, idx) => {
                     const isActive = activeLyricIndex === idx;
                     return (
@@ -5644,10 +5651,10 @@ export default function App() {
                         onClick={() => seek(line.time)}
                         className="cursor-pointer select-none py-1.5 px-2 rounded-xl text-sm leading-relaxed"
                         style={{
-                          color: isActive ? C.primarySolid : 'rgba(255,255,255,0.35)',
-                          textShadow: isActive ? `0 0 18px ${C.primaryGlow}, 0 0 35px ${C.primaryGlow}` : 'none',
+                          color: isActive ? C.primarySolid : 'rgba(255,255,255,0.4)',
+                          textShadow: isActive ? `0 0 16px ${C.primaryGlow}, 0 0 30px ${C.primaryGlow}` : 'none',
                           fontWeight: isActive ? 700 : 400,
-                          transition: 'color 0.4s ease, text-shadow 0.4s ease, font-weight 0.3s ease',
+                          transition: 'color 0.35s ease, text-shadow 0.35s ease, font-weight 0.3s ease',
                         }}
                       >
                         {line.text}
