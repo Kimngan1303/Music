@@ -808,6 +808,25 @@ router.post('/social/friend-request', auth, async (req, res) => {
   }
 });
 
+// Get recent direct messages where current user is recipient for notification alerts
+router.get('/social/recent-direct-messages', auth, async (req, res) => {
+  try {
+    const currentUserId = String(req.user.id);
+    const currentUserEmail = req.user.email || '';
+
+    const recentMsgs = await Message.find({
+      $or: [
+        { recipientId: currentUserId },
+        { recipientId: currentUserEmail }
+      ]
+    }).sort({ createdAt: -1 }).limit(30).lean();
+
+    res.json(recentMsgs);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // 2. Direct Messages & Public Chat
 router.get('/social/messages/:targetUserId', auth, async (req, res) => {
   try {
@@ -865,6 +884,48 @@ router.post('/social/messages', auth, async (req, res) => {
 
 // 3. Listen Together (Phòng Nghe Nhạc Cùng Nhau) Room In-Memory Sync Engine
 const listenRooms = new Map(); // roomId => { hostId, hostName, track, curTime, isPlaying, members: [] }
+const listenRoomInvites = []; // [{ id, hostId, hostName, hostAvatar, targetUserId, roomId, createdAt }]
+
+router.post('/social/listen-room/invite', auth, async (req, res) => {
+  try {
+    const { targetUserId, roomId } = req.body;
+    const currentUserId = String(req.user.id);
+
+    let currentUser = await User.findById(currentUserId);
+    const hostName = currentUser ? currentUser.name : (req.user.name || 'Host');
+    const hostAvatar = currentUser ? currentUser.avatar : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+
+    const inviteObj = {
+      id: 'invite_' + Date.now(),
+      hostId: currentUserId,
+      hostName,
+      hostAvatar,
+      targetUserId: String(targetUserId),
+      roomId: roomId || `room_${currentUserId}`,
+      createdAt: new Date()
+    };
+
+    listenRoomInvites.push(inviteObj);
+    res.json({ message: `Đã gửi lời mời nghe nhạc tới thành viên! 🎧`, invite: inviteObj });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.get('/social/listen-room/invites/pending', auth, async (req, res) => {
+  try {
+    const currentUserId = String(req.user.id);
+    const currentUserEmail = req.user.email || '';
+
+    const pending = listenRoomInvites.filter(inv =>
+      inv.targetUserId === currentUserId || inv.targetUserId === currentUserEmail
+    );
+
+    res.json(pending);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 router.get('/social/listen-room/:roomId', (req, res) => {
   const { roomId } = req.params;
@@ -878,13 +939,22 @@ router.get('/social/listen-room/:roomId', (req, res) => {
 router.post('/social/listen-room/sync', auth, async (req, res) => {
   try {
     const { roomId, track, curTime, isPlaying, action } = req.body;
-    const currentUserId = req.user.id;
+    const currentUserId = String(req.user.id);
 
-    let room = listenRooms.get(roomId || 'main_room');
-    if (!room) {
+    let targetRoomId = roomId || `room_${currentUserId}`;
+    let room = listenRooms.get(targetRoomId);
+
+    if (action === 'leave') {
+      if (room) {
+        room.members = room.members.filter(m => m.id !== currentUserId);
+      }
+      return res.json({ success: true, message: 'Đã rời phòng nghe nhạc chung', room: null });
+    }
+
+    if (action === 'create' || !room) {
       let currentUser = await User.findById(currentUserId);
       room = {
-        roomId: roomId || 'main_room',
+        roomId: targetRoomId,
         hostId: currentUserId,
         hostName: currentUser ? currentUser.name : (req.user.name || 'Host'),
         track: track || null,
@@ -900,12 +970,14 @@ router.post('/social/listen-room/sync', auth, async (req, res) => {
         if (!room.members.some(m => m.id === currentUserId)) {
           room.members.push({ id: currentUserId, name: currentUser ? currentUser.name : 'Thành viên' });
         }
-      } else {
-        // Only host or any member updating state
-        if (track) room.track = track;
-        if (curTime !== undefined) room.curTime = curTime;
-        if (isPlaying !== undefined) room.isPlaying = Boolean(isPlaying);
-        room.updatedAt = Date.now();
+      } else if (action === 'sync') {
+        // ONLY host can update track, playback state and timeline!
+        if (room.hostId === currentUserId) {
+          if (track) room.track = track;
+          if (curTime !== undefined) room.curTime = curTime;
+          if (isPlaying !== undefined) room.isPlaying = Boolean(isPlaying);
+          room.updatedAt = Date.now();
+        }
       }
     }
 
@@ -914,6 +986,7 @@ router.post('/social/listen-room/sync', auth, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
 
 module.exports = router;
 

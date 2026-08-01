@@ -1137,6 +1137,40 @@ export default function App() {
     return () => clearInterval(interval);
   }, [user?._id]);
 
+  // Unread Direct Messages Notification Badges & Alerts
+  const [unreadDirectMessages, setUnreadDirectMessages] = useState([]);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const seenMsgIdsRef = useRef(new Set());
+
+  const fetchUnreadDirectMessages = async () => {
+    try {
+      const res = await axios.get('/api/social/recent-direct-messages', getAuthConfig());
+      if (res.data && Array.isArray(res.data)) {
+        const curUserId = user?._id || user?.id || '';
+        const unreadList = res.data.filter(m => m.senderId !== curUserId);
+
+        // Alert user if a new direct message arrived
+        unreadList.forEach(m => {
+          if (!seenMsgIdsRef.current.has(m._id)) {
+            seenMsgIdsRef.current.add(m._id);
+            if (!chatModal.open || (chatModal.activeUser?._id !== m.senderId && chatModal.activeUser?.id !== m.senderId)) {
+              showToast(`💬 ${m.senderName || 'Ai đó'}: "${m.text || 'Đã chia sẻ 1 bài hát'}"`, 'info', 'Tin nhắn mới');
+            }
+          }
+        });
+
+        setUnreadDirectMessages(unreadList);
+        setUnreadChatCount(unreadList.length);
+      }
+    } catch (e) { }
+  };
+
+  useEffect(() => {
+    fetchUnreadDirectMessages();
+    const interval = setInterval(fetchUnreadDirectMessages, 3500);
+    return () => clearInterval(interval);
+  }, [user?._id, chatModal.open]);
+
   // Active User Search for Friend Request
   const [searchUserQuery, setSearchUserQuery] = useState('');
   const [searchUserResults, setSearchUserResults] = useState([]);
@@ -1171,23 +1205,85 @@ export default function App() {
     }
   };
 
-  // Listen Together Room Sync
-  const handleSyncListenParty = async (actionType = 'sync', customTrack = null) => {
+  // Pending Room Invites State & Polling
+  const [pendingListenInvites, setPendingListenInvites] = useState([]);
+  const seenInviteIdsRef = useRef(new Set());
+
+  const fetchPendingListenInvites = async () => {
     try {
-      const roomId = listenPartyRoom?.roomId || 'main_party_room';
+      const res = await axios.get('/api/social/listen-room/invites/pending', getAuthConfig());
+      if (res.data && Array.isArray(res.data)) {
+        res.data.forEach(inv => {
+          if (!seenInviteIdsRef.current.has(inv.id)) {
+            seenInviteIdsRef.current.add(inv.id);
+            showToast(`🎧 ${inv.hostName} đã mời bạn tham gia Phòng Nghe Nhạc Cùng Nhau!`, 'info', 'Mời Nghe Chung');
+          }
+        });
+        setPendingListenInvites(res.data);
+      }
+    } catch (e) { }
+  };
+
+  useEffect(() => {
+    fetchPendingListenInvites();
+    const interval = setInterval(fetchPendingListenInvites, 4000);
+    return () => clearInterval(interval);
+  }, [user?._id]);
+
+  // Send Listen Together Room Invite to a target user
+  const handleInviteListenParty = async (targetUser) => {
+    try {
+      const targetId = targetUser?._id || targetUser?.id;
+      const myRoomId = listenPartyRoom?.roomId || `room_${user?._id || user?.id || 'host'}`;
+
+      // Ensure host room is initialized
+      await handleSyncListenParty('create');
+
+      const res = await axios.post('/api/social/listen-room/invite', {
+        targetUserId: targetId,
+        roomId: myRoomId
+      }, getAuthConfig());
+
+      showToast(res.data?.message || `Đã gửi lời mời nghe nhạc tới ${targetUser?.name || 'thành viên'}! 🎧`, 'success', 'Mời Nghe Nhạc');
+    } catch (err) {
+      showToast('Lỗi gửi lời mời nghe nhạc', 'error');
+    }
+  };
+
+  // Leave Listen Together Room
+  const handleLeaveListenParty = async () => {
+    try {
+      if (listenPartyRoom) {
+        await axios.post('/api/social/listen-room/sync', {
+          roomId: listenPartyRoom.roomId,
+          action: 'leave'
+        }, getAuthConfig());
+      }
+    } catch (e) { }
+    setListenPartyRoom(null);
+    setIsListenPartyHost(false);
+    showToast('Đã rời phòng nghe nhạc chung. Bạn đã tự do điều khiển nhạc độc lập! 🎵', 'info', 'Rời Phòng');
+  };
+
+  // Listen Together Room Sync
+  const handleSyncListenParty = async (actionType = 'sync', customTrack = null, customRoomId = null) => {
+    try {
+      const targetRoomId = customRoomId || listenPartyRoom?.roomId || `room_${user?._id || user?.id || 'host'}`;
       const res = await axios.post('/api/social/listen-room/sync', {
-        roomId,
+        roomId: targetRoomId,
         track: customTrack || track,
         curTime,
         isPlaying: playing,
         action: actionType
-      });
+      }, getAuthConfig());
 
       if (res.data && res.data.room) {
         setListenPartyRoom(res.data.room);
-        if (res.data.room.hostId === (user?._id || user?.id)) {
-          setIsListenPartyHost(true);
-        }
+        const isHost = res.data.room.hostId === String(user?._id || user?.id || 'host');
+        setIsListenPartyHost(isHost);
+      } else if (actionType === 'leave') {
+        setListenPartyRoom(null);
+        setIsListenPartyHost(false);
       }
     } catch (e) { }
   };
@@ -4370,15 +4466,24 @@ export default function App() {
 
               {/* 💬 Direct Chat & Listen Together Button */}
               <button
-                onClick={() => setChatModal({ open: true, activeUser: null, tab: 'chat' })}
+                onClick={() => {
+                  setChatModal({ open: true, activeUser: null, tab: 'chat' });
+                  setUnreadChatCount(0);
+                }}
                 className="relative p-2 rounded-full transition-all cursor-pointer hover:scale-110 active:scale-95 flex items-center justify-center"
                 style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.primarySolid }}
                 title="Trò chuyện trực tiếp & Nghe Nhạc Cùng Nhau"
               >
                 <i className="ri-message-3-fill text-base md:text-lg"></i>
-                <span className="absolute -top-1 -right-1 bg-emerald-500 text-white font-extrabold text-[8px] px-1 rounded-full border border-white shadow-md">
-                  LIVE
-                </span>
+                {unreadChatCount > 0 ? (
+                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white font-extrabold text-[9px] min-w-4.5 h-4.5 px-1 rounded-full flex items-center justify-center border border-white shadow-md animate-bounce z-10">
+                    {unreadChatCount}
+                  </span>
+                ) : (
+                  <span className="absolute -top-1 -right-1 bg-emerald-500 text-white font-extrabold text-[8px] px-1 rounded-full border border-white shadow-md">
+                    LIVE
+                  </span>
+                )}
               </button>
 
               {/* 🔔 Notification Bell Button & Dropdown Panel (Đặt ngang hàng ở cuối hàng) */}
@@ -4432,6 +4537,88 @@ export default function App() {
                       </div>
 
                       <div className="flex flex-col gap-2.5 max-h-80 overflow-y-auto custom-scrollbar pr-1">
+                        {/* 🎧 Pending Room Invites Section inside Notification Dropdown */}
+                        {pendingListenInvites && pendingListenInvites.length > 0 && (
+                          <div className="mb-3 pb-3 border-b" style={{ borderColor: C.border }}>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-500 block mb-2">
+                              🎧 Lời Mời Nghe Nhạc Cùng Nhau ({pendingListenInvites.length})
+                            </span>
+
+                            <div className="flex flex-col gap-2">
+                              {pendingListenInvites.map(inv => (
+                                <div
+                                  key={inv.id}
+                                  className="p-2.5 rounded-2xl border flex items-center justify-between gap-2"
+                                  style={{ background: C.tag, borderColor: C.border }}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <img src={inv.hostAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                                    <div className="flex flex-col min-w-0">
+                                      <span className="text-xs font-bold truncate" style={{ color: C.txt }}>{inv.hostName}</span>
+                                      <span className="text-[10px] text-emerald-500 font-medium">Mời bạn nghe nhạc cùng nhau</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <button
+                                      onClick={() => {
+                                        handleSyncListenParty('join', null, inv.roomId);
+                                        setChatModal({ open: true, activeUser: null, tab: 'listen_party' });
+                                        setShowNotifMenu(false);
+                                      }}
+                                      className="px-2.5 py-1 rounded-xl text-[11px] font-bold text-white shadow-xs cursor-pointer hover:scale-105"
+                                      style={{ background: '#10b981' }}
+                                    >
+                                      Vào nghe ngay
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {/* 💬 Unread Direct Messages Section inside Notification Dropdown */}
+                        {unreadDirectMessages && unreadDirectMessages.length > 0 && (
+                          <div className="mb-3 pb-3 border-b" style={{ borderColor: C.border }}>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-blue-500 block mb-2">
+                              💬 Tin Nhắn Mới Nhận ({unreadDirectMessages.length})
+                            </span>
+
+                            <div className="flex flex-col gap-2">
+                              {unreadDirectMessages.slice(0, 4).map(msg => (
+                                <div
+                                  key={msg._id}
+                                  onClick={() => {
+                                    setChatModal({
+                                      open: true,
+                                      activeUser: { _id: msg.senderId, name: msg.senderName, avatar: msg.senderAvatar },
+                                      tab: 'chat'
+                                    });
+                                    setShowNotifMenu(false);
+                                    setUnreadChatCount(prev => Math.max(0, prev - 1));
+                                  }}
+                                  className="p-2.5 rounded-2xl border flex items-center justify-between gap-2 cursor-pointer transition hover:scale-[1.02]"
+                                  style={{ background: C.tag, borderColor: C.border }}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <img src={msg.senderAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                                    <div className="flex flex-col min-w-0">
+                                      <span className="text-xs font-bold truncate" style={{ color: C.txt }}>{msg.senderName || 'Thành viên'}</span>
+                                      <span className="text-[11px] truncate font-medium" style={{ color: C.txtSub }}>{msg.text || '🎵 Đã chia sẻ 1 bài hát'}</span>
+                                    </div>
+                                  </div>
+
+                                  <button
+                                    className="px-2.5 py-1 rounded-xl text-[11px] font-bold text-white shadow-xs cursor-pointer hover:scale-105 shrink-0"
+                                    style={{ background: C.primary }}
+                                  >
+                                    Chat ngay
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         {/* 🤝 Pending Friend Requests Section inside Notification Dropdown */}
                         {pendingFriendRequests && pendingFriendRequests.length > 0 && (
                           <div className="mb-3 pb-3 border-b" style={{ borderColor: C.border }}>
@@ -7771,25 +7958,35 @@ export default function App() {
                   </div>
 
                   <div className="flex items-center gap-2 z-10 shrink-0">
-                    <button
-                      onClick={() => handleSyncListenParty('join')}
-                      className="px-4 py-2.5 rounded-2xl text-xs font-extrabold text-white shadow-md flex items-center gap-1.5 cursor-pointer transition hover:scale-105 active:scale-95"
-                      style={{ background: '#10b981', boxShadow: '0 4px 14px rgba(16,185,129,0.4)' }}
-                    >
-                      <i className="ri-play-circle-fill text-sm" />
-                      <span>Đồng Bộ Nghe Ngay</span>
-                    </button>
+                    {listenPartyRoom ? (
+                      <button
+                        onClick={handleLeaveListenParty}
+                        className="px-4 py-2.5 rounded-2xl text-xs font-extrabold text-white shadow-md flex items-center gap-1.5 cursor-pointer transition hover:scale-105 active:scale-95 bg-red-500"
+                      >
+                        <i className="ri-logout-box-r-line text-sm" />
+                        <span>Rời Phòng Nghe Chung</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleSyncListenParty('create')}
+                        className="px-4 py-2.5 rounded-2xl text-xs font-extrabold text-white shadow-md flex items-center gap-1.5 cursor-pointer transition hover:scale-105 active:scale-95"
+                        style={{ background: '#10b981', boxShadow: '0 4px 14px rgba(16,185,129,0.4)' }}
+                      >
+                        <i className="ri-add-circle-fill text-sm" />
+                        <span>Tạo Phòng Mới</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                {/* Host Control Actions */}
+                {/* Host Control Actions & Status */}
                 <div className="p-4 rounded-2xl border flex flex-col gap-3" style={{ background: C.tag, borderColor: C.border }}>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-extrabold flex items-center gap-1.5" style={{ color: C.txt }}>
                       <i className="ri-equalizer-line text-emerald-500" /> Bàn Điều Khiển Phát Nhạc Đồng Bộ
                     </span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
-                      {isListenPartyHost ? '✦ Bạn là Host điều khiển' : '✦ Đang đồng bộ từ Host'}
+                      {isListenPartyHost ? '👑 Bạn là Host điều khiển' : '🔒 Đang phát theo Host'}
                     </span>
                   </div>
 
@@ -7804,16 +8001,23 @@ export default function App() {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          onClick={() => {
-                            togglePlay();
-                            handleSyncListenParty('sync');
-                          }}
-                          className="w-9 h-9 rounded-full text-white flex items-center justify-center shadow-md cursor-pointer transition hover:scale-110"
-                          style={{ background: C.primary }}
-                        >
-                          {playing ? <i className="ri-pause-fill text-lg" /> : <i className="ri-play-fill text-lg ml-0.5" />}
-                        </button>
+                        {isListenPartyHost ? (
+                          <button
+                            onClick={() => {
+                              togglePlay();
+                              handleSyncListenParty('sync');
+                            }}
+                            className="w-9 h-9 rounded-full text-white flex items-center justify-center shadow-md cursor-pointer transition hover:scale-110"
+                            style={{ background: C.primary }}
+                            title="Host đổi phát/tạm dừng cho cả phòng"
+                          >
+                            {playing ? <i className="ri-pause-fill text-lg" /> : <i className="ri-play-fill text-lg ml-0.5" />}
+                          </button>
+                        ) : (
+                          <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-white/10" style={{ color: C.txtSub }}>
+                            🔒 Phát theo Host
+                          </span>
+                        )}
                       </div>
                     </div>
                   ) : (
