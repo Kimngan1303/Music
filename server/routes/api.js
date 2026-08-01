@@ -660,6 +660,30 @@ router.post('/history', auth, async (req, res) => {
 const Friendship = require('../models/Friendship');
 const Message = require('../models/Message');
 
+// Search members by name or email for active friend request
+router.get('/social/search-users', async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || !q.trim()) return res.json([]);
+
+    const regex = new RegExp(q.trim(), 'i');
+    const users = await User.find({
+      $or: [{ name: regex }, { email: regex }]
+    }).select('-password').limit(15).lean();
+
+    const now = new Date();
+    const formatted = users.map(u => ({
+      ...u,
+      isOnline: u.lastSeen ? (Math.abs(now.getTime() - new Date(u.lastSeen).getTime()) < 180000) : false
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 // 1. Friend Requests & Friend List
 router.get('/social/friends', auth, async (req, res) => {
   try {

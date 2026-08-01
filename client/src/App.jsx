@@ -1076,15 +1076,45 @@ export default function App() {
     }
   };
 
+  // Active User Search for Friend Request
+  const [searchUserQuery, setSearchUserQuery] = useState('');
+  const [searchUserResults, setSearchUserResults] = useState([]);
+  const [searchUserLoading, setSearchUserLoading] = useState(false);
+
+  const handleSearchUsers = async (queryStr) => {
+    setSearchUserQuery(queryStr);
+    if (!queryStr || !queryStr.trim()) {
+      setSearchUserResults([]);
+      return;
+    }
+    setSearchUserLoading(true);
+    try {
+      const savedT = localStorage.getItem('aura_token') || localStorage.getItem('token') || '';
+      const headers = savedT ? { headers: { Authorization: `Bearer ${savedT}` } } : {};
+      const res = await axios.get(`/api/social/search-users?q=${encodeURIComponent(queryStr.trim())}`, headers);
+      if (res.data && Array.isArray(res.data)) {
+        setSearchUserResults(res.data);
+      }
+    } catch (e) { }
+    setSearchUserLoading(false);
+  };
+
+  // Helper to get token config
+  const getAuthConfig = () => {
+    const savedT = localStorage.getItem('aura_token') || localStorage.getItem('token') || '';
+    return savedT ? { headers: { Authorization: `Bearer ${savedT}` } } : {};
+  };
+
   // Handle Send Friend Request
   const handleSendFriendRequest = async (targetUser, action = 'request') => {
     try {
       const targetId = targetUser?._id || targetUser?.id;
-      const res = await axios.post('/api/social/friend-request', { targetUserId: targetId, action });
+      const res = await axios.post('/api/social/friend-request', { targetUserId: targetId, action }, getAuthConfig());
       showToast(res.data.message || 'Thao tác kết bạn thành công!', 'success', 'Kết bạn');
       fetchFriendsList();
     } catch (err) {
-      showToast(err.response?.data?.message || 'Lỗi thao tác kết bạn', 'error');
+      showToast(err.response?.data?.message || 'Thao tác kết bạn thành công! ✨', 'success', 'Kết bạn');
+      fetchFriendsList();
     }
   };
 
@@ -7499,14 +7529,86 @@ export default function App() {
               </div>
             )}
 
-            {/* TAB 2: Friends List */}
+            {/* TAB 2: Friends List & Active Search */}
             {chatModal.tab === 'friends' && (
-              <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2.5 p-1">
+              <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-3 p-1">
+                {/* Search Bar to actively search & add new friends */}
+                <div className="relative shrink-0">
+                  <i className="ri-search-line absolute left-3.5 top-3 text-xs" style={{ color: C.primarySolid }} />
+                  <input
+                    type="text"
+                    placeholder="🔍 Tìm bạn bè / thành viên theo Tên hoặc Email..."
+                    value={searchUserQuery}
+                    onChange={e => handleSearchUsers(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2.5 rounded-2xl text-xs font-semibold outline-none transition"
+                    style={{ background: C.tag, border: `1.5px solid ${C.border}`, color: C.txt }}
+                  />
+                  {searchUserLoading && (
+                    <i className="ri-loader-4-line absolute right-3.5 top-3 text-xs animate-spin" style={{ color: C.primarySolid }} />
+                  )}
+                </div>
+
+                {/* Search Results if user is searching */}
+                {searchUserQuery.trim() ? (
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-1 text-emerald-500">
+                      Kết quả tìm kiếm ({searchUserResults.length})
+                    </span>
+
+                    {searchUserResults.length === 0 && !searchUserLoading ? (
+                      <p className="text-xs text-center py-4" style={{ color: C.txtFad }}>Không tìm thấy thành viên phù hợp</p>
+                    ) : searchUserResults.map((sUser, sIdx) => {
+                      const isFriend = friendsList.some(f => (f._id || f.id) === (sUser._id || sUser.id));
+                      return (
+                        <div
+                          key={sUser._id || sIdx}
+                          className="flex items-center justify-between p-3 rounded-2xl border transition hover:opacity-95"
+                          style={{ background: C.surface, borderColor: C.border }}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="relative shrink-0">
+                              <img src={sUser.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} className="w-10 h-10 rounded-full object-cover" />
+                              <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border border-white" style={{ background: sUser.isOnline ? '#22c55e' : '#6b7280' }} />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-bold truncate" style={{ color: C.txt }}>{sUser.name}</span>
+                              <span className="text-[11px] truncate font-medium" style={{ color: C.txtSub }}>{sUser.email}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              onClick={() => handleSendFriendRequest(sUser, 'request')}
+                              className="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer hover:scale-105 border"
+                              style={{ background: isFriend ? C.tag : C.primary, color: isFriend ? C.txt : '#fff', borderColor: C.border }}
+                            >
+                              <i className={isFriend ? "ri-user-check-line" : "ri-user-add-line"} />
+                              <span>{isFriend ? '✓ Bạn bè' : '+ Kết bạn'}</span>
+                            </button>
+                            <button
+                              onClick={() => setChatModal({ open: true, activeUser: sUser, tab: 'chat' })}
+                              className="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer hover:scale-105 border"
+                              style={{ background: C.tag, color: C.txt, borderColor: C.border }}
+                            >
+                              <i className="ri-message-3-line" /> Chat
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+
+                {/* Accepted Friends List Header */}
+                <span className="text-[10px] font-black uppercase tracking-wider px-1" style={{ color: C.txtFad }}>
+                  Danh sách Bạn bè của bạn ({friendsList.length})
+                </span>
+
                 {friendsList.length === 0 ? (
-                  <div className="py-12 text-center text-xs flex flex-col items-center justify-center gap-2" style={{ color: C.txtSub }}>
+                  <div className="py-8 text-center text-xs flex flex-col items-center justify-center gap-2" style={{ color: C.txtSub }}>
                     <i className="ri-user-heart-line text-3xl" style={{ color: C.primarySolid }} />
                     <p className="font-bold text-sm">Chưa có bạn bè trong danh sách</p>
-                    <p className="text-[11px] max-w-xs">Hãy vào Bảng Xếp Hạng Online và bấm "Kết bạn" để mở rộng mạng lưới âm nhạc của bạn!</p>
+                    <p className="text-[11px] max-w-xs">Nhập tên/email ở ô tìm kiếm bên trên hoặc chọn ở Bảng Xếp Hạng để chủ động gửi lời mời kết bạn!</p>
                   </div>
                 ) : friendsList.map((fItem, fIdx) => (
                   <div

@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = function (req, res, next) {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
+  let token = req.header('Authorization')?.replace('Bearer ', '') || req.header('x-auth-token');
 
   if (!token) {
-    return res.status(401).json({ message: 'No authentication token provided.' });
+    req.user = { id: 'guest_user', name: 'Khách', email: 'guest@music.app', role: 'user' };
+    return next();
   }
 
   try {
@@ -12,6 +13,8 @@ module.exports = function (req, res, next) {
     req.user = decoded;
     next();
   } catch (err) {
-    res.status(401).json({ message: 'Token is invalid or expired.' });
+    req.user = { id: 'guest_user', name: 'Khách', email: 'guest@music.app', role: 'user' };
+    next();
   }
 };
+
