@@ -7502,9 +7502,7 @@ export default function App() {
                 onClick={() => {
                   const targetU = viewUserProfileModal.user;
                   setViewUserProfileModal(null);
-                  setChatModal({ open: true, activeUser: targetU, tab: 'listen_party' });
-                  handleSyncListenParty('create');
-                  showToast(`🎧 Đã khởi tạo Phòng Nghe Nhạc Cùng Nhau với ${targetU?.name || 'thành viên'}!`, 'info', 'Nghe Nhạc Cùng Nhau');
+                  handleInviteListenParty(targetU);
                 }}
                 className="w-full py-2.5 rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer transition hover:opacity-95 border"
                 style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(16,185,129,0.2))', color: '#10b981', borderColor: 'rgba(16,185,129,0.3)' }}
@@ -8102,8 +8100,7 @@ export default function App() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setChatModal({ open: true, activeUser: fItem, tab: 'listen_party' });
-                            handleSyncListenParty('create');
+                            handleInviteListenParty(fItem);
                           }}
                           className="px-3 py-1.5 rounded-xl text-xs font-bold text-white transition flex items-center gap-1 cursor-pointer hover:scale-105 shadow-sm"
                           style={{ background: '#10b981' }}
@@ -8120,93 +8117,106 @@ export default function App() {
             {/* TAB 3: Listen Together (Phòng Nghe Nhạc Cùng Nhau) */}
             {chatModal.tab === 'listen_party' && (
               <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 p-2">
-                {/* Room Info Banner */}
-                <div
-                  className="p-5 rounded-3xl border flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left relative overflow-hidden"
-                  style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(59,130,246,0.15) 100%)', borderColor: 'rgba(16,185,129,0.3)' }}
-                >
-                  <div className="flex items-center gap-4 z-10 min-w-0">
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl text-white shadow-lg shrink-0" style={{ background: '#10b981' }}>
-                      <i className="ri-headphone-fill animate-bounce" />
+                {!listenPartyRoom ? (
+                  <div className="p-8 rounded-3xl border text-center flex flex-col items-center justify-center gap-4 my-auto" style={{ background: C.tag, borderColor: C.border }}>
+                    <div className="w-16 h-16 rounded-3xl flex items-center justify-center text-3xl text-white shadow-lg" style={{ background: '#10b981' }}>
+                      <i className="ri-headphone-fill animate-pulse" />
                     </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-500">🎧 Phòng Nghe Nhạc Cùng Nhau</span>
-                      <h4 className="text-base font-extrabold truncate" style={{ color: C.txt, fontFamily: F.heading }}>
-                        {listenPartyRoom ? `Phòng của Host ${listenPartyRoom.hostName}` : 'Phòng Nghe Nhạc Chung'}
-                      </h4>
-                      <p className="text-xs" style={{ color: C.txtSub }}>
-                        {listenPartyRoom?.members ? `${listenPartyRoom.members.length} người đang cùng nghe` : 'Sẵn sàng đồng bộ bài hát'}
+                    <div className="flex flex-col items-center max-w-sm gap-1">
+                      <h4 className="text-base font-extrabold" style={{ color: C.txt }}>Bạn Chưa Tham Gia Phòng Nghe Nào</h4>
+                      <p className="text-xs text-center leading-relaxed" style={{ color: C.txtSub }}>
+                        Nhận lời mời từ bạn bè trong khung Chat/Thông báo để gia nhập phòng, hoặc tự tạo phòng của riêng mình bên dưới để mời bạn bè cùng nghe nhạc!
                       </p>
                     </div>
+                    <button
+                      onClick={() => handleSyncListenParty('create')}
+                      className="px-5 py-3 rounded-2xl text-xs font-extrabold text-white shadow-md flex items-center gap-2 cursor-pointer transition hover:scale-105 active:scale-95"
+                      style={{ background: '#10b981', boxShadow: '0 4px 14px rgba(16,185,129,0.4)' }}
+                    >
+                      <i className="ri-add-circle-fill text-base" />
+                      <span>➕ Tạo Phòng Mới Của Bạn</span>
+                    </button>
                   </div>
-
-                  <div className="flex items-center gap-2 z-10 shrink-0">
-                    {listenPartyRoom ? (
-                      <button
-                        onClick={handleLeaveListenParty}
-                        className="px-4 py-2.5 rounded-2xl text-xs font-extrabold text-white shadow-md flex items-center gap-1.5 cursor-pointer transition hover:scale-105 active:scale-95 bg-red-500"
-                      >
-                        <i className="ri-logout-box-r-line text-sm" />
-                        <span>Rời Phòng Nghe Chung</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleSyncListenParty('create')}
-                        className="px-4 py-2.5 rounded-2xl text-xs font-extrabold text-white shadow-md flex items-center gap-1.5 cursor-pointer transition hover:scale-105 active:scale-95"
-                        style={{ background: '#10b981', boxShadow: '0 4px 14px rgba(16,185,129,0.4)' }}
-                      >
-                        <i className="ri-add-circle-fill text-sm" />
-                        <span>Tạo Phòng Mới</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Host Control Actions & Status */}
-                <div className="p-4 rounded-2xl border flex flex-col gap-3" style={{ background: C.tag, borderColor: C.border }}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold flex items-center gap-1.5" style={{ color: C.txt }}>
-                      <i className="ri-equalizer-line text-emerald-500" /> Bàn Điều Khiển Phát Nhạc Đồng Bộ
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
-                      {isListenPartyHost ? '👑 Bạn là Host điều khiển' : '🔒 Đang phát theo Host'}
-                    </span>
-                  </div>
-
-                  {track ? (
-                    <div className="flex items-center justify-between p-3 rounded-xl border bg-white/5" style={{ borderColor: C.border }}>
-                      <div className="flex items-center gap-3 min-w-0">
-                        <img src={track.thumbnail} className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                ) : (
+                  <>
+                    {/* Room Info Banner */}
+                    <div
+                      className="p-5 rounded-3xl border flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left relative overflow-hidden"
+                      style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(59,130,246,0.15) 100%)', borderColor: 'rgba(16,185,129,0.3)' }}
+                    >
+                      <div className="flex items-center gap-4 z-10 min-w-0">
+                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl text-white shadow-lg shrink-0" style={{ background: '#10b981' }}>
+                          <i className="ri-headphone-fill animate-bounce" />
+                        </div>
                         <div className="flex flex-col min-w-0">
-                          <span className="text-xs font-bold truncate" style={{ color: C.txt }}>{getCleanSongTitle(track)}</span>
-                          <span className="text-[11px] truncate" style={{ color: C.txtSub }}>{track.artist || 'Artist'}</span>
+                          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-500">🎧 Phòng Nghe Nhạc Cùng Nhau</span>
+                          <h4 className="text-base font-extrabold truncate" style={{ color: C.txt, fontFamily: F.heading }}>
+                            Phòng của Host {listenPartyRoom.hostName}
+                          </h4>
+                          <p className="text-xs" style={{ color: C.txtSub }}>
+                            {listenPartyRoom?.members ? `${listenPartyRoom.members.length} người đang cùng nghe` : 'Sẵn sàng đồng bộ bài hát'}
+                          </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        {isListenPartyHost ? (
-                          <button
-                            onClick={() => {
-                              togglePlay();
-                              handleSyncListenParty('sync');
-                            }}
-                            className="w-9 h-9 rounded-full text-white flex items-center justify-center shadow-md cursor-pointer transition hover:scale-110"
-                            style={{ background: C.primary }}
-                            title="Host đổi phát/tạm dừng cho cả phòng"
-                          >
-                            {playing ? <i className="ri-pause-fill text-lg" /> : <i className="ri-play-fill text-lg ml-0.5" />}
-                          </button>
-                        ) : (
-                          <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-white/10" style={{ color: C.txtSub }}>
-                            🔒 Phát theo Host
-                          </span>
-                        )}
+                      <div className="flex items-center gap-2 z-10 shrink-0">
+                        <button
+                          onClick={handleLeaveListenParty}
+                          className="px-4 py-2.5 rounded-2xl text-xs font-extrabold text-white shadow-md flex items-center gap-1.5 cursor-pointer transition hover:scale-105 active:scale-95 bg-red-500"
+                        >
+                          <i className="ri-logout-box-r-line text-sm" />
+                          <span>Rời Phòng Nghe Chung</span>
+                        </button>
                       </div>
                     </div>
-                  ) : (
-                    <p className="text-xs text-center py-4" style={{ color: C.txtFad }}>Chọn 1 bài hát trong thư viện để bắt đầu phát chung!</p>
-                  )}
-                </div>
+
+                    {/* Host Control Actions & Status */}
+                    <div className="p-4 rounded-2xl border flex flex-col gap-3" style={{ background: C.tag, borderColor: C.border }}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-extrabold flex items-center gap-1.5" style={{ color: C.txt }}>
+                          <i className="ri-equalizer-line text-emerald-500" /> Bàn Điều Khiển Phát Nhạc Đồng Bộ
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
+                          {isListenPartyHost ? '👑 Bạn là Host điều khiển' : '🔒 Đang phát theo Host'}
+                        </span>
+                      </div>
+
+                      {track ? (
+                        <div className="flex items-center justify-between p-3 rounded-xl border bg-white/5" style={{ borderColor: C.border }}>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <img src={track.thumbnail} className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-bold truncate" style={{ color: C.txt }}>{getCleanSongTitle(track)}</span>
+                              <span className="text-[11px] truncate" style={{ color: C.txtSub }}>{track.artist || 'Artist'}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {isListenPartyHost ? (
+                              <button
+                                onClick={() => {
+                                  togglePlay();
+                                  handleSyncListenParty('sync');
+                                }}
+                                className="w-9 h-9 rounded-full text-white flex items-center justify-center shadow-md cursor-pointer transition hover:scale-110"
+                                style={{ background: C.primary }}
+                                title="Host đổi phát/tạm dừng cho cả phòng"
+                              >
+                                {playing ? <i className="ri-pause-fill text-lg" /> : <i className="ri-play-fill text-lg ml-0.5" />}
+                              </button>
+                            ) : (
+                              <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-white/10" style={{ color: C.txtSub }}>
+                                🔒 Phát theo Host
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-center py-4" style={{ color: C.txtFad }}>Chọn 1 bài hát trong thư viện để bắt đầu phát chung!</p>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
