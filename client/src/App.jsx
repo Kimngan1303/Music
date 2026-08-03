@@ -6883,7 +6883,7 @@ export default function App() {
 
       {/* ── BOTTOM PLAYER ─────────────────────── */}
       <footer
-        className="w-full flex flex-col md:flex-row items-center px-2 md:px-4 lg:px-6 justify-center md:justify-between shrink-0 z-50 transition-all h-auto md:h-[90px] py-2.5 md:py-0 gap-2.5 md:gap-0"
+        className="w-full max-w-full overflow-hidden flex flex-col md:flex-row items-center px-2 md:px-4 lg:px-6 justify-center md:justify-between shrink-0 z-50 transition-all h-auto md:h-[90px] py-2.5 md:py-0 gap-2.5 md:gap-0"
         style={{
           background: C.surface,
           backdropFilter: 'blur(24px)',
@@ -6893,7 +6893,7 @@ export default function App() {
         }}>
 
         {/* Track Info (LEFT) */}
-        <div className="flex items-center gap-2 md:gap-3 w-[30%] min-w-[180px] max-w-[340px] shrink-0 overflow-hidden justify-start">
+        <div className="flex items-center gap-2 md:gap-3 w-1/4 max-w-[280px] lg:max-w-[320px] shrink-0 overflow-hidden justify-start">
           {track ? (
             <>
               <div className="relative shrink-0">
@@ -6951,7 +6951,7 @@ export default function App() {
         </div>
 
         {/* Center: Controls + Timeline */}
-        <div className="flex flex-col items-center gap-2 md:gap-2 w-full md:max-w-2xl md:flex-1 md:px-6">
+        <div className="flex flex-col items-center gap-2 md:gap-2 w-full md:max-w-2xl flex-1 min-w-0 md:px-4 lg:px-6">
           <div className="flex items-center justify-between md:justify-center gap-4 md:gap-6 w-full px-6 md:px-0 order-2 md:order-1">
             <Tooltip text={isShuffle ? 'Tắt phát ngẫu nhiên' : 'Bật phát ngẫu nhiên'}>
               <button
@@ -7041,10 +7041,10 @@ export default function App() {
         </div>
 
         {/* Right Controls: Extra + Volume */}
-        <div className="hidden md:flex items-center justify-end gap-3 w-[30%] min-w-[180px] max-w-[340px] shrink-0">
+        <div className="hidden md:flex items-center justify-end gap-1.5 lg:gap-2.5 w-1/4 max-w-[280px] lg:max-w-[320px] shrink-0 min-w-0">
           <Tooltip text={sleepTimer ? `Hẹn giờ: ${sleepTimer} phút` : 'Hẹn giờ tắt nhạc'}>
             <button onClick={cycleSleepTimer}
-              className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+              className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0"
               style={{ color: sleepTimer > 0 ? C.primarySolid : C.txtFad }}
               onMouseEnter={e => e.currentTarget.style.color = sleepTimer > 0 ? C.primarySolid : C.txt}
               onMouseLeave={e => e.currentTarget.style.color = sleepTimer > 0 ? C.primarySolid : C.txtFad}
@@ -7061,7 +7061,7 @@ export default function App() {
 
           <Tooltip text="Lời bài hát (Karaoke 🎤)">
             <button onClick={() => setLyricsModal(true)}
-              className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+              className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0"
               style={{ color: lyricsModal ? C.primarySolid : C.txtFad }}
               onMouseEnter={e => e.currentTarget.style.color = lyricsModal ? C.primarySolid : C.txt}
               onMouseLeave={e => e.currentTarget.style.color = lyricsModal ? C.primarySolid : C.txtFad}
@@ -7073,7 +7073,7 @@ export default function App() {
           <Tooltip text={pipWindow ? "Đóng cửa sổ thu nhỏ" : "Mở cửa sổ con nổi (Mini Player)"}>
             <button
               onClick={togglePipWindow}
-              className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+              className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0"
               style={{ color: pipWindow ? C.primarySolid : C.txtFad }}
               onMouseEnter={e => e.currentTarget.style.color = pipWindow ? C.primarySolid : C.txt}
               onMouseLeave={e => e.currentTarget.style.color = pipWindow ? C.primarySolid : C.txtFad}
@@ -7087,7 +7087,7 @@ export default function App() {
             </button>
           </Tooltip>
 
-          <div className="flex items-center gap-1.5 ml-2 w-28 lg:w-32">
+          <div className="flex items-center gap-1.5 ml-1 lg:ml-2 w-20 sm:w-24 lg:w-28 xl:w-32 min-w-[70px] shrink-0">
             <Tooltip text={muted || vol === 0 ? 'Bật lại âm thanh' : 'Tắt tiếng'}>
               <button onClick={toggleMute}
                 className="transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0"
@@ -7099,7 +7099,7 @@ export default function App() {
               </button>
             </Tooltip>
             <input type="range" min="0" max="100" value={muted ? 0 : vol} onChange={changeVol}
-              className={`flex-1 cursor-pointer h-1 md:h-1.5 rounded-full ${themeKey === 'summer_season' ? 'sun-theme-slider' : ''}`}
+              className={`flex-1 min-w-0 cursor-pointer h-1 md:h-1.5 rounded-full ${themeKey === 'summer_season' ? 'sun-theme-slider' : ''}`}
               style={{
                 background: themeKey === 'summer_season'
                   ? `linear-gradient(90deg, #ff7e5f 0%, #f59e0b ${muted ? 0 : vol}%, rgba(245, 158, 11, 0.25) ${muted ? 0 : vol}%, rgba(245, 158, 11, 0.25) 100%)`
