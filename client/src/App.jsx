@@ -882,7 +882,7 @@ function Tooltip({ text, children, className = "" }) {
   return (
     <div className={`relative group/tooltip ${className || 'inline-flex items-center justify-center'}`}>
       {children}
-      <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 hidden group-hover/tooltip:flex flex-col items-center pointer-events-none z-[100] whitespace-nowrap transition-all duration-150">
+      <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 hidden group-hover/tooltip:flex flex-col items-center pointer-events-none z-[120] whitespace-nowrap transition-all duration-150">
         <div
           className="px-2.5 py-1 text-[11px] font-bold rounded-xl text-white shadow-2xl flex items-center gap-1 leading-none"
           style={{
@@ -5968,7 +5968,7 @@ export default function App() {
                           <span className="text-xs md:text-sm font-bold truncate" style={{ color: sel || isSelected ? C.primarySolid : C.txt }}>{song.title}</span>
                           <span className="text-[10px] md:text-xs truncate" style={{ color: C.txtSub }}>{song.artist}</span>
                         </div>
-                        <span className="hidden sm:block text-xs text-right shrink-0 w-12" style={{ color: C.txtFad }}>{song.duration}</span>
+                        <span className="hidden sm:flex items-center justify-center text-xs font-bold text-center shrink-0 w-16 px-1" style={{ color: C.txtFad }}>{song.duration}</span>
 
                         <div className="flex justify-end items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                           <button onClick={() => setSongToAdd(song)} title="Thêm bài hát này vào danh sách phát"
@@ -6082,11 +6082,11 @@ export default function App() {
           <div
             className="shrink-0 flex flex-col overflow-hidden transition-all duration-300 shadow-xl relative"
             style={{
-              width: '400px',
+              width: '520px',
               borderLeft: `1.5px solid ${C.border}`,
               background: C.surface,
               color: C.txt,
-              zIndex: 10,
+              zIndex: 30,
             }}
           >
             {/* Ambient Blur Artwork Background */}
@@ -6883,7 +6883,7 @@ export default function App() {
 
       {/* ── BOTTOM PLAYER ─────────────────────── */}
       <footer
-        className="w-full max-w-full overflow-hidden flex flex-col md:flex-row items-center px-2 md:px-4 lg:px-6 justify-center md:justify-between shrink-0 z-50 transition-all h-auto md:h-[90px] py-2.5 md:py-0 gap-2.5 md:gap-0"
+        className="w-full max-w-full flex flex-col md:flex-row items-center px-2 md:px-4 lg:px-6 justify-center md:justify-between shrink-0 z-[60] transition-all h-auto md:h-[90px] py-2.5 md:py-0 gap-2.5 md:gap-0 relative"
         style={{
           background: C.surface,
           backdropFilter: 'blur(24px)',
@@ -7036,7 +7036,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Controls: Extra + Volume */}
+        {/* Right Controls: Extra + Volume + PIP */}
         <div className="hidden md:flex items-center justify-end gap-1.5 lg:gap-2.5 w-1/4 max-w-[280px] lg:max-w-[320px] shrink-0 min-w-0">
           <Tooltip text={sleepTimer ? `Hẹn giờ: ${sleepTimer} phút` : 'Hẹn giờ tắt nhạc'}>
             <button onClick={cycleSleepTimer}
@@ -7055,8 +7055,8 @@ export default function App() {
             </button>
           </Tooltip>
 
-          <Tooltip text="Lời bài hát (Karaoke 🎤)">
-            <button onClick={() => setLyricsModal(true)}
+          <Tooltip text={lyricsModal ? "Đóng lời bài hát (Karaoke 🎤)" : "Lời bài hát (Karaoke 🎤)"}>
+            <button onClick={() => setLyricsModal(prev => !prev)}
               className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0"
               style={{ color: lyricsModal ? C.primarySolid : C.txtFad }}
               onMouseEnter={e => e.currentTarget.style.color = lyricsModal ? C.primarySolid : C.txt}
@@ -7066,23 +7066,7 @@ export default function App() {
             </button>
           </Tooltip>
 
-          <Tooltip text={pipWindow ? "Đóng cửa sổ thu nhỏ" : "Mở cửa sổ con nổi (Mini Player)"}>
-            <button
-              onClick={togglePipWindow}
-              className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0"
-              style={{ color: pipWindow ? C.primarySolid : C.txtFad }}
-              onMouseEnter={e => e.currentTarget.style.color = pipWindow ? C.primarySolid : C.txt}
-              onMouseLeave={e => e.currentTarget.style.color = pipWindow ? C.primarySolid : C.txtFad}
-            >
-              <i className={pipWindow ? "ri-picture-in-picture-2-fill text-lg md:text-xl" : "ri-picture-in-picture-2-line text-lg md:text-xl"}></i>
-              {pipWindow && (
-                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1 md:h-1 rounded-full"
-                  style={{ background: C.primarySolid }}>
-                </span>
-              )}
-            </button>
-          </Tooltip>
-
+          {/* Volume control */}
           <div className="flex items-center gap-1.5 ml-1 lg:ml-2 w-20 sm:w-24 lg:w-28 xl:w-32 min-w-[70px] shrink-0">
             <Tooltip text={muted || vol === 0 ? 'Bật lại âm thanh' : 'Tắt tiếng'}>
               <button onClick={toggleMute}
@@ -7105,6 +7089,24 @@ export default function App() {
                 '--accent-glow': C.primaryGlow
               }} />
           </div>
+
+          {/* Mini player (PIP) window button moved to the RIGHT side of the volume bar */}
+          <Tooltip text={pipWindow ? "Đóng cửa sổ thu nhỏ" : "Mở cửa sổ con nổi (Mini Player)"}>
+            <button
+              onClick={togglePipWindow}
+              className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0 ml-1"
+              style={{ color: pipWindow ? C.primarySolid : C.txtFad }}
+              onMouseEnter={e => e.currentTarget.style.color = pipWindow ? C.primarySolid : C.txt}
+              onMouseLeave={e => e.currentTarget.style.color = pipWindow ? C.primarySolid : C.txtFad}
+            >
+              <i className={pipWindow ? "ri-picture-in-picture-2-fill text-lg md:text-xl" : "ri-picture-in-picture-2-line text-lg md:text-xl"}></i>
+              {pipWindow && (
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1 md:h-1 rounded-full"
+                  style={{ background: C.primarySolid }}>
+                </span>
+              )}
+            </button>
+          </Tooltip>
         </div>
       </footer>
 
