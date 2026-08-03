@@ -6948,7 +6948,19 @@ export default function App() {
 
         {/* Center: Controls + Timeline */}
         <div className="flex flex-col items-center gap-2 md:gap-2 w-full md:max-w-2xl flex-1 min-w-0 md:px-4 lg:px-6">
-          <div className="flex items-center justify-between md:justify-center gap-4 md:gap-6 w-full px-6 md:px-0 order-2 md:order-1">
+          <div className="flex items-center justify-between md:justify-center gap-3.5 md:gap-5 w-full px-6 md:px-0 order-2 md:order-1">
+            {/* Heart / Favorite button in center controls near Shuffle */}
+            <Tooltip text={track && favs.includes(track.id) ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}>
+              <button onClick={() => track && toggleFav(track.id)}
+                className="transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0 p-1"
+                style={{ color: track && favs.includes(track.id) ? C.primarySolid : C.txtFad }}
+                onMouseEnter={e => e.currentTarget.style.color = track && favs.includes(track.id) ? C.primarySolid : C.txt}
+                onMouseLeave={e => e.currentTarget.style.color = track && favs.includes(track.id) ? C.primarySolid : C.txtFad}
+              >
+                <i className={track && favs.includes(track.id) ? 'ri-heart-fill text-lg md:text-xl' : 'ri-heart-line text-lg md:text-xl'}></i>
+              </button>
+            </Tooltip>
+
             <Tooltip text={isShuffle ? 'Tắt phát ngẫu nhiên' : 'Bật phát ngẫu nhiên'}>
               <button
                 onClick={toggleShuffle}
