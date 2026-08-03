@@ -6948,8 +6948,8 @@ export default function App() {
 
         {/* Center: Controls + Timeline */}
         <div className="flex flex-col items-center gap-2 md:gap-2 w-full md:max-w-2xl flex-1 min-w-0 md:px-4 lg:px-6">
-          <div className="flex items-center justify-between md:justify-center gap-3.5 md:gap-5 w-full px-6 md:px-0 order-2 md:order-1">
-            {/* Heart / Favorite button in center controls near Shuffle */}
+          <div className="flex items-center justify-between md:justify-center gap-3 md:gap-4.5 w-full px-6 md:px-0 order-2 md:order-1">
+            {/* 1. Heart / Favorite button */}
             <Tooltip text={track && favs.includes(track.id) ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}>
               <button onClick={() => track && toggleFav(track.id)}
                 className="transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0 p-1"
@@ -6961,6 +6961,7 @@ export default function App() {
               </button>
             </Tooltip>
 
+            {/* 2. Shuffle button */}
             <Tooltip text={isShuffle ? 'Tắt phát ngẫu nhiên' : 'Bật phát ngẫu nhiên'}>
               <button
                 onClick={toggleShuffle}
@@ -6978,6 +6979,7 @@ export default function App() {
               </button>
             </Tooltip>
 
+            {/* 3. Prev button */}
             <Tooltip text="Bài phía trước">
               <button onClick={prevTrack} 
                 className="transition-transform hover:scale-110 active:scale-95 cursor-pointer" 
@@ -6989,6 +6991,7 @@ export default function App() {
               </button>
             </Tooltip>
 
+            {/* 4. Play / Pause main button */}
             <Tooltip text={buffering ? 'Đang tải dữ liệu...' : playing ? 'Tạm dừng' : 'Bật phát nhạc'}>
               <button onClick={togglePlay}
                 className={`w-10 h-10 md:w-11 md:h-11 rounded-full text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0 ${getSeasonalPlayBtnClass(themeKey) || 'shadow-md'}`}
@@ -6997,6 +7000,7 @@ export default function App() {
               </button>
             </Tooltip>
 
+            {/* 5. Next button */}
             <Tooltip text="Bài tiếp theo">
               <button onClick={nextTrack} 
                 className="transition-transform hover:scale-110 active:scale-95 cursor-pointer" 
@@ -7008,6 +7012,7 @@ export default function App() {
               </button>
             </Tooltip>
 
+            {/* 6. Repeat button */}
             <Tooltip text={repeatMode === 'one' ? 'Đang lặp 1 bài' : repeatMode === 'all' ? 'Đang lặp danh sách' : 'Lặp lại danh sách'}>
               <button
                 onClick={toggleRepeat}
@@ -7026,6 +7031,24 @@ export default function App() {
                 {repeatMode === 'all' && (
                   <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 md:w-1 md:h-1 rounded-full"
                     style={{ background: C.primarySolid }}>
+                  </span>
+                )}
+              </button>
+            </Tooltip>
+
+            {/* 7. Sleep Timer button moved right next to Repeat button */}
+            <Tooltip text={sleepTimer ? `Hẹn giờ: ${sleepTimer} phút` : 'Hẹn giờ tắt nhạc'}>
+              <button onClick={cycleSleepTimer}
+                className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0"
+                style={{ color: sleepTimer > 0 ? C.primarySolid : C.txtFad }}
+                onMouseEnter={e => e.currentTarget.style.color = sleepTimer > 0 ? C.primarySolid : C.txt}
+                onMouseLeave={e => e.currentTarget.style.color = sleepTimer > 0 ? C.primarySolid : C.txtFad}
+              >
+                <i className={sleepTimer > 0 ? 'ri-timer-fill text-lg md:text-xl' : 'ri-timer-line text-lg md:text-xl'}></i>
+                {sleepTimer > 0 && (
+                  <span className="absolute -top-1 -right-2 text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center text-white shadow-xs"
+                    style={{ background: C.primarySolid }}>
+                    {sleepTimer}
                   </span>
                 )}
               </button>
@@ -7050,23 +7073,6 @@ export default function App() {
 
         {/* Right Controls: Extra + Volume + PIP */}
         <div className="hidden md:flex items-center justify-end gap-1.5 lg:gap-2.5 w-1/4 max-w-[280px] lg:max-w-[320px] shrink-0 min-w-0">
-          <Tooltip text={sleepTimer ? `Hẹn giờ: ${sleepTimer} phút` : 'Hẹn giờ tắt nhạc'}>
-            <button onClick={cycleSleepTimer}
-              className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0"
-              style={{ color: sleepTimer > 0 ? C.primarySolid : C.txtFad }}
-              onMouseEnter={e => e.currentTarget.style.color = sleepTimer > 0 ? C.primarySolid : C.txt}
-              onMouseLeave={e => e.currentTarget.style.color = sleepTimer > 0 ? C.primarySolid : C.txtFad}
-            >
-              <i className={sleepTimer > 0 ? 'ri-timer-fill text-lg md:text-xl' : 'ri-timer-line text-lg md:text-xl'}></i>
-              {sleepTimer > 0 && (
-                <span className="absolute -top-1 -right-2 text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center text-white shadow-xs"
-                  style={{ background: C.primarySolid }}>
-                  {sleepTimer}
-                </span>
-              )}
-            </button>
-          </Tooltip>
-
           <Tooltip text={lyricsModal ? "Đóng lời bài hát (Karaoke 🎤)" : "Lời bài hát (Karaoke 🎤)"}>
             <button onClick={() => setLyricsModal(prev => !prev)}
               className="relative p-1 transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0"
