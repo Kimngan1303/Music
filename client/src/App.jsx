@@ -6913,32 +6913,28 @@ export default function App() {
                 )}
               </div>
               <div className="flex flex-col min-w-0 flex-1 overflow-hidden justify-center text-left mr-2">
-                <Tooltip text={`${track.title} • ${track.artist}`} className="w-full min-w-0 flex flex-col overflow-hidden">
-                  <div className="flex items-center gap-1.5 min-w-0 w-full cursor-pointer" title={`${track.title} - ${track.artist}`}>
-                    <span className="text-xs md:text-sm font-bold truncate block min-w-0 flex-1 hover:underline" style={{ color: C.txt }}>
-                      {track.title}
+                <div className="flex items-center gap-1.5 min-w-0 w-full">
+                  <span className="text-xs md:text-sm font-bold truncate shrink min-w-0 hover:underline cursor-pointer" style={{ color: C.txt }} title={`${track.title} - ${track.artist}`}>
+                    {track.title}
+                  </span>
+                  {buffering && (
+                    <span className="shrink-0 px-1.5 py-0.5 text-[8px] font-extrabold rounded-md text-amber-300 bg-amber-500/20 border border-amber-500/30 flex items-center gap-1 animate-pulse whitespace-nowrap">
+                      <i className="ri-loader-4-line animate-spin text-[10px]"></i>
                     </span>
-                    {buffering && (
-                      <span className="shrink-0 px-1.5 py-0.5 text-[8px] font-extrabold rounded-md text-amber-300 bg-amber-500/20 border border-amber-500/30 flex items-center gap-1 animate-pulse whitespace-nowrap">
-                        <i className="ri-loader-4-line animate-spin text-[10px]"></i>
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[10px] md:text-xs truncate block w-full" style={{ color: C.txtSub }}>{track.artist}</span>
-                </Tooltip>
+                  )}
+                  <Tooltip text={track && favs.includes(track.id) ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}>
+                    <button onClick={() => track && toggleFav(track.id)}
+                      className="transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0 ml-0.5"
+                      style={{ color: track && favs.includes(track.id) ? C.primarySolid : C.txtFad }}
+                      onMouseEnter={e => e.currentTarget.style.color = track && favs.includes(track.id) ? C.primarySolid : C.txt}
+                      onMouseLeave={e => e.currentTarget.style.color = track && favs.includes(track.id) ? C.primarySolid : C.txtFad}
+                    >
+                      <i className={track && favs.includes(track.id) ? 'ri-heart-fill text-base md:text-lg' : 'ri-heart-line text-base md:text-lg'}></i>
+                    </button>
+                  </Tooltip>
+                </div>
+                <span className="text-[10px] md:text-xs truncate block w-full" style={{ color: C.txtSub }}>{track.artist}</span>
               </div>
-              
-              {/* Fav button moved to Track Info area like Spotify */}
-              <Tooltip text={track && favs.includes(track.id) ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}>
-                <button onClick={() => track && toggleFav(track.id)}
-                  className="transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0 ml-1"
-                  style={{ color: track && favs.includes(track.id) ? C.primarySolid : C.txtFad }}
-                  onMouseEnter={e => e.currentTarget.style.color = track && favs.includes(track.id) ? C.primarySolid : C.txt}
-                  onMouseLeave={e => e.currentTarget.style.color = track && favs.includes(track.id) ? C.primarySolid : C.txtFad}
-                >
-                  <i className={track && favs.includes(track.id) ? 'ri-heart-fill text-base md:text-lg' : 'ri-heart-line text-base md:text-lg'}></i>
-                </button>
-              </Tooltip>
             </>
           ) : (
             <div className="flex items-center gap-1.5 md:gap-3">
