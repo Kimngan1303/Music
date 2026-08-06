@@ -45,8 +45,9 @@ export default function Fish3DCanvas() {
     const FISH_COUNT = 6;
     const loader = new GLTFLoader();
 
+    const modelUrl = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/public/fish.glb` : '/fish.glb';
     loader.load(
-      '/fish.glb',
+      modelUrl,
       (gltf) => {
         const baseModel = gltf.scene;
 

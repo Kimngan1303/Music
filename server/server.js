@@ -20,6 +20,9 @@ app.use('/api/music', require('./routes/musicRoutes'));
 app.use('/api/playlists', require('./routes/playlistRoutes'));
 app.use('/api', require('./routes/api'));
 
+// Serve static files from public folder (for large assets like fish.glb)
+app.use('/public', express.static('public'));
+
 // Serve client dist static files if built (local dev only)
 app.use(express.static('../client/dist'));
 
